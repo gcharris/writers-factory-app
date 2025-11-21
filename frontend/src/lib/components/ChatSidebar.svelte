@@ -80,27 +80,27 @@
 
 <style>
   .sidebar {
-    width: 300px;
-    background: #1e1e1e;
-    border-left: 1px solid #333;
+    width: 100%;
+    height: 100%;
+    background: #f8fafc;
+    border-left: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
-    color: #fff;
+    color: #111827;
     font-family: sans-serif;
-    height: 100%;
   }
 
   .header {
     padding: 1rem;
-    border-bottom: 1px solid #333;
-    background: #252526;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
   }
 
   h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
 
   .status {
     font-size: 0.8rem;
-    color: #aaa;
+    color: #6b7280;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -129,7 +129,7 @@
   
   .message.user { justify-content: flex-end; }
   .message.assistant { justify-content: flex-start; }
-  .message.system { justify-content: center; font-size: 0.8rem; color: #666; }
+  .message.system { justify-content: center; font-size: 0.8rem; color: #6b7280; }
 
   .bubble {
     max-width: 85%;
@@ -139,22 +139,22 @@
     line-height: 1.4;
   }
 
-  .user .bubble { background: #007acc; color: white; }
-  .assistant .bubble { background: #333; color: #ddd; }
+  .user .bubble { background: #2563eb; color: white; }
+  .assistant .bubble { background: #e5e7eb; color: #111827; }
 
   .input-area {
     padding: 1rem;
-    border-top: 1px solid #333;
+    border-top: 1px solid #e5e7eb;
     display: flex;
     gap: 0.5rem;
-    background: #252526;
+    background: #ffffff;
   }
 
   textarea {
     flex: 1;
-    background: #3c3c3c;
-    border: 1px solid #555;
-    color: white;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    color: #111827;
     padding: 0.5rem;
     border-radius: 4px;
     resize: none;
@@ -162,10 +162,10 @@
     font-family: inherit;
   }
 
-  textarea:focus { outline: 1px solid #007acc; }
+  textarea:focus { outline: 1px solid #2563eb; }
 
   button {
-    background: #007acc;
+    background: #2563eb;
     color: white;
     border: none;
     padding: 0 1rem;
@@ -173,6 +173,6 @@
     cursor: pointer;
   }
   
-  button:hover { background: #0062a3; }
+  button:hover { background: #1d4ed8; }
 </style>
 

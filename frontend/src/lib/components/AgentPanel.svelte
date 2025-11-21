@@ -83,29 +83,28 @@
 
   <div class="agent-list">
     {#each agents as agent}
-      {#if isSetupMode || selectedNames.has(agent.name)}
-        <!-- Accessible Button Wrapper -->
-        <div 
-          role="button"
-          tabindex="0"
-          class="agent-card {isSetupMode && selectedNames.has(agent.name) ? 'selected' : ''} {isSetupMode ? 'clickable' : ''}" 
-          on:click={() => isSetupMode && toggleAgent(agent.name)}
-          on:keydown={(e) => e.key === 'Enter' && isSetupMode && toggleAgent(agent.name)}>
-          
-          <div class="icon-area">
-            {#if !isSetupMode}
-              <div class="status-indicator {agent.status}"></div>
-            {:else}
-              <div class="checkbox">{selectedNames.has(agent.name) ? '☑️' : '⬜'}</div>
-            {/if}
-          </div>
-
-          <div class="info">
-            <strong>{agent.nickname || agent.name}</strong>
-            <span>{agent.provider}</span>
-          </div>
+      <button
+        type="button"
+        disabled={!isSetupMode}
+        class={`agent-card ${selectedNames.has(agent.name) ? 'selected' : ''} ${isSetupMode ? 'clickable' : ''}`} 
+        on:click={() => isSetupMode && toggleAgent(agent.name)}>
+        
+        <div class="icon-area">
+          {#if isSetupMode}
+            <div class="checkbox">{selectedNames.has(agent.name) ? '☑️' : '⬜'}</div>
+          {:else}
+            <div class="status-indicator {agent.status}"></div>
+          {/if}
         </div>
-      {/if}
+
+        <div class="info">
+          <strong>{agent.nickname || agent.name}</strong>
+          <span class="provider">{agent.provider}</span>
+          {#if agent.role}
+            <small>{agent.role}</small>
+          {/if}
+        </div>
+      </button>
     {/each}
   </div>
 
@@ -168,6 +167,9 @@
     margin-bottom: 0.5rem; 
   }
   
+  .agent-card { width: 100%; text-align: left; border: 1px solid #e5e7eb; }
+  .agent-card:disabled { cursor: default; opacity: 1; }
+  .agent-card:focus-visible { outline: 2px solid #2563eb; }
   .agent-card.clickable { cursor: pointer; }
   .agent-card.clickable:hover { border-color: #93c5fd; }
   .agent-card.selected { border-color: #2563eb; background-color: #eff6ff; }
@@ -182,7 +184,8 @@
 
   .info { display: flex; flex-direction: column; font-size: 0.85rem; overflow: hidden; }
   .info strong { font-weight: 600; color: #111827; }
-  .info span { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+  .info span.provider { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+  .info small { font-size: 0.65rem; color: #9ca3af; }
 
   .controls { 
     padding: 1rem; 

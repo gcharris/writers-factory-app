@@ -1,14 +1,16 @@
 <script>
-  import { editorContent } from '$lib/stores';
+  import { editorContent, activeFile } from '$lib/stores';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   
-  export let activeFile = ""; 
+  let currentFile = "";
   let lastSaved = "";
 
+  $: currentFile = $activeFile;
+
   async function saveFile() {
-    if (!activeFile) return;
+    if (!currentFile) return;
     try {
-      await writeTextFile(activeFile, $editorContent);
+      await writeTextFile(currentFile, $editorContent);
       lastSaved = new Date().toLocaleTimeString();
       console.log("Saved locally!");
     } catch (e) {
@@ -29,7 +31,7 @@
 <div class="editor-container">
   <div class="toolbar">
     <!-- Display only the filename, no button -->
-    <span class="filename">{activeFile ? activeFile.split('/').pop() : "No file selected"}</span>
+    <span class="filename">{currentFile ? currentFile.split('/').pop() : "No file selected"}</span>
     {#if lastSaved}
       <span class="saved-indicator">Saved {lastSaved}</span>
     {/if}

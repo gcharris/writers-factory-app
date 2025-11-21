@@ -1,7 +1,7 @@
 <script>
   import { open } from '@tauri-apps/plugin-dialog';
   import { readDir, readTextFile } from '@tauri-apps/plugin-fs';
-  import { editorContent } from '$lib/stores';
+  import { editorContent, activeFile } from '$lib/stores';
   import { onMount } from 'svelte';
 
   export let selectedFile = ""; 
@@ -9,6 +9,8 @@
   let currentPath = "";
   let errorMsg = "";
   const STORAGE_KEY = "last_project_path";
+
+  $: selectedFile = $activeFile;
 
   onMount(async () => {
     // 1. Auto-restore previous project
@@ -51,10 +53,12 @@
     if (file.isDirectory) return; // Ignore folders for now
     
     try {
-      const fullPath = `${currentPath}/${file.name}`;
+      const separator = currentPath.endsWith("/") ? "" : "/";
+      const fullPath = `${currentPath}${separator}${file.name}`;
       selectedFile = fullPath; 
       const text = await readTextFile(fullPath);
       editorContent.set(text);
+      activeFile.set(fullPath);
     } catch (e) {
       console.error(e);
       alert("Failed to read file: " + e);

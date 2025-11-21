@@ -10,18 +10,32 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from services.llm_service import LLMService
-from services.manager_service import ManagerService
-
 # --- App Imports ---
-# ... other imports ...
+# Fix path to allow importing from sibling directories
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from backend.agents.wizard.setup import generate_project_config
+from backend.agents.registry import AgentRegistry
+from backend.agents.specialists.scaffold import SmartScaffoldAgent
+from backend.agents.orchestrator import SceneTournament, DraftCritic
+from backend.graph.graph_service import KnowledgeGraphService
+from backend.graph.schema import Base, Node
+from backend.graph.ner_extractor import NERExtractor, SPACY_AVAILABLE
+from backend.services.llm_service import LLMService
+from backend.services.manager_service import ManagerService
 
 # Initialize Services
-llm_service = LLMService()
-manager_service = ManagerService(model="llama3.2") # Make sure you have this model pulled
+try:
+    llm_service = LLMService()
+    manager_service = ManagerService(model="llama3.2") # Make sure you have this model pulled
+except Exception as e:
+    print(f"Error initializing services: {e}")
+    llm_service = None
+    manager_service = None
 
 # Load Agents
-AGENTS_PATH = os.path.join(os.path.dirname(__file__), "agents.yaml")
+# Agents config lives at repo root (../agents.yaml)
+AGENTS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "agents.yaml")
 AGENTS = []
 if os.path.exists(AGENTS_PATH):
     with open(AGENTS_PATH, "r") as f:
@@ -135,3 +149,9 @@ async def chat_with_manager(req: ManagerChatRequest):
     """Send a message to the local Manager agent."""
     response = manager_service.chat(req.message, req.context)
     return {"response": response}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("backend.api:app", host="127.0.0.1", port=8000, reload=False)

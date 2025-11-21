@@ -1,36 +1,74 @@
 version: "1.0"
 
 agents:
+  - id: "gpt-4o"
+    name: "GPT-4o"
+    provider: "openai"
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-4o"
+    role: "The Logic Master. You prioritize structure, reasoning, and clarity."
+    use_cases: ["tournament", "judging"]
+    enabled: true
+
+  - id: "claude-sonnet-3-7"
+    name: "Claude 3.7 Sonnet"
+    provider: "anthropic"
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-3-7-sonnet-20250219"
+    role: "The Nuanced Writer. You prioritize tone, empathy, and creative flair."
+    use_cases: ["tournament", "enhancement", "critique"]
+    enabled: true
+
+  - id: "grok-2"
+    name: "Grok 2"
+    provider: "xai"
+    api_key_env: "XAI_API_KEY"
+    model: "grok-2"
+    role: "The Witty Rebel. You prioritize humor, directness, and unconventional thinking."
+    use_cases: ["tournament", "brainstorming"]
+    enabled: true
+
+  - id: "deepseek-v3"
+    name: "DeepSeek V3"
+    provider: "deepseek"
+    api_key_env: "DEEPSEEK_API_KEY"
+    model: "deepseek-chat"
+    role: "The Systems Architect. You focus on science, logic, and tactical plotting."
+    use_cases: ["tournament", "analysis"]
+    enabled: true
+
+  - id: "qwen-plus"
+    name: "Qwen Plus"
+    provider: "qwen"
+    api_key_env: "QWEN_API_KEY"
+    model: "qwen-plus"
+    role: "The Polyglot Researcher. You weave world-building details and cultural nuance."
+    use_cases: ["tournament", "context_injection"]
+    enabled: true
+
+  - id: "mistral-large"
+    name: "Mistral Large"
+    provider: "mistral"
+    api_key_env: "MISTRAL_API_KEY"
+    model: "mistral-large-latest"
+    role: "The Stylist. You tighten prose, pacing, and descriptive texture."
+    use_cases: ["tournament", "polish"]
+    enabled: true
+
+  - id: "zhipu-glm4"
+    name: "Zhipu GLM-4"
+    provider: "zhipu"
+    api_key_env: "ZHIPU_API_KEY"
+    model: "glm-4"
+    role: "The Strategist. You surface plot twists, stakes, and long-arc consistency."
+    use_cases: ["tournament", "plotting"]
+    enabled: true
+
   - id: "ollama-llama-3.2"
     name: "Ollama Llama 3.2"
     provider: "ollama"
     endpoint: "http://localhost:11434"
     model: "llama3.2"
-    cost_per_1k_tokens: 0.0
-    latency: "fast"
-    quality_rating: 7.5
+    role: "The Local Scout. You prototype ideas instantly with zero token cost."
     use_cases: ["brainstorming", "quick_drafts", "character_checks"]
-    enabled: true
-    
-  - id: "claude-sonnet-3-5"
-    name: "Claude Sonnet 3.5"
-    provider: "anthropic"
-    api_key_env: "ANTHROPIC_API_KEY"
-    model: "claude-3-5-sonnet-20240620"
-    cost_per_1k_tokens: 0.003
-    latency: "medium"
-    quality_rating: 9.5
-    use_cases: ["tournament", "enhancement", "critique"]
-    enabled: true
-    max_monthly_spend: 50.00  # USD
-
-  - id: "gemini-pro-1-5"
-    name: "Gemini 1.5 Pro"
-    provider: "google"
-    api_key_env: "GEMINI_API_KEY"
-    model: "gemini-1.5-pro"
-    cost_per_1k_tokens: 0.00125
-    latency: "medium"
-    quality_rating: 9.2
-    use_cases: ["tournament", "reasoning"]
     enabled: true

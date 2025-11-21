@@ -68,14 +68,16 @@
   }
 
   .agent-panel-wrapper {
-    flex: 1; /* Takes top 50% roughly */
-    border-bottom: 1px solid #333;
-    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    overflow: hidden;
   }
 
   .manager-wrapper {
-    flex: 1; /* Takes bottom 50% roughly */
-    display: flex;
-    flex-direction: column;
+    flex: none;
+    height: 260px;
+    border-top: 1px solid #e5e7eb;
   }
 </style>
