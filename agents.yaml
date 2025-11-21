@@ -1,0 +1,36 @@
+version: "1.0"
+
+agents:
+  - id: "ollama-llama-3.2"
+    name: "Ollama Llama 3.2"
+    provider: "ollama"
+    endpoint: "http://localhost:11434"
+    model: "llama3.2"
+    cost_per_1k_tokens: 0.0
+    latency: "fast"
+    quality_rating: 7.5
+    use_cases: ["brainstorming", "quick_drafts", "character_checks"]
+    enabled: true
+    
+  - id: "claude-sonnet-3-5"
+    name: "Claude Sonnet 3.5"
+    provider: "anthropic"
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-3-5-sonnet-20240620"
+    cost_per_1k_tokens: 0.003
+    latency: "medium"
+    quality_rating: 9.5
+    use_cases: ["tournament", "enhancement", "critique"]
+    enabled: true
+    max_monthly_spend: 50.00  # USD
+
+  - id: "gemini-pro-1-5"
+    name: "Gemini 1.5 Pro"
+    provider: "google"
+    api_key_env: "GEMINI_API_KEY"
+    model: "gemini-1.5-pro"
+    cost_per_1k_tokens: 0.00125
+    latency: "medium"
+    quality_rating: 9.2
+    use_cases: ["tournament", "reasoning"]
+    enabled: true

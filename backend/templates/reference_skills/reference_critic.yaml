@@ -1,0 +1,38 @@
+# REFERENCE SCORING RUBRIC (Generic Template)
+# The Setup Wizard will inject specific names/domains into {{placeholders}}
+
+dimensions:
+  - name: "Voice Authenticity"
+    weight: 0.30
+    criteria:
+      - "Does it sound like {{protagonist_name}} observing, or an AI explaining?"
+      - "Are metaphors rooted in {{protagonist_name}}'s specific domains ({{domains}})?"
+      - "Is the narrative distance consistent (e.g. Close Third Person)?"
+
+  - name: "Character Consistency"
+    weight: 0.20
+    criteria:
+      - "Does behavior match established psychology and motivation?"
+      - "Are capabilities and limitations respected?"
+      - "Are relationship dynamics authentic to the history?"
+
+  - name: "Metaphor Discipline"
+    weight: 0.20
+    criteria:
+      - "Avoid clichés and mixed metaphors."
+      - "Rotate domains: do not overuse one metaphor type (e.g. {{primary_domain}})."
+      - "Prefer direct transformation ('The sun slashed') over similes ('The sun was like a knife')."
+
+  - name: "Prose Mechanics"
+    weight: 0.15
+    criteria:
+      - "No 'filter words' (felt, saw, realized, heard)."
+      - "No 'with [adverb]' constructions (e.g. 'with practiced ease')."
+      - "Show, don't tell emotions."
+
+  - name: "Narrative Function"
+    weight: 0.15
+    criteria:
+      - "Does the scene advance the plot or character arc?"
+      - "Is the conflict clear and active?"
+      - "Does the scene start late and leave early?"

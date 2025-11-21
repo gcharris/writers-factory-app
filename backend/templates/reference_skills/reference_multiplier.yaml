@@ -1,0 +1,28 @@
+# REFERENCE STRATEGIES (Generic Template)
+# Used by the Setup Wizard to generate project-specific strategies.
+
+global_instruction: |
+  Use "Verbalized Sampling": Prioritize creative diversity.
+  Do not aim for the "average" completion.
+  Take a creative risk (Probability 0.07-0.14) while maintaining strict {{voice_name}} voice.
+
+strategies:
+  - id: "strategy_a"
+    name: "Sensory & Atmosphere Focus"
+    directive: "Focus intensely on the sensory details of the setting. Use the environment to reflect {{protagonist_name}}'s internal state. Make the setting act as a character."
+
+  - id: "strategy_b"
+    name: "Internal State & Memory"
+    directive: "Focus on {{protagonist_name}}'s internal monologue and memory associations. Filter the action through their specific past traumas or experiences."
+
+  - id: "strategy_c"
+    name: "Mechanics & Process"
+    directive: "Focus on the technical or magical mechanics of the world. Describe the 'how' of the action with precision, using {{protagonist_name}}'s specific expertise."
+
+  - id: "strategy_d"
+    name: "Rhythm & Pacing"
+    directive: "Focus on the flow and rhythm of the prose. Vary sentence length to control tension. Prioritize the 'music' of the scene over exposition."
+
+  - id: "strategy_e"
+    name: "Emotional Pivot"
+    directive: "Focus on the key emotional turning point. Sacrifice detailed description for raw character reaction and relationship dynamics."

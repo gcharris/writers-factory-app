@@ -1,0 +1,37 @@
+# --- US / Big Three ---
+# OpenAI (GPT-4o)
+OPENAI_API_KEY=your_openai_key_here
+
+# Anthropic (Claude 3.5 Sonnet)
+ANTHROPIC_API_KEY=your_anthropic_key_here
+
+# XAI (Grok)
+XAI_API_KEY=your_xai_key_here
+
+# --- China / Asia ---
+# DeepSeek
+DEEPSEEK_API_KEY=your_deepseek_key_here
+
+# Alibaba Qwen (DashScope)
+QWEN_API_KEY=your_qwen_key_here
+
+# Moonshot Kimi
+KIMI_API_KEY=your_kimi_key_here
+
+# Zhipu AI (ChatGLM)
+ZHIPU_API_KEY=your_zhipu_key_here
+
+# Tencent Hunyuan
+TENCENT_API_KEY=your_tencent_key_here
+
+# --- Europe ---
+# Mistral AI
+MISTRAL_API_KEY=your_mistral_key_here
+
+# --- Legacy / Disabled ---
+# Google Gemini (CLI Auth is separate, this is for direct API if needed)
+# GEMINI_API_KEY=your_gemini_key_here
+
+# --- Local ---
+# Ollama (Usually no key needed, but good for compatibility)
+OLLAMA_API_KEY=local

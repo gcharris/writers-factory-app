@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tauri Connection Diagnostic</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; color: #333; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
+        h1 { margin-top: 0; color: #2c3e50; }
+        .status-box { padding: 1rem; margin: 1rem 0; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+        .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Backend Connection Test</h1>
+    <p>Attempting to connect to <strong>http://127.0.0.1:8000/health</strong>...</p>
+    
+    <div id="status" class="status-box pending">Initializing test...</div>
+    
+    <button onclick="runHealthCheck()">Retry Connection</button>
+</div>
+
+<script>
+    const BACKEND_URL = "http://127.0.0.1:8000/health";
+
+    async function runHealthCheck() {
+        const statusDiv = document.getElementById('status');
+        statusDiv.className = 'status-box pending';
+        statusDiv.textContent = `Connecting to ${BACKEND_URL}...`;
+
+        try {
+            // 1. Start the timer
+            const startTime = performance.now();
+            
+            // 2. Attempt fetch
+            const response = await fetch(BACKEND_URL, {
+                method: 'GET',
+                // 'cors' mode is default, but explicit helps clarity
+                mode: 'cors', 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const endTime = performance.now();
+            const duration = (endTime - startTime).toFixed(0);
+
+            // 3. Check HTTP status
+            if (!response.ok) {
+                throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+            }
+
+            // 4. Parse JSON
+            const data = await response.json();
+
+            // 5. Success
+            statusDiv.className = 'status-box success';
+            statusDiv.textContent = `SUCCESS!\n\nDuration: ${duration}ms\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+
+        } catch (error) {
+            // 6. Failure Analysis
+            let debugHint = "Unknown error.";
+            
+            if (error.message.includes("Failed to fetch")) {
+                debugHint = "The browser could not reach the server. \nPossibilities:\n- Backend is not running.\n- Port 8000 is blocked.\n- Tauri CSP is blocking localhost.";
+            } else if (error.message.includes("HTTP Error")) {
+                debugHint = "Server was reached but rejected the request. \nPossibilities:\n- CORS issue (if status is 403/401).\n- Server internal error (if status is 500).";
+            }
+
+            statusDiv.className = 'status-box error';
+            statusDiv.textContent = `FAILED.\n\nError: ${error.message}\n\nDiagnostic Hint:\n${debugHint}`;
+        }
+    }
+
+    // Run automatically on load
+    runHealthCheck();
+</script>
+
+</body>
+</html>

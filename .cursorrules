@@ -1,0 +1,21 @@
+# Project: Writers Factory Desktop (Graph-Centric IDE)
+
+## Core Philosophy
+- **Truth is the Graph:** The NetworkX/SQLite graph is the source of truth, not text files.
+- **Hybrid AI:** Use Gemini 3.0 CLI for reasoning/creative tasks. Use local Ollama for simple utility/NER tasks.
+- **Architecture:** Tauri (Frontend) + Python FastAPI (Backend).
+
+## Technical Stack
+- Backend: Python 3.12, NetworkX, Pydantic, SQLAlchemy (Async), FastAPI.
+- Frontend: SvelteKit, TypeScript, Tauri v2.
+- AI Bridge: `backend/bridges/gemini_cli.py` (Subprocess wrapper).
+
+## Documentation Reference
+- Always refer to `docs/01_architecture.md` for structural questions.
+- Always refer to `docs/02_scene_pipeline.md` for logic regarding scene generation and database schemas.
+
+## Coding Style
+- Use Python Type Hints strongly.
+- Use Pydantic models for all data exchange.
+- When writing Python code, ensure it is compatible with the Gemini 3.0 CLI bridge.
+
