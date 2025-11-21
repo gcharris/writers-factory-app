@@ -3,6 +3,7 @@
   import Editor from '$lib/components/Editor.svelte';
   import AgentPanel from '$lib/components/AgentPanel.svelte';
   import ChatSidebar from '$lib/components/ChatSidebar.svelte';
+  import NotebookPanel from '$lib/components/NotebookPanel.svelte';
 </script>
 
 <div class="app-container">
@@ -15,12 +16,12 @@
   </main>
 
   <aside class="right-sidebar">
-    <!-- Top half: Tournament Squad -->
     <div class="agent-panel-wrapper">
       <AgentPanel />
     </div>
-    
-    <!-- Bottom half: The Manager (Cursor) -->
+    <div class="notebook-wrapper">
+      <NotebookPanel />
+    </div>
     <div class="manager-wrapper">
       <ChatSidebar />
     </div>
@@ -75,9 +76,17 @@
     overflow: hidden;
   }
 
+  .notebook-wrapper {
+    flex: 1;
+    min-height: 0;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
   .manager-wrapper {
     flex: none;
     height: 260px;
     border-top: 1px solid #e5e7eb;
+    background: #f8fafc;
   }
 </style>

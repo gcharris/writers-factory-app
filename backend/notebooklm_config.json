@@ -1,0 +1,23 @@
+{
+  "notebooks": [
+    {
+      "id": "8b1f262a-fe2a-45f3-8c3b-39689c9d3123",
+      "label": "Craft Bible",
+      "description": "Writing craft, plot structure, character development strategies",
+      "category": "craft"
+    },
+    {
+      "id": "e03a6b48-2835-496c-88ae-4536dd3b1930",
+      "label": "Azeem Character Study",
+      "description": "Character voice based on curated YouTube interviews",
+      "category": "character"
+    },
+    {
+      "id": "71c17eaa-f11c-41a8-afc1-dc940ae35353",
+      "label": "Future World (10-Year Horizon)",
+      "description": "World-building research for near-future speculation",
+      "category": "world"
+    }
+  ]
+}
+

@@ -10,9 +10,17 @@
   async function saveFile() {
     if (!currentFile) return;
     try {
-      await writeTextFile(currentFile, $editorContent);
+      // Use Backend API to save file
+      const response = await fetch(`http://localhost:8000/files/${encodeURIComponent(currentFile)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: $editorContent })
+      });
+
+      if (!response.ok) throw new Error("Backend failed to save file");
+
       lastSaved = new Date().toLocaleTimeString();
-      console.log("Saved locally!");
+      console.log("Saved to backend!");
     } catch (e) {
       alert("Error saving: " + e);
     }

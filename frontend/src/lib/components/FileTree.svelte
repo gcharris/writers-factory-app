@@ -56,8 +56,13 @@
       const separator = currentPath.endsWith("/") ? "" : "/";
       const fullPath = `${currentPath}${separator}${file.name}`;
       selectedFile = fullPath; 
-      const text = await readTextFile(fullPath);
-      editorContent.set(text);
+
+      // Use Backend API to read file
+      const response = await fetch(`http://localhost:8000/files/${encodeURIComponent(fullPath)}`);
+      if (!response.ok) throw new Error("Backend failed to read file");
+      
+      const data = await response.json();
+      editorContent.set(data.content);
       activeFile.set(fullPath);
     } catch (e) {
       console.error(e);

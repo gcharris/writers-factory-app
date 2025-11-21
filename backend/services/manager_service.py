@@ -7,7 +7,7 @@ class ManagerService:
     The 'Writer's Cursor' - Local Integrated Agent.
     Uses Ollama to provide zero-latency, private assistance.
     """
-    def __init__(self, model: str = "llama3.2"):
+    def __init__(self, model: str = "llama3.2:3b"):
         self.model = model
         self.context_history: List[int] = [] # Stores context tokens for continuity
         self.system_prompt = (
