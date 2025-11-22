@@ -1,0 +1,191 @@
+version: '3'
+
+vars:
+  PACKAGE_NAME: notebooklm_mcp
+  PYTHON_CMD: uv run python
+  PYTEST_CMD: uv run pytest
+  CONFIG_FILE: notebooklm-config.json
+
+env:
+  UV_PYTHON: python3.10
+
+tasks:
+  default:
+    desc: "🎯 Show all available tasks"
+    cmds:
+      - task --list
+
+  # =============================================================================
+  # 🚀 UV Environment Management
+  # =============================================================================
+
+  setup:
+    desc: "🔧 Complete project setup with UV"
+    cmds:
+      - echo "🚀 Setting up NotebookLM MCP with UV..."
+      - uv sync --all-groups
+      - echo "✅ Project setup complete!"
+      - echo "📝 Run 'task --list' to see available commands"
+
+  install:
+    desc: "📦 Install project dependencies with UV"
+    cmds:
+      - echo "📦 Installing with UV..."
+      - uv sync
+
+  install-dev:
+    desc: "🔧 Install development dependencies"
+    cmds:
+      - echo "🔧 Installing development dependencies..."
+      - uv sync --group dev --group test --group lint
+    deps:
+      - task: install
+
+  test:
+    desc: "🧪 Run working tests with UV"
+    cmds:
+      - echo "🧪 Running working tests..."
+      - "{{.PYTEST_CMD}} tests/test_config.py tests/test_config_real.py tests/test_comprehensive_simple.py -v"
+    deps:
+      - task: install
+
+  test-quick:
+    desc: "⚡ Quick single test for validation"
+    cmds:
+      - echo "⚡ Running quick validation test..."
+      - "{{.PYTEST_CMD}} tests/test_config_real.py::TestServerConfig::test_default_values -v"
+    deps:
+      - task: install
+
+  test-coverage:
+    desc: "📊 Run coverage analysis with UV"
+    cmds:
+      - echo "📊 Running coverage analysis..."
+      - uv run coverage run --source=src/{{.PACKAGE_NAME}} -m pytest tests/test_config.py tests/test_config_real.py tests/test_comprehensive_simple.py --junitxml=junit.xml
+      - uv run coverage report --show-missing
+      - uv run coverage xml
+      - uv run coverage html
+      - echo "📋 Coverage report generated in htmlcov/"
+    deps:
+      - task: install
+
+  lint:
+    desc: "🔍 Run linting with UV"
+    cmds:
+      - echo "🦀 Running Ruff linter..."
+      - uv run ruff check src/ tests/ --fix
+    deps:
+      - task: install
+
+  format:
+    desc: "🎨 Format code with UV"
+    cmds:
+      - echo "⚫ Formatting with Black..."
+      - uv run black src/ tests/
+      - echo "📊 Sorting imports..."
+      - uv run isort src/ tests/
+    deps:
+      - task: install
+
+  build:
+    desc: "🏗️ Build package with UV"
+    cmds:
+      - echo "🏗️ Building package..."
+      - uv build
+      - echo "✅ Package built successfully!"
+    deps:
+      - task: install
+
+  build-check:
+    desc: "✅ Validate build artifacts"
+    cmds:
+      - echo "✅ Checking build artifacts..."
+      - uv run twine check dist/*
+    deps:
+      - task: build
+
+  server-stdio:
+    desc: "🚀 Start FastMCP v2 server (STDIO mode)"
+    cmds:
+      - echo "🚀 Starting FastMCP v2 server (STDIO)..."
+      - "{{.PYTHON_CMD}} -m notebooklm_mcp.cli --config {{.CONFIG_FILE}} server"
+    deps:
+      - task: install
+
+  server-http:
+    desc: "🌐 Start FastMCP v2 server (HTTP mode)"
+    cmds:
+      - echo "🌐 Starting FastMCP v2 server (HTTP)..."
+      - "{{.PYTHON_CMD}} -m notebooklm_mcp.cli --config {{.CONFIG_FILE}} server --transport http --port 8001 --headless"
+    deps:
+      - task: install
+
+  clean:
+    desc: "🧹 Clean build artifacts"
+    cmds:
+      - echo "🧹 Cleaning build artifacts..."
+      - rm -rf dist/ build/ *.egg-info/
+      - rm -rf htmlcov/ .coverage
+      - find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+  info:
+    desc: "ℹ️ Show project information"
+    cmds:
+      - echo "📊 NotebookLM MCP Project Information"
+      - echo "======================================"
+      - echo "🏷️ Package {{.PACKAGE_NAME}}"
+      - "{{.PYTHON_CMD}} --version"
+      - uv --version
+      - pwd
+
+  # =============================================================================
+  # 📋 Dependency Management with UV
+  # =============================================================================
+
+  deps-add:
+    desc: "➕ Add new dependency (usage: task deps-add -- package_name)"
+    cmds:
+      - echo "➕ Adding dependency {{.CLI_ARGS}}"
+      - uv add {{.CLI_ARGS}}
+
+  deps-add-dev:
+    desc: "➕ Add development dependency (usage: task deps-add-dev -- package_name)"
+    cmds:
+      - echo "➕ Adding dev dependency {{.CLI_ARGS}}"
+      - uv add --group dev {{.CLI_ARGS}}
+
+  deps-remove:
+    desc: "➖ Remove dependency (usage: task deps-remove -- package_name)"
+    cmds:
+      - echo "➖ Removing dependency {{.CLI_ARGS}}"
+      - uv remove {{.CLI_ARGS}}
+
+  deps-list:
+    desc: "📋 List all dependencies"
+    cmds:
+      - echo "📋 Project dependencies:"
+      - uv tree
+
+  deps-lock:
+    desc: "🔒 Generate dependency lockfile"
+    cmds:
+      - echo "🔒 Generating lockfile..."
+      - uv lock
+
+  deps-update:
+    desc: "🔄 Update all dependencies"
+    cmds:
+      - echo "🔄 Updating dependencies..."
+      - uv sync --upgrade
+
+  # =============================================================================
+  # 🚨 Quality Assurance
+  # =============================================================================
+
+  enforce-test:
+    desc: "🚨 MANDATORY Enforce testing after function changes"
+    cmds:
+      - echo "🚨 MANDATORY TESTING ENFORCEMENT"
+      - echo "⚠️ This must pass after ANY function changes!"
+      - task: test-coverage
+      - echo "✅ Test enforcement completed!"
