@@ -10,3 +10,14 @@ __pycache__/
 *.sqlite
 *.sqlite3
 *.log
+
+# Dependencies
+node_modules/
+
+# Browser Profiles (Private)
+chrome_profile_notebooklm/
+chrome_profile/
+
+# Build Artifacts (Optional, but good practice to ignore dist if source is tracked)
+# dist/ 
+# (Keeping dist/ for now since we want the executable to be ready-to-run)
