@@ -41,6 +41,9 @@ This is the new core engine designed to prevent "Context Bloat" and "Hallucinati
 
 - **Concept:** When you chat with an agent or brainstorm, it does **not** go to the Knowledge Graph immediately. It lives in the **Session**.
 - **Storage:** SQLite Table `session_events` (Fast, ordered log of the conversation).
+- **Optimization (Session Compaction):** To prevent context bloat during long ideation sessions, the `MemoryService` runs a background task to compress history.
+  - **Trigger:** Count-Based (e.g., every 20 turns) or Time-Based (15m inactivity).
+  - **Strategy:** Recursive Summarization (condensing older turns) or Token Truncation.
 - **Action:** User clicks **"Commit"** or **"Save Scene."** This triggers the "Swallow" event.
 
 ### **Phase 2: The Liver (The Consolidator Agent)**
@@ -70,8 +73,9 @@ This is the new core engine designed to prevent "Context Bloat" and "Hallucinati
 - **Mechanism:**
   1. The system asks the Judge: *"Why did this draft win?"*
   2. Answer: *"It used short sentences and noir metaphors."*
-  3. Action: This "Strategy" is vectorized and stored linked to the Character Node.
-  4. **Payoff:** Next time you write this character, the prompt automatically includes: *"Style Instruction: Use short sentences and noir metaphors (proven effective in Scene 3)."*
+  3. **Consolidation:** The `MemoryService` retrieves existing strategies and decides whether to **Merge** (if compatible), **Update** (if replacing old advice), or **Create** a new entry. This prevents "Strategy Bloat" and contradictions.
+  4. **Action:** This "Strategy" is vectorized and stored linked to the Character Node.
+  5. **Retrieval (Push):** Next time you write this character, the prompt automatically includes: *"Style Instruction: Use short sentences and noir metaphors (proven effective in Scene 3)."* (Proactively loaded to ensure zero-latency availability).
 
 ------
 

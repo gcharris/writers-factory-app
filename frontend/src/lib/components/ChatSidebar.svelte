@@ -1,33 +1,141 @@
 <script>
   import { onMount } from 'svelte';
+  import { apiClient } from '$lib/api_client';
+  import { sessionId, chatHistory, sessionSceneId, sessionInitialized, sessionError, activeFile } from '$lib/stores';
 
-  let messages = [
-    { role: 'system', text: 'Manager online. I have access to your local files.' }
-  ];
+  let messages = [];
   let input = "";
   let status = "checking...";
   let modelName = "";
+  let isLoading = false;
   const API_URL = "http://127.0.0.1:8000";
 
+  // Subscribe to stores
+  $: currentSessionId = $sessionId;
+  $: currentSceneId = $sessionSceneId;
+
+  // Sync messages with chatHistory store
+  $: {
+    if ($chatHistory.length > 0) {
+      messages = $chatHistory;
+    }
+  }
+
   onMount(async () => {
+    // Check backend status
     try {
       const res = await fetch(`${API_URL}/manager/status`);
       const data = await res.json();
-      status = data.status === "active" ? "Online" : "Offline (Check Ollama)";
+      status = data.status === "online" ? "Online" : "Offline (Check Ollama)";
       modelName = data.model || "";
     } catch (e) {
       status = "Backend Offline";
     }
+
+    // Initialize or restore session
+    await initializeSession();
   });
 
+  /**
+   * Initialize session: either restore existing or create new
+   */
+  async function initializeSession() {
+    try {
+      if (currentSessionId) {
+        // Existing session - load history from backend
+        console.log(`Restoring session: ${currentSessionId}`);
+        const historyData = await apiClient.getSessionHistory(currentSessionId);
+
+        // Convert backend events to UI format
+        const loadedMessages = historyData.events
+          .filter(e => e.role !== 'system' || e.content !== 'Session started')
+          .map(e => ({
+            role: e.role,
+            text: e.content,
+            id: e.id
+          }));
+
+        if (loadedMessages.length > 0) {
+          messages = loadedMessages;
+          chatHistory.set(loadedMessages);
+        } else {
+          // Session exists but empty, add welcome message
+          messages = [{ role: 'system', text: 'Manager online. Session restored.' }];
+        }
+
+        sessionInitialized.set(true);
+        console.log(`Loaded ${loadedMessages.length} messages from session`);
+      } else {
+        // No session - create new one
+        await createNewSession();
+      }
+    } catch (e) {
+      console.error('Session initialization failed:', e);
+      sessionError.set(e.message);
+
+      // Graceful degradation: still allow chat even if session API fails
+      messages = [{ role: 'system', text: 'Manager online. (Session persistence unavailable)' }];
+      sessionInitialized.set(true);
+    }
+  }
+
+  /**
+   * Create a new session and store the ID
+   */
+  async function createNewSession() {
+    try {
+      // Get scene context from active file if available
+      let sceneContext = null;
+      if ($activeFile && $activeFile.includes('scene')) {
+        sceneContext = $activeFile;
+      }
+
+      const result = await apiClient.createSession(sceneContext);
+      sessionId.set(result.session_id);
+      if (result.scene_id) {
+        sessionSceneId.set(result.scene_id);
+      }
+
+      messages = [{ role: 'system', text: 'Manager online. New session created.' }];
+      chatHistory.set(messages);
+      sessionInitialized.set(true);
+
+      console.log(`Created new session: ${result.session_id}`);
+    } catch (e) {
+      console.error('Failed to create session:', e);
+      sessionError.set(e.message);
+      messages = [{ role: 'system', text: 'Manager online. (Offline mode)' }];
+      sessionInitialized.set(true);
+    }
+  }
+
+  /**
+   * Start a fresh session (clear history)
+   */
+  async function newSession() {
+    sessionId.set(null);
+    sessionSceneId.set(null);
+    messages = [];
+    chatHistory.set([]);
+    await createNewSession();
+  }
+
   async function sendMessage() {
-    if (!input.trim()) return;
-    
-    // Optimistic UI update
-    const userMsg = { role: 'user', text: input };
-    messages = [...messages, userMsg];
+    if (!input.trim() || isLoading) return;
+
+    isLoading = true;
     const currentInput = input;
     input = "";
+
+    // Optimistic UI update
+    const userMsg = { role: 'user', text: currentInput };
+    messages = [...messages, userMsg];
+
+    // Log user message to backend (fire and forget for speed)
+    if (currentSessionId) {
+      apiClient.logMessage(currentSessionId, 'user', currentInput, currentSceneId)
+        .catch(e => console.warn('Failed to log user message:', e));
+    }
 
     try {
       const res = await fetch(`${API_URL}/manager/chat`, {
@@ -36,10 +144,22 @@
         body: JSON.stringify({ message: currentInput })
       });
       const data = await res.json();
-      
-      messages = [...messages, { role: 'assistant', text: data.response }];
+
+      const assistantMsg = { role: 'assistant', text: data.response };
+      messages = [...messages, assistantMsg];
+
+      // Log assistant message to backend
+      if (currentSessionId) {
+        apiClient.logMessage(currentSessionId, 'assistant', data.response, currentSceneId)
+          .catch(e => console.warn('Failed to log assistant message:', e));
+      }
     } catch (e) {
-      messages = [...messages, { role: 'system', text: `Error: ${e.message}` }];
+      const errorMsg = { role: 'system', text: `Error: ${e.message}` };
+      messages = [...messages, errorMsg];
+    } finally {
+      isLoading = false;
+      // Sync to store
+      chatHistory.set(messages);
     }
   }
 
@@ -53,11 +173,17 @@
 
 <div class="sidebar">
   <div class="header">
-    <h3>Manager</h3>
+    <div class="header-row">
+      <h3>Manager</h3>
+      <button class="new-btn" on:click={newSession} title="Start new session">New</button>
+    </div>
     <div class="status">
       <span class="dot {status === 'Online' ? 'green' : 'red'}"></span>
       <span>{status} {modelName ? `(${modelName})` : ''}</span>
     </div>
+    {#if currentSessionId}
+      <div class="session-info">Session: {currentSessionId.substring(0, 8)}...</div>
+    {/if}
   </div>
 
   <div class="chat-area">
@@ -66,15 +192,23 @@
         <div class="bubble">{msg.text}</div>
       </div>
     {/each}
+    {#if isLoading}
+      <div class="message assistant">
+        <div class="bubble loading">Thinking...</div>
+      </div>
+    {/if}
   </div>
 
   <div class="input-area">
-    <textarea 
-      bind:value={input} 
+    <textarea
+      bind:value={input}
       on:keydown={handleKeydown}
       placeholder="Ask the Manager..."
+      disabled={isLoading}
     ></textarea>
-    <button on:click={sendMessage}>Send</button>
+    <button on:click={sendMessage} disabled={isLoading}>
+      {isLoading ? '...' : 'Send'}
+    </button>
   </div>
 </div>
 
@@ -96,7 +230,27 @@
     background: #ffffff;
   }
 
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+
+  .new-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: #374151;
+  }
+
+  .new-btn:hover {
+    background: #e5e7eb;
+  }
 
   .status {
     font-size: 0.8rem;
@@ -104,6 +258,13 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .session-info {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+    font-family: monospace;
   }
 
   .dot {
@@ -126,7 +287,7 @@
   .message {
     display: flex;
   }
-  
+
   .message.user { justify-content: flex-end; }
   .message.assistant { justify-content: flex-start; }
   .message.system { justify-content: center; font-size: 0.8rem; color: #6b7280; }
@@ -137,6 +298,11 @@
     border-radius: 8px;
     font-size: 0.9rem;
     line-height: 1.4;
+  }
+
+  .bubble.loading {
+    opacity: 0.7;
+    animation: pulse 1s infinite;
   }
 
   .user .bubble { background: #2563eb; color: white; }
@@ -163,6 +329,7 @@
   }
 
   textarea:focus { outline: 1px solid #2563eb; }
+  textarea:disabled { opacity: 0.6; }
 
   button {
     background: #2563eb;
@@ -172,7 +339,13 @@
     border-radius: 4px;
     cursor: pointer;
   }
-  
-  button:hover { background: #1d4ed8; }
-</style>
 
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #93c5fd; cursor: wait; }
+
+  @keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 0.4; }
+    100% { opacity: 0.7; }
+  }
+</style>

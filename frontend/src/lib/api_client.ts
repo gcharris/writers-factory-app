@@ -40,6 +40,44 @@ export interface ScaffoldResult {
     scaffold: string;
 }
 
+// --- Session Interfaces ---
+export interface SessionCreateRequest {
+    scene_id?: string;
+}
+
+export interface SessionMessageRequest {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    scene_id?: string;
+}
+
+export interface SessionEvent {
+    id: number;
+    session_id: string;
+    scene_id: string | null;
+    role: string;
+    content: string;
+    token_count: number;
+    is_committed: boolean;
+    timestamp: string;
+}
+
+export interface SessionHistoryResponse {
+    session_id: string;
+    events: SessionEvent[];
+}
+
+export interface SessionCreateResponse {
+    session_id: string;
+    scene_id: string | null;
+}
+
+export interface SessionMessageResponse {
+    status: string;
+    event_id: number;
+    token_count: number;
+}
+
 /**
  * A TypeScript client for interacting with the Writers Factory Python backend.
  */
@@ -111,6 +149,65 @@ export class WritersFactoryAPI {
             method: 'POST',
             body: JSON.stringify(data),
         });
+    }
+
+    // ==========================================
+    // Session Management (The Workbench)
+    // ==========================================
+
+    /**
+     * Create a new chat session.
+     * @param sceneId Optional scene ID to link this session to.
+     */
+    async createSession(sceneId?: string): Promise<SessionCreateResponse> {
+        const body: SessionCreateRequest = {};
+        if (sceneId) body.scene_id = sceneId;
+
+        return this._request('/session/new', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * Log a message to a session.
+     * Called BEFORE sending to LLM (for user) and AFTER receiving (for assistant).
+     * @param sessionId The session UUID.
+     * @param role Message role: 'user', 'assistant', or 'system'.
+     * @param content The message content.
+     * @param sceneId Optional scene ID for context.
+     */
+    async logMessage(
+        sessionId: string,
+        role: 'user' | 'assistant' | 'system',
+        content: string,
+        sceneId?: string
+    ): Promise<SessionMessageResponse> {
+        const body: SessionMessageRequest = { role, content };
+        if (sceneId) body.scene_id = sceneId;
+
+        return this._request(`/session/${sessionId}/message`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * Get chat history for a session.
+     * Used to restore UI state on page refresh.
+     * @param sessionId The session UUID.
+     * @param limit Max number of events to return (default 50).
+     */
+    async getSessionHistory(sessionId: string, limit: number = 50): Promise<SessionHistoryResponse> {
+        return this._request(`/session/${sessionId}/history?limit=${limit}`);
+    }
+
+    /**
+     * Get session statistics (for compaction decisions).
+     * @param sessionId The session UUID.
+     */
+    async getSessionStats(sessionId: string): Promise<any> {
+        return this._request(`/session/${sessionId}/stats`);
     }
 }
 

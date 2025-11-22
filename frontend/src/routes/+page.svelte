@@ -3,7 +3,7 @@
   import Editor from '$lib/components/Editor.svelte';
   import AgentPanel from '$lib/components/AgentPanel.svelte';
   import ChatSidebar from '$lib/components/ChatSidebar.svelte';
-  import NotebookPanel from '$lib/components/NotebookPanel.svelte';
+  import TabbedPanel from '$lib/components/TabbedPanel.svelte';
 </script>
 
 <div class="app-container">
@@ -20,7 +20,7 @@
       <AgentPanel />
     </div>
     <div class="notebook-wrapper">
-      <NotebookPanel />
+      <TabbedPanel />
     </div>
     <div class="manager-wrapper">
       <ChatSidebar />

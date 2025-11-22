@@ -16,14 +16,15 @@
 ## Phase 3: The Metabolism (🚧 Current Focus)
 **Goal:** Stateful Session & Memory Digestion.
 1.  **Session Manager:** Stop "fire-and-forget". Build SQLite session logging.
-2.  **Consolidator Agent:** Local Llama 3.2 script to parse saved text into graph nodes.
-3.  **Conflict Resolution:** Logic to detect when new text contradicts old graph facts.
+2.  **Session Compaction:** Implement background task to summarize/truncate long chat histories (Cost/Context optimization).
+3.  **Consolidator Agent:** Local Llama 3.2 script to parse saved text into graph nodes.
+4.  **Conflict Resolution:** Logic to detect when new text contradicts old graph facts.
 
 ## Phase 4: The Immune System (Planned)
 **Goal:** Story Health & Versioning.
 1.  **Health Service:** Automated checks for Dropped Threads, Timeline Errors, and Character Absences.
 2.  **Version Control:** Graph snapshotting ("Time Travel") and Branching ("What If" scenarios).
-3.  **Procedural Memory:** Vectorizing user preferences ("Style Learning").
+3.  **Procedural Memory:** Vectorizing user preferences with **Consolidation Logic** (Merge/Update/Create strategies to prevent bloat).
 
 ## Phase 5: Polish & Release
 1.  **Packaging:** Build `.dmg` / `.exe` installers.
