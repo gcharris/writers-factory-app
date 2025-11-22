@@ -232,18 +232,61 @@ class NotebookLMMCPClient:
 
     async def query_notebook(self, notebook_id: str, query: str) -> NotebookResponse:
         logger.info(f"🔍 Querying Notebook {notebook_id[:5]}...")
+        
+        # Construct arguments matching the Tool Schema (ask_question)
         args = {
-            "query": query,
-            "notebook_id": notebook_id,
+            "question": query,
+            # Prefer notebook_url for direct access, avoiding library lookup issues
+            "notebook_url": f"https://notebooklm.google.com/notebook/{notebook_id}",
+            "browser_options": {
+                "headless": False, # Ensure visibility
+                "stealth": {"enabled": True}
+            }
         }
+        
         result = await self._call_tool("ask_question", args)
         
         # DEBUG: Inspect what the MCP server actually returned
         logger.info(f"🐞 MCP RAW RESPONSE: {json.dumps(result, indent=2)}")
         
+        answer_text = ""
+        sources = []
+
+        # Parse MCP "content" list which contains the actual JSON response string
+        if "content" in result and isinstance(result["content"], list):
+            for item in result["content"]:
+                if item.get("type") == "text":
+                    try:
+                        # The tool returns a JSON string *inside* the text content
+                        inner_data = json.loads(item["text"])
+                        
+                        # Check for explicit failure in inner data
+                        if inner_data.get("success") is False:
+                            error_msg = inner_data.get("error", "Unknown MCP error")
+                            logger.error(f"❌ MCP Tool Execution Failed: {error_msg}")
+                            raise RuntimeError(f"NotebookLM Error: {error_msg}")
+
+                        # Handle nested "data" structure
+                        if "data" in inner_data:
+                            answer_text = inner_data["data"].get("answer", "")
+                            # Attempt to find sources/citations if available
+                            sources = inner_data["data"].get("citations", [])
+                        else:
+                            # Fallback if flat structure
+                            answer_text = inner_data.get("answer", "")
+                            sources = inner_data.get("citations", [])
+                            
+                    except json.JSONDecodeError:
+                        # If not JSON, assume the text itself is the answer
+                        answer_text = item["text"]
+        else:
+            # Legacy/Fallback if tool returns direct dictionary
+            answer_text = result.get("answer", "")
+            sources = result.get("citations", [])
+
         return NotebookResponse(
-            answer=result.get("answer", ""),
-            sources=result.get("citations", []),
+            answer=answer_text,
+            sources=sources,
             notebook_id=notebook_id,
             query=query,
         )
