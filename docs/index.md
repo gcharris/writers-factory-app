@@ -4,16 +4,26 @@
 
 ---
 
+## 🚨 READ THIS FIRST: The Mission
+
+Before you install the software, understand what we are building. We are not just writing a novel; we are engineering a synthetic cognitive system.
+
+### [👉 Read the Manifesto: The Cyborg Novelist](manifesto)
+
+*Understanding the difference between "Chatting with AI" and "Engineering a Muse."*
+
+---
+
 ## Choose Your Track
 
-Welcome to the Writers Factory. This course offers two ways to engage with the platform. Choose the path that matches your goals for the week.
+Welcome to the Writers Factory. Choose the path that matches your goals for the week.
 
 | ✍️ **The Writer Track**                                       | 🛠️ **The Engineer Track**                                     |
 | :----------------------------------------------------------- | :----------------------------------------------------------- |
 | **Goal:** Write a novella (15k+ words)                       | **Goal:** Improve the System Architecture                    |
 | **Activity:** Creative Writing & Analysis                    | **Activity:** Python/Rust Development                        |
 | **Setup:** Download & Run (No coding)                        | **Setup:** Clone Repo & Build                                |
-| [**⬇️ Download Mac/Windows App**](https://github.com/YOUR_USERNAME/writers-factory-desktop/releases/latest) | [**↗️ View Source Code**](https://github.com/YOUR_USERNAME/writers-factory-desktop) |
+| [**⬇️ Download Mac/Windows App**](https://github.com/gcharris/writers-factory-desktop/releases/latest) | [**↗️ View Source Code**](https://github.com/gcharris/writers-factory-desktop) |
 
 ---
 
@@ -21,9 +31,10 @@ Welcome to the Writers Factory. This course offers two ways to engage with the p
 **Status:** Mandatory
 **Deadline:** 48 hours before Day 1
 
-1.  **Install the Software:** Use the link above for your track.
-2.  **The "Health Check":** Open the app. If you see the "Welcome to Writers Factory" screen, you are ready.
-3.  **NotebookLM Preparation:** You must create a NotebookLM account and upload 5,000 words of *personal writing* (emails, journals, blogs) to train your Voice Avatar.
+1.  **Read the Manifesto:** Link above.
+2.  **Install the Software:** Use the link above for your track.
+3.  **The "Health Check":** Open the app. If you see the "Welcome to Writers Factory" screen, you are ready.
+4.  **NotebookLM Preparation:** You must create a NotebookLM account and upload 5,000 words of *personal writing* (emails, journals, blogs) to train your Voice Avatar.
 
 ---
 
@@ -63,9 +74,20 @@ Welcome to the Writers Factory. This course offers two ways to engage with the p
 
 ## Resources & Help
 
-* **[Troubleshooting Guide](https://github.com/YOUR_USERNAME/writers-factory-desktop/wiki/Troubleshooting)**: Common installation errors.
-* **[Discussion Board](https://github.com/YOUR_USERNAME/writers-factory-desktop/discussions)**: Ask questions and share prompts.
-* **[Report a Bug](https://github.com/YOUR_USERNAME/writers-factory-desktop/issues)**: Found a glitch? File it here.
+* **[Troubleshooting Guide](https://github.com/gcharris/writers-factory-desktop/wiki/Troubleshooting)**: Common installation errors.
+* **[Discussion Board](https://github.com/gcharris/writers-factory-desktop/discussions)**: Ask questions and share prompts.
+* **[Report a Bug](https://github.com/gcharris/writers-factory-desktop/issues)**: Found a glitch? File it here.
 
 ---
-*Writers Factory is an open-source AI writing environment built for the Skoltech ISP 2025.*
+
+## Who Owns What
+
+* **Your Writing:** All of your writing in this course (ideas, drafts, finished work) belongs to you. You keep full ownership and control over your creative work.
+
+* **The Software:** Writers Factory (the software, architecture, and code) remains the property of the course creator and project partners.
+
+* **Engineer Track Contributions:** If you choose the Engineer Track and provide technical ideas, feedback, or code related to the software, you agree that these may be incorporated into future versions of Writers Factory without giving you ownership rights in the software, although significant contributions may be acknowledged (for example, by listing you as a contributor in documentation or release notes).
+
+---
+
+*Writers Factory is an open-source AI writing environment built for the Skoltech ISP 2026.*
