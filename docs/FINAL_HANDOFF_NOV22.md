@@ -1,38 +1,46 @@
 # Writers Factory - Final Handoff Report
-**Date:** November 22, 2025 (13:10)
-**Status:** STABLE INFRASTRUCTURE (NotebookLM Logic Pending Upstream Fix)
+**Date:** November 22, 2025 (13:20)
+**Status:** INFRASTRUCTURE COMPLETE | NOTEBOOKLM STALLED
 
-## 1. System Status
-| Component | Status | Notes |
-|-----------|--------|-------|
-| **Backend (FastAPI)** | ✅ Online | Running on Port 8000. All endpoints functional. |
-| **Frontend (Tauri)** | ✅ Online | Running on Port 1420. UI connected. |
-| **Agents (Ollama)** | ✅ Online | Squad fully operational. |
-| **NotebookLM Integration** | ⚠️ Partial | **Server Launches:** ✅ **Auth Triggers:** ✅ **Query:** ❌ (Crashes due to upstream scraper/browser bugs). |
+## 1. Where We Are (Successes)
+The core application "Body" and "Brain" are fully functional and backed up.
+*   **Backend (FastAPI):** ✅ **Online.** Serving files, running agents, and hosting the API on Port 8000.
+*   **Frontend (Tauri):** ✅ **Online.** The UI is connected, file editing works, and the Sidebar is active.
+*   **Agents (Ollama/Llama 3.2):** ✅ **Online.** The "Squad" (Orchestrator, Director, etc.) is responsive.
+*   **Git Repository:** ✅ **Clean.** All messy submodules fixed. Private data (Chrome Profile) is ignored but preserved locally.
 
-## 2. The MCP Saga
-We attempted two different MCP server implementations to fix the "Oracle":
-1.  **PleasePrompto (Node.js):** Launches browser successfully but crashes when parsing the NotebookLM page (Google UI change). **Current Active Version.**
-2.  **Khengyun (Python):** Has updated logic but crashes on macOS due to `undetected-chromedriver` incompatibilities ("session not created").
+## 2. The "Dead End" (NotebookLM Integration)
+We hit a wall with the NotebookLM "Oracle" integration due to external tool breakages.
 
-**Decision:** We reverted to **PleasePrompto** because it is structurally sound and will likely be the first to get a scraper fix from the community.
+| Implementation | Status | Why it Failed (Dead End) |
+|:---|:---|:---|
+| **PleasePrompto (Node.js)** | **Active** | Launches browser ✅, Authenticates ✅, but **Crashes on Query** ❌. <br> *Reason:* Google changed their UI HTML, breaking the scraper's ability to find the answer text. Needs an upstream code update. |
+| **Khengyun (Python)** | **Backed Up** | **Crashes on Launch** ❌. <br> *Reason:* The `undetected-chromedriver` library conflicts with your specific version of Chrome/macOS, preventing the browser from even starting. |
 
-## 3. How to Run
+**Current Strategy:**
+We are using the **PleasePrompto** version. It is installed and ready. We are simply waiting for the open-source maintainers to fix the "scraper selector" bug.
+
+## 3. How to Resume Work
+**Start the Factory:**
 ```bash
-# 1. Start Backend
+# Terminal 1: Backend
 cd "/Users/gch2024/Documents/Documents - Mac Mini/writers-factory-app"
 source venv/bin/activate
 python backend/api.py
 
-# 2. Start Frontend (New Terminal)
+# Terminal 2: Frontend
 cd frontend
 npm run tauri dev
 ```
 
-## 4. Next Steps (The "Metabolism")
-Now that the "Body" (App) is built and the "Brain" (Agents) is online, you can proceed to:
-1.  **Orchestrate Agents:** Use the `Orchestrator` to assign tasks to `CreativeDirector` and `Editor`.
-2.  **Write Scenes:** The file system and editor are fully wired.
-3.  **Monitor MCP:** Watch the [PleasePrompto/notebooklm-mcp](https://github.com/PleasePrompto/notebooklm-mcp) repo for a fix to the `substring` error. When they push a fix, simply run `git pull` in `backend/external/notebooklm-mcp` and `npm run build`.
+**Fixing the Dead End (When ready):**
+Monitor the [PleasePrompto GitHub Issues](https://github.com/PleasePrompto/notebooklm-mcp/issues). When a fix is posted:
+1. `cd backend/external/notebooklm-mcp`
+2. `git pull`
+3. `npm run build`
 
-**The Factory is Open.**
+## 4. Project Structure Reference
+*   `backend/api.py` - Main entry point.
+*   `backend/notebooklm_config.json` - Stores your Notebook IDs.
+*   `backend/external/notebooklm-mcp/` - The Active Node.js MCP server.
+*   `backend/external/khengyun-mcp/` - The Inactive Python MCP server (kept for reference).
