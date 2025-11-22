@@ -3,15 +3,23 @@ import sys
 import shutil
 import logging
 import yaml
+import json
 from typing import List, Dict, Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # --- Path Setup ---
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- App Imports ---
+# [RESTORED CODE] Force load the .env file from the backend folder or root
+from dotenv import load_dotenv
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path=env_path) # Load backend/.env
+load_dotenv() # Load root .env if exists
+
 from backend.agents.wizard.setup import generate_project_config
 from backend.agents.registry import AgentRegistry
 from backend.agents.specialists.scaffold import SmartScaffoldAgent
@@ -19,6 +27,8 @@ from backend.agents.orchestrator import SceneTournament, DraftCritic
 from backend.graph.graph_service import KnowledgeGraphService
 from backend.graph.schema import Base, Node
 from backend.graph.ner_extractor import NERExtractor, SPACY_AVAILABLE
+from backend.ingestor import GraphIngestor
+from backend.services.notebooklm_service import get_notebooklm_client
 
 # --- SQLAlchemy Imports ---
 from sqlalchemy import create_engine
@@ -35,6 +45,7 @@ DB_FILE = os.path.join(PROJECT_PATH, "graph.db")
 DB_URL = f"sqlite:///{DB_FILE}"
 BASE_TEMPLATE_PATH = "backend/templates/reference_skills"
 AGENTS_CONFIG_PATH = "agents.yaml"
+NOTEBOOK_CONFIG_PATH = "backend/notebooklm_config.json"
 
 # --- FastAPI App Initialization ---
 app = FastAPI(
@@ -42,9 +53,18 @@ app = FastAPI(
     description="API for orchestrating the AI writing pipeline.",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:1420", "http://127.0.0.1:1420", "tauri://localhost"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # --- Service Initialization (Global Instances) ---
 # In a production app, use FastAPI's Depends for better lifecycle management.
 agent_registry = AgentRegistry(config_path=AGENTS_CONFIG_PATH)
+notebooklm_client = get_notebooklm_client()
 
 # Database session management
 engine = create_engine(DB_URL)
@@ -71,7 +91,122 @@ class SceneSaveRequest(BaseModel):
     scene_id: int
     winning_text: str
 
+class FileUpdateRequest(BaseModel):
+    content: str
+
+class NotebookQueryRequest(BaseModel):
+    query: str
+    notebook_id: str
+
+class CharacterProfileRequest(BaseModel):
+    character_name: str
+    notebook_id: str
+
+class WorldBuildingRequest(BaseModel):
+    aspect: str
+    notebook_id: str
+
+class ContextRequest(BaseModel):
+    entity_name: str
+    entity_type: str
+    notebook_id: str
+
 # --- API Endpoints ---
+
+@app.get("/agents", summary="List available agents")
+def list_agents():
+    """Return list of configured agents"""
+    agents = agent_registry.list_enabled_agents()
+    return {"agents": agents}
+
+@app.get("/manager/status", summary="Check Manager status")
+def manager_status():
+    """Simple heartbeat for the Manager agent"""
+    # Since manager is embedded, if API is up, Manager is 'ready'
+    return {"status": "online"}
+
+# --- File Management ---
+@app.get("/files/{filepath:path}")
+async def read_file(filepath: str):
+    """Read a specific file"""
+    # Security check: ensure path is within allowed directories or absolute path if permitted
+    # For this dev tool, we allow reading project files
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {"content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/files/{filepath:path}")
+async def save_file(filepath: str, request: FileUpdateRequest):
+    """Save content to a file"""
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(request.content)
+        return {"status": "success", "message": "File saved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Graph Ingestion ---
+@app.post("/ingest")
+async def run_ingestion():
+    """Trigger manual graph ingestion from World Bible"""
+    ingestor = GraphIngestor()
+    await ingestor.run_ingestion()
+    return {"status": "Ingestion complete"}
+
+# --- NotebookLM Integration ---
+@app.get("/notebooklm/status")
+async def get_notebooklm_status():
+    is_up = await notebooklm_client.is_available()
+    return {"status": "ready" if is_up else "offline"}
+
+@app.get("/notebooklm/notebooks")
+async def list_notebooks():
+    try:
+        if os.path.exists(NOTEBOOK_CONFIG_PATH):
+            with open(NOTEBOOK_CONFIG_PATH, "r") as f:
+                data = json.load(f)
+                return {"configured": data.get("notebooks", [])}
+        return {"configured": []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notebooklm/query")
+async def query_notebook(req: NotebookQueryRequest):
+    try:
+        return await notebooklm_client.query_notebook(req.notebook_id, req.query)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notebooklm/character-profile")
+async def extract_character_profile(req: CharacterProfileRequest):
+    try:
+        return await notebooklm_client.extract_character_profile(req.notebook_id, req.character_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notebooklm/world-building")
+async def extract_world_building(req: WorldBuildingRequest):
+    try:
+        return await notebooklm_client.extract_world_building(req.notebook_id, req.aspect)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notebooklm/context")
+async def get_context(req: ContextRequest):
+    try:
+        answer = await notebooklm_client.query_for_context(req.notebook_id, req.entity_name, req.entity_type)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Original Endpoints ---
 
 @app.post("/project/init", summary="Initialize a new student project")
 def init_project(request: ProjectInitRequest):
@@ -179,3 +314,8 @@ def save_scene(request: SceneSaveRequest):
         "message": f"Scene saved to {scene_file_path}",
         "ingested_new_nodes": ingested_count
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+

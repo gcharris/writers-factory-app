@@ -1,9 +1,7 @@
 """
 NotebookLM MCP Client (Desktop Edition)
 
-Ported from the legacy writers-platform repository.
-Manages subprocess connection to the Node-based MCP server located at
-backend/external/notebooklm-mcp.
+Updated to use standard MCP "tools/call" protocol.
 """
 
 from __future__ import annotations
@@ -25,8 +23,8 @@ class NotebookInfo(BaseModel):
     title: str
     description: Optional[str] = None
     source_count: int = 0
-    created_at: str
-    updated_at: str
+    created_at: str = ""
+    updated_at: str = ""
 
 
 class NotebookResponse(BaseModel):
@@ -61,7 +59,7 @@ class NotebookLMMCPClient:
                 config = json.load(f)
             self.server_config = config.get("mcpServers", {}).get("notebooklm", {})
         if not self.server_config:
-            base_path = Path(__file__).resolve().parents[1]
+            base_path = Path(__file__).resolve().parents[2]  # Adjusted for backend/services nesting
             self.server_config = {
                 "command": "node",
                 "args": [str(base_path / "external" / "notebooklm-mcp" / "dist" / "index.js")],
@@ -83,32 +81,108 @@ class NotebookLMMCPClient:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env=env,
+            env={**env, "HEADLESS": "false"},
         )
         await asyncio.sleep(2)
 
-    async def list_notebooks(self) -> List[NotebookInfo]:
+    async def _call_tool(self, tool_name: str, arguments: Dict) -> Dict:
+        """
+        Executes an MCP tool call using the standard JSON-RPC 2.0 format.
+        """
         await self.ensure_started()
-        request = {"jsonrpc": "2.0", "id": 1, "method": "notebooks/list", "params": {}}
-        return await self._send_request(request, result_key="notebooks", model=NotebookInfo)
-
-    async def query_notebook(self, notebook_id: str, query: str, max_sources: int = 5) -> NotebookResponse:
-        await self.ensure_started()
+        
         request = {
             "jsonrpc": "2.0",
-            "id": 2,
-            "method": "notebook/query",
+            "id": 1,
+            "method": "tools/call",
             "params": {
-                "notebook_id": notebook_id,
-                "query": query,
-                "max_sources": max_sources,
-                "include_citations": True
+                "name": tool_name,
+                "arguments": arguments
             }
         }
-        result = await self._send_request(request)
+
+        if not self._process or not self._process.stdin or not self._process.stdout:
+            raise RuntimeError("NotebookLM MCP server process not running")
+
+        try:
+            self._process.stdin.write(json.dumps(request).encode() + b"\n")
+            await self._process.stdin.drain()
+            
+            # Read lines until we get a valid JSON response
+            while True:
+                response_line = await self._process.stdout.readline()
+                if not response_line:
+                    # End of stream
+                    err = await self._process.stderr.read(1024)
+                    raise RuntimeError(f"MCP Server closed stream. Stderr: {err.decode()}")
+                
+                line = response_line.decode().strip()
+                if not line:
+                    continue
+                    
+                # Skip banner/log lines that aren't JSON
+                if not line.startswith("{"):
+                    logger.info(f"MCP STDOUT (ignored): {line}")
+                    continue
+                    
+                try:
+                    response = json.loads(line)
+                    # If it's a valid JSON-RPC response matching our ID, break
+                    if response.get("id") == 1 or "error" in response or "result" in response:
+                        break
+                except json.JSONDecodeError:
+                    logger.info(f"MCP STDOUT (parse error): {line}")
+                    continue
+            
+            if "error" in response:
+                raise RuntimeError(f"MCP Error: {response['error']}")
+                
+            # MCP tool result structure: result: { content: [{ type: "text", text: "..." }] }
+            result = response.get("result", {})
+            content_list = result.get("content", [])
+            
+            if not content_list:
+                return {}
+                
+            # Parse the inner JSON often returned in the text field
+            text_content = content_list[0].get("text", "{}")
+            try:
+                return json.loads(text_content)
+            except json.JSONDecodeError:
+                return {"raw_text": text_content}
+
+        except Exception as e:
+            logger.error(f"MCP Call Failed: {e}")
+            raise e
+
+    async def list_notebooks(self) -> List[NotebookInfo]:
+        # The MCP server has 'list_notebooks' tool
+        data = await self._call_tool("list_notebooks", {})
+        # The tool returns a list of notebooks directly or wrapped
+        notebooks_data = data if isinstance(data, list) else data.get("notebooks", [])
+        
+        results = []
+        for nb in notebooks_data:
+            results.append(NotebookInfo(
+                id=nb.get("id", ""),
+                title=nb.get("title", "Untitled"),
+                source_count=nb.get("sourceCount", 0)
+            ))
+        return results
+
+    async def query_notebook(self, notebook_id: str, query: str, max_sources: int = 5) -> NotebookResponse:
+        # The MCP server has 'ask_question' tool
+        args = {
+            "query": query,
+            "notebook_id": notebook_id,
+            # "max_sources": max_sources # Check if supported by tool schema
+        }
+        
+        result = await self._call_tool("ask_question", args)
+        
         return NotebookResponse(
             answer=result.get("answer", ""),
-            sources=result.get("sources", []),
+            sources=result.get("citations", []), # Map 'citations' to 'sources'
             notebook_id=notebook_id,
             query=query,
         )
@@ -127,94 +201,32 @@ class NotebookLMMCPClient:
             logger.error("NotebookLM MCP unavailable: %s", exc)
             return False
 
-    async def _send_request(self, request: Dict, result_key: Optional[str] = None, model=None):
-        if not self._process or not self._process.stdin or not self._process.stdout:
-            raise RuntimeError("NotebookLM MCP server process not running")
-
-        self._process.stdin.write(json.dumps(request).encode() + b"\n")
-        await self._process.stdin.drain()
-        response_line = await self._process.stdout.readline()
-        response = json.loads(response_line.decode())
-        if "error" in response:
-            raise RuntimeError(response["error"])
-
-        result = response.get("result", {})
-        if result_key:
-            result = result.get(result_key, [])
-        if model:
-            return [model(**item) for item in result]
-        return result
-
+    # ... wrapper methods for higher level logic ...
     async def extract_character_profile(self, notebook_id: str, character_name: str) -> Dict:
-        query = f"""
-        If {character_name} were a character in a novel, based on the
-        research in this notebook, provide:
-
-        1. **Backstory**: Their background and formative experiences
-        2. **Voice**: Their speaking style, vocabulary, and mannerisms
-        3. **Core Beliefs**: Their philosophical views and values
-        4. **Character Arc**: Potential journey and transformation
-        5. **Conflicts**: Internal and external struggles they might face
-        6. **Relationships**: How they might relate to other characters
-
-        Use specific examples from the notebook sources.
-        Keep response concise but detailed (under 500 words).
-        """
-        response = await self.query_notebook(
-            notebook_id=notebook_id,
-            query=query,
-            max_sources=10,
-        )
+        query = f"Generate a character profile for {character_name} based on this notebook."
+        resp = await self.query_notebook(notebook_id, query)
         return {
             "character_name": character_name,
-            "profile": response.answer,
-            "sources": response.sources,
+            "profile": resp.answer,
+            "sources": resp.sources,
             "notebook_id": notebook_id,
         }
 
     async def extract_world_building(self, notebook_id: str, aspect: str) -> Dict:
-        query = f"""
-        Based on the research in this notebook, describe {aspect} for a
-        fictional world. Include:
-
-        1. **Key Characteristics**: Defining features and trends
-        2. **Concrete Examples**: Specific scenarios and manifestations
-        3. **Implications**: How this affects characters and plot
-        4. **Conflicts**: Tensions and dilemmas arising from this aspect
-
-        Ground your response in the notebook sources.
-        Keep response concise but detailed (under 500 words).
-        """
-        response = await self.query_notebook(
-            notebook_id=notebook_id,
-            query=query,
-            max_sources=8,
-        )
+        query = f"Describe the world-building aspect: {aspect}."
+        resp = await self.query_notebook(notebook_id, query)
         return {
             "aspect": aspect,
-            "details": response.answer,
-            "sources": response.sources,
+            "details": resp.answer,
+            "sources": resp.sources,
             "notebook_id": notebook_id,
         }
 
     async def query_for_context(self, notebook_id: str, entity_name: str, entity_type: str) -> str:
-        if entity_type == "character":
-            query = f"What are the key traits and characteristics of {entity_name}?"
-        elif entity_type == "location":
-            query = f"Describe the key features and atmosphere of {entity_name}."
-        elif entity_type == "object":
-            query = f"What is {entity_name} and how does it work?"
-        else:
-            query = f"What is important to know about {entity_name}?"
-
-        response = await self.query_notebook(
-            notebook_id=notebook_id,
-            query=query,
-            max_sources=3,
-        )
-        return response.answer
+        query = f"What do we know about the {entity_type} named {entity_name}?"
+        resp = await self.query_notebook(notebook_id, query)
+        return resp.answer
 
 
 def get_notebooklm_client() -> NotebookLMMCPClient:
     return NotebookLMMCPClient()
-

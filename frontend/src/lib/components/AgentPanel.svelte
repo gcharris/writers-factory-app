@@ -13,7 +13,8 @@
 
   onMount(async () => {
     try {
-      const res = await fetch(`${API_URL}/agents`);
+      const res = await fetch(`${API_URL}/agents`, { mode: 'cors' }); // Force CORS mode
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       agents = data.agents.map(a => ({ ...a, status: 'ready' }));
       
@@ -23,7 +24,8 @@
         selectedNames = selectedNames;
       }
     } catch (e) {
-      error = "Backend offline. Is api.py running?";
+      console.error("Agent fetch failed:", e);
+      error = `Backend offline (${e.message}). Is api.py running?`;
     }
   });
 

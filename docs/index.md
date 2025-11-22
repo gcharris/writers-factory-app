@@ -84,7 +84,7 @@ Welcome to the Writers Factory. Choose the path that matches your goals for the 
 
 * **Your Writing:** All of your writing in this course (ideas, drafts, finished work) belongs to you. You keep full ownership and control over your creative work.
 
-* **The Software:** Writers Factory (the software, architecture, and code) remains the property of the course creator and project partners.
+* **The Software:** Writers Factory (the software, architecture, and code) remains the property of Geoffrey Carr-Harris.
 
 * **Engineer Track Contributions:** If you choose the Engineer Track and provide technical ideas, feedback, or code related to the software, you agree that these may be incorporated into future versions of Writers Factory without giving you ownership rights in the software, although significant contributions may be acknowledged (for example, by listing you as a contributor in documentation or release notes).
 
