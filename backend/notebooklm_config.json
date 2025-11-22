@@ -1,10 +1,10 @@
 {
   "notebooks": [
     {
-      "id": "8b1f262a-fe2a-45f3-8c3b-39689c9d3123",
-      "label": "Craft Bible",
-      "description": "Writing craft, plot structure, character development strategies",
-      "category": "craft"
+      "id": "8c13e467-7c97-46c6-b0c4-d0f484209d02",
+      "label": "Mo Gawdat Research",
+      "description": "Research collection on Mo Gawdat",
+      "category": "character"
     },
     {
       "id": "e03a6b48-2835-496c-88ae-4536dd3b1930",
@@ -20,4 +20,3 @@
     }
   ]
 }
-

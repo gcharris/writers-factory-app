@@ -166,6 +166,14 @@ async def get_notebooklm_status():
     is_up = await notebooklm_client.is_available()
     return {"status": "ready" if is_up else "offline"}
 
+@app.get("/notebooklm/auth")
+async def trigger_auth():
+    try:
+        await notebooklm_client.setup_auth()
+        return {"status": "Auth flow triggered. Check for browser window."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/notebooklm/notebooks")
 async def list_notebooks():
     try:

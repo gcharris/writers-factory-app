@@ -61,6 +61,20 @@
     }
   }
 
+  async function triggerAuth() {
+    try {
+      notebookError.set('');
+      notebookLoading.set(true);
+      const res = await fetch(`${API_URL}/notebooklm/auth`);
+      if (!res.ok) throw new Error('Auth trigger failed');
+      alert("Check your screen for a Google Login window!");
+    } catch (err) {
+      notebookError.set(err.message);
+    } finally {
+      notebookLoading.set(false);
+    }
+  }
+
   function selectNotebook(event) {
     selectedNotebookId.set(event.target.value);
   }
@@ -104,6 +118,7 @@
       <span class="status-label">{status}</span>
     </div>
     <button class="refresh-btn" on:click={() => { fetchStatus(); fetchConfiguredNotebooks(); }}>⟳</button>
+    <button class="auth-btn" on:click={triggerAuth} title="Log in to Google">🔑</button>
   </div>
 
   {#if notebooks.length === 0}
