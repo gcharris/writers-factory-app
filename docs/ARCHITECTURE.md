@@ -249,9 +249,38 @@ Does this scene challenge the Fatal Flaw / The Lie?
 ## Workflows (5-Stage Pipeline)
 
 ### Stage 1: Creation (Story Bible)
-- Guided wizard to create all required artifacts
-- Validation before proceeding to Stage 2
-- NotebookLM integration for research
+
+**Powered by the Story Bible Architect** - See [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md)
+
+The Story Bible Architect is an **intelligent Ollama-powered agent** (not a form-filling wizard) that:
+- Assesses writer's NotebookLM library (multiple notebooks as "consultants")
+- Identifies gaps against Narrative Protocol requirements
+- Proposes paths: query notebooks, brainstorm, or create new sources
+- Challenges weak structural choices with craft expertise
+- Synthesizes across sources into proper templates
+
+**Multi-Notebook Architecture:**
+```
+Writer's NotebookLM Library
+├── WORLD NOTEBOOKS (setting, rules, factions)
+├── CHARACTER/VOICE NOTEBOOKS (voice samples, real people)
+├── CRAFT REFERENCE NOTEBOOKS (favorite novels, films, technique)
+└── PROJECT NOTEBOOK (synthesized Story Bible - created at end)
+```
+
+**Creative Workflow:**
+1. **Notebook Assessment** - Inventory resources, assign roles (world/voice/craft)
+2. **Intelligent Gap Analysis** - "I have KAI's situation but not his interior"
+3. **Craft-Informed Challenges** - "That's circumstance, not flaw"
+4. **Cross-Notebook Synthesis** - Connect insights across sources
+5. **Template Generation** - Structure into Story Bible files (via Ollama)
+6. **Export for Safety Net** - Copy to `NotebookLM_Export/` for Project Notebook
+
+**Key Distinction:**
+- NotebookLM = Research oracle (query multiple specialized notebooks)
+- Ollama = Story architect (structures, validates, challenges with craft knowledge)
+
+The Project Notebook (created at end) serves as a **safety net** - if the writer wants to chat directly with NotebookLM about their story, all structured context is available there.
 
 ### Stage 2: Writing
 - Scene generation with context injection
@@ -365,12 +394,17 @@ writers-factory-app/
 - [x] Consolidator (Chat → Graph)
 - [x] Health Dashboard (Metabolic)
 
-### Phase 2: Story Bible System
-- [ ] Story Bible template scaffolding
-- [ ] Protagonist.md parser (extract Fatal Flaw, The Lie)
-- [ ] Beat_Sheet.md parser (track progress)
-- [ ] Story Bible completeness validation
-- [ ] Guided Creation Wizard
+### Phase 2: Story Bible System (IN PROGRESS)
+- [x] Story Bible template scaffolding (`StoryBibleService.scaffold_story_bible()`)
+- [x] Protagonist.md parser (extract Fatal Flaw, The Lie, Arc, Contradiction Score)
+- [x] Beat_Sheet.md parser (15-beat validation, midpoint type detection)
+- [x] Story Bible completeness validation (Level 2 Health Checks)
+- [x] API endpoints (`/story-bible/*`)
+- [x] Workflow infrastructure (`backend/workflows/base.py`)
+- [x] Story Bible Architect specification ([specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md))
+- [ ] **Story Bible Architect agent implementation** (Ollama-powered creative partner)
+- [ ] Multi-notebook orchestration in frontend
+- [ ] NotebookLM_Export directory and workflow
 
 ### Phase 3: Narrative Health
 - [ ] Health checks that understand Story Bible structure
@@ -398,6 +432,8 @@ The following detailed specifications address low-level implementation requireme
 
 | Specification | Purpose | Document |
 |---------------|---------|----------|
+| **Story Bible Architect** | Ollama-powered creative partner, multi-notebook orchestration, system prompt | [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md) |
+| **Story Bible System** | Phase 2 technical requirements, parsers, validation | [specs/Technical specifications and requirements for Story Bible System.md](specs/Technical%20specifications%20and%20requirements%20for%20Story%20Bible%20System.md) |
 | **File Synchronization** | External edit detection, graph re-ingestion triggers | [specs/FILE_SYNC.md](specs/FILE_SYNC.md) |
 | **Security & Credentials** | API key storage, encryption, OS keychain integration | [specs/SECURITY.md](specs/SECURITY.md) |
 | **RAG Implementation** | Chunking strategy, retrieval logic, context budgets | [specs/RAG_IMPLEMENTATION.md](specs/RAG_IMPLEMENTATION.md) |

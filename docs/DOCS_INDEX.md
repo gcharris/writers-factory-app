@@ -12,6 +12,7 @@
 | [Backend Services](BACKEND_SERVICES.md) | Service layer documentation |
 | [Workflows](WORKFLOWS.md) | Workflow infrastructure guide |
 | [Architecture](ARCHITECTURE.md) | System architecture & roadmap |
+| [The Foreman Spec](specs/STORY_BIBLE_ARCHITECT.md) | Intelligent creative partner design |
 
 ---
 
@@ -80,6 +81,7 @@ Check status: `GET /story-bible/can-execute`
 | Group | Base Path | Description |
 |-------|-----------|-------------|
 | System | `/agents`, `/manager` | Agent listing, health checks |
+| **Foreman** | `/foreman/*` | Intelligent creative partner |
 | Files | `/files/{path}` | Read/write files |
 | Graph | `/graph/*` | Knowledge graph operations |
 | Sessions | `/session/*` | Chat session management |
@@ -91,6 +93,14 @@ Check status: `GET /story-bible/can-execute`
 ### Key Endpoints
 
 ```
+# The Foreman (Intelligent Creative Partner)
+POST /foreman/start               # Initialize project with protagonist
+POST /foreman/chat                # Chat with Foreman (Ollama-powered)
+POST /foreman/notebook            # Register NotebookLM notebook
+GET  /foreman/status              # Get work order status
+POST /foreman/reset               # Reset for new project
+
+# Story Bible System
 GET  /story-bible/status          # Level 2 Health Checks
 POST /story-bible/scaffold        # Create templates
 POST /story-bible/smart-scaffold  # AI-powered generation
@@ -110,6 +120,7 @@ POST /notebooklm/query            # Query NotebookLM
 
 | Service | File | Purpose |
 |---------|------|---------|
+| **The Foreman** | `agents/foreman.py` | Ollama-powered intelligent creative partner |
 | `StoryBibleService` | `services/story_bible_service.py` | Story Bible parsing & validation |
 | `NotebookLMMCPClient` | `services/notebooklm_service.py` | NotebookLM integration |
 | `SessionService` | `services/session_service.py` | Chat persistence |
@@ -120,6 +131,11 @@ POST /notebooklm/query            # Query NotebookLM
 ### Key Data Classes
 
 ```python
+# From agents/foreman.py
+ForemanMode         # ARCHITECT, DIRECTOR, EDITOR
+WorkOrder           # Project tracking with template completion
+TemplateRequirement # Individual template status
+
 # From story_bible_service.py
 ProtagonistData     # Character profile with Fatal Flaw, The Lie, Arc
 BeatData            # Single beat (1-15)
@@ -244,7 +260,9 @@ docs/
 
 ```
 backend/
-├── api.py                     # 850+ lines, 40+ endpoints
+├── api.py                     # 950+ lines, 45+ endpoints
+├── agents/
+│   └── foreman.py             # 700+ lines, THE FOREMAN (Ollama-powered)
 ├── services/
 │   └── story_bible_service.py # 1100+ lines, Phase 2 implementation
 ├── workflows/

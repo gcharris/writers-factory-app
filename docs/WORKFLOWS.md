@@ -13,6 +13,8 @@ Workflows are composable, multi-step async processes that:
 - Handle errors gracefully
 - Return detailed execution results
 
+**Key Distinction:** Workflows are the *execution engine*. The **Story Bible Architect** (see [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md)) is the *intelligent agent* that orchestrates workflows with craft knowledge and writer interaction.
+
 ---
 
 ## Architecture
@@ -22,6 +24,30 @@ backend/workflows/
 ├── __init__.py         # Module exports
 ├── base.py             # Workflow, WorkflowStep, WorkflowResult
 └── smart_scaffold.py   # SmartScaffoldWorkflow implementation
+
+backend/agents/
+└── story_bible_architect.py  # (PLANNED) Ollama-powered creative partner
+```
+
+### Two-Layer Design
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│           STORY BIBLE ARCHITECT (Ollama Agent)              │
+│  • Craft knowledge (Fatal Flaw, The Lie, 15 beats)         │
+│  • Gap analysis & intelligent prompting                     │
+│  • Multi-notebook orchestration                             │
+│  • Writer interaction & Socratic challenges                 │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ Invokes
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│           WORKFLOWS (Execution Engine)                      │
+│  • SmartScaffoldWorkflow - query & synthesize               │
+│  • SceneGenerationWorkflow - draft scenes (planned)         │
+│  • ArchivistWorkflow - finalize scenes (planned)           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -228,7 +254,33 @@ else:
 
 **File:** `backend/workflows/smart_scaffold.py`
 
-The "AI Scaffolding Agent" that converts NotebookLM research into Story Bible templates.
+The execution engine that queries NotebookLM and synthesizes Story Bible templates.
+
+> **Note:** This workflow is invoked by the **Story Bible Architect** agent, which provides the intelligent orchestration, gap analysis, and craft-informed challenges. See [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md).
+
+### Multi-Notebook Architecture
+
+The workflow supports querying **multiple notebooks** as specialized consultants:
+
+```
+Writer's NotebookLM Library
+├── WORLD NOTEBOOKS
+│   ├── "Future 2034" - articles, videos about setting
+│   └── "Tech Trends" - research papers
+│
+├── CHARACTER/VOICE NOTEBOOKS
+│   ├── "Azeem's Worldview" - 100+ videos for voice extraction
+│   └── "Real People" - inspiration for characters
+│
+└── CRAFT REFERENCE NOTEBOOKS
+    ├── "Catcher in the Rye" - unreliable narrator technique
+    └── "Favorite Films" - structural inspiration
+```
+
+The Story Bible Architect determines **which notebook to query for what purpose**:
+- World-building questions → World notebooks
+- Character voice extraction → Voice notebooks
+- Narrative technique → Craft notebooks
 
 ### Purpose
 
@@ -236,6 +288,7 @@ The "AI Scaffolding Agent" that converts NotebookLM research into Story Bible te
 - Parse responses into structured template fields
 - Create Story Bible files with synthesized content
 - Validate completeness (Level 2 Health Checks)
+- Export to `NotebookLM_Export/` for Project Notebook creation
 
 ### Steps
 

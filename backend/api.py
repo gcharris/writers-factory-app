@@ -841,6 +841,150 @@ async def run_smart_scaffold(request: SmartScaffoldRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Smart scaffold failed: {str(e)}")
 
+# --- The Foreman (Intelligent Creative Partner) ---
+
+from backend.agents.foreman import Foreman, create_foreman
+
+# Global Foreman instance (stateful)
+_foreman_instance: Foreman = None
+
+def get_foreman() -> Foreman:
+    """Get or create the Foreman instance."""
+    global _foreman_instance
+    if _foreman_instance is None:
+        _foreman_instance = create_foreman(
+            notebooklm_client=notebooklm_client,
+            story_bible_service=get_story_bible_service(),
+            content_path=CONTENT_PATH,
+        )
+    return _foreman_instance
+
+
+class ForemanStartRequest(BaseModel):
+    project_title: str
+    protagonist_name: str
+    notebooks: dict = None  # {notebook_id: role}
+
+
+class ForemanChatRequest(BaseModel):
+    message: str
+
+
+class ForemanNotebookRequest(BaseModel):
+    notebook_id: str
+    role: str  # "world", "voice", "craft"
+
+
+@app.post("/foreman/start", summary="Start a new project with the Foreman")
+async def foreman_start(request: ForemanStartRequest):
+    """
+    Initialize the Foreman for a new project.
+
+    The Foreman will track the work order (Story Bible templates)
+    and guide the writer through completion.
+    """
+    try:
+        foreman = get_foreman()
+        result = foreman.start_project(
+            project_title=request.project_title,
+            protagonist_name=request.protagonist_name,
+            notebooks=request.notebooks,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start project: {str(e)}")
+
+
+@app.post("/foreman/chat", summary="Chat with the Foreman")
+async def foreman_chat(request: ForemanChatRequest):
+    """
+    Send a message to the Foreman and get a response.
+
+    The Foreman will:
+    - Consider the work order status
+    - Review relevant KB entries
+    - Respond with craft-aware guidance
+    - Optionally take actions (query NotebookLM, write templates, etc.)
+    """
+    try:
+        foreman = get_foreman()
+        result = await foreman.chat(request.message)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+
+
+@app.post("/foreman/notebook", summary="Register a NotebookLM notebook")
+async def foreman_register_notebook(request: ForemanNotebookRequest):
+    """
+    Register a NotebookLM notebook with the Foreman.
+
+    Roles:
+    - "world": World-building, setting, factions
+    - "voice": Character voice samples
+    - "craft": Narrative technique references
+    """
+    try:
+        foreman = get_foreman()
+        result = foreman.register_notebook(request.notebook_id, request.role)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to register notebook: {str(e)}")
+
+
+@app.get("/foreman/status", summary="Get Foreman status")
+async def foreman_status():
+    """
+    Get the current Foreman state.
+
+    Returns work order status, conversation length, and pending KB entries.
+    """
+    try:
+        foreman = get_foreman()
+        state = foreman.get_state()
+        return {
+            "active": foreman.work_order is not None,
+            "mode": foreman.mode.value,
+            "work_order": state.get("work_order"),
+            "conversation_length": len(foreman.conversation),
+            "kb_entries_pending": len(foreman.kb_entries),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+
+@app.post("/foreman/flush-kb", summary="Flush KB entries for persistence")
+async def foreman_flush_kb():
+    """
+    Flush pending KB entries.
+
+    Returns the entries and clears the pending list.
+    Caller should persist these to the Knowledge Graph.
+    """
+    try:
+        foreman = get_foreman()
+        entries = foreman.flush_kb_entries()
+        return {
+            "status": "flushed",
+            "entries": entries,
+            "count": len(entries),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to flush KB: {str(e)}")
+
+
+@app.post("/foreman/reset", summary="Reset the Foreman")
+async def foreman_reset():
+    """
+    Reset the Foreman to initial state.
+
+    Clears the current project, conversation, and KB entries.
+    """
+    global _foreman_instance
+    _foreman_instance = None
+    return {"status": "reset", "message": "Foreman has been reset"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

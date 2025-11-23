@@ -11,6 +11,7 @@ backend/
 ├── api.py                      # FastAPI application & endpoints
 ├── ingestor.py                 # Graph ingestion from markdown files
 ├── agents/
+│   ├── foreman.py              # THE FOREMAN - Ollama-powered creative partner
 │   ├── orchestrator.py         # SceneTournament, DraftCritic
 │   ├── registry.py             # AgentRegistry - loads agents.yaml
 │   └── specialists/
@@ -39,7 +40,192 @@ backend/
 
 ## Core Services
 
-### 1. StoryBibleService
+### 1. The Foreman (Intelligent Creative Partner)
+
+**File:** `backend/agents/foreman.py`
+
+The Foreman is an Ollama-powered intelligent agent that serves as a creative writing partner throughout the novel-writing process. Unlike a simple chatbot wizard, the Foreman understands narrative craft and actively challenges weak structural choices.
+
+> **Design Philosophy:** See [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md) for the complete specification.
+
+#### Three Modes Across Project Lifecycle
+
+| Mode | Stage | Purpose |
+|------|-------|---------|
+| `ARCHITECT` | Conception | Build Story Bible, query NotebookLM, challenge structure |
+| `DIRECTOR` | Execution | Draft scenes, inject context, maintain beat awareness |
+| `EDITOR` | Polish | Check voice consistency, pacing, continuity |
+
+#### Key Classes
+
+##### `ForemanMode`
+```python
+class ForemanMode(Enum):
+    ARCHITECT = "architect"  # Stage 1: Story Bible creation
+    DIRECTOR = "director"    # Stage 2: Scene drafting
+    EDITOR = "editor"        # Stage 3: Revision and polish
+```
+
+##### `TemplateRequirement`
+```python
+@dataclass
+class TemplateRequirement:
+    name: str                  # "Protagonist", "Beat Sheet", etc.
+    file_path: str             # Path pattern (supports {name} placeholder)
+    status: str = "not_started"  # not_started, in_progress, complete
+    required_fields: List[str] = field(default_factory=list)
+    missing_fields: List[str] = field(default_factory=list)
+    last_updated: Optional[datetime] = None
+```
+
+##### `WorkOrder`
+Tracks what needs to be completed and current progress.
+
+```python
+@dataclass
+class WorkOrder:
+    project_title: str
+    protagonist_name: str
+    mode: ForemanMode = ForemanMode.ARCHITECT
+    templates: List[TemplateRequirement] = field(default_factory=list)
+    notebooks: Dict[str, str] = field(default_factory=dict)  # role -> notebook_id
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def completion_percentage(self) -> float:
+        """Calculate overall completion (0-100%)."""
+
+    @property
+    def is_complete(self) -> bool:
+        """All templates marked as complete."""
+
+    def get_status_summary(self) -> str:
+        """Generate a status summary for the Foreman's context."""
+```
+
+##### `Foreman`
+The main agent class.
+
+```python
+class Foreman:
+    def __init__(
+        self,
+        model: str = "llama3.2:3b",
+        ollama_url: str = "http://localhost:11434",
+        notebooklm_client = None,
+        story_bible_service = None,
+        content_path: Path = None,
+    ):
+        # Stores conversation history, work order, KB entries
+
+    # Project Management
+    def start_project(self, project_title: str, protagonist_name: str) -> WorkOrder
+    def register_notebook(self, notebook_id: str, role: str)  # role: world, voice, craft
+    def reset(self)
+
+    # Conversation
+    async def chat(self, user_message: str) -> Dict:
+        """
+        Send a message and get a response.
+
+        Returns:
+            {
+                "response": str,      # Foreman's response text
+                "actions": List,      # Actions taken (notebook queries, KB writes)
+                "work_order": Dict,   # Current work order status
+                "kb_entries_pending": int
+            }
+        """
+
+    # Knowledge Base
+    def get_kb_entries(self) -> List[Dict]
+    def flush_kb_entries(self) -> List[Dict]  # Return and clear pending entries
+```
+
+#### Action System
+
+The Foreman can emit structured JSON actions that the system executes:
+
+```python
+# Query a NotebookLM notebook
+{
+    "action": "query_notebook",
+    "notebook_role": "world",  # or "voice", "craft"
+    "query": "What is the social structure of the Gatekeepers?"
+}
+
+# Save a decision to the Knowledge Base
+{
+    "action": "save_decision",
+    "category": "character",  # or "world", "constraint", "structure"
+    "key": "mickey_fatal_flaw",
+    "value": "Intellectual arrogance - dismisses emotional intelligence",
+    "source": "Writer brainstorm + Future 2034 notebook"
+}
+
+# Update a template field
+{
+    "action": "update_template",
+    "template": "Protagonist",
+    "field": "fatal_flaw",
+    "value": "Intellectual arrogance - believes pure logic solves everything"
+}
+```
+
+#### System Prompt (Embedded Craft Knowledge)
+
+The Foreman has ~2000 tokens of craft knowledge in its system prompt:
+
+- **Fatal Flaw vs Circumstance**: Challenges "external problem" flaws
+- **The Lie**: Ensures protagonist has mistaken belief driving behavior
+- **15-Beat Structure**: Knows Save the Cat! percentages and purposes
+- **Midpoint Types**: False Victory vs False Defeat understanding
+- **Character Arc**: Setup → Midpoint shift → Resolution
+
+#### Context Window Management
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ FOREMAN CONTEXT WINDOW (~7000 tokens total)                 │
+├─────────────────────────────────────────────────────────────┤
+│ [SYSTEM PROMPT] ~2000 tokens                                │
+│   Craft knowledge, action instructions, mode-specific skills│
+│                                                             │
+│ [WORK ORDER] ~200 tokens                                    │
+│   Current templates and completion status                   │
+│                                                             │
+│ [KB RETRIEVAL] ~1000 tokens                                 │
+│   Relevant decisions, constraints, facts                    │
+│                                                             │
+│ [CONVERSATION] ~4000 tokens                                 │
+│   Recent exchanges with the writer                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Factory Function
+
+```python
+def create_foreman(
+    notebooklm_client=None,
+    story_bible_service=None,
+    content_path: Path = None,
+    model: str = "llama3.2:3b",
+) -> Foreman:
+    """
+    Factory function to create a configured Foreman instance.
+
+    Usage:
+        foreman = create_foreman(
+            notebooklm_client=get_notebooklm_client(),
+            story_bible_service=StoryBibleService(content_path),
+            content_path=Path("content"),
+        )
+    """
+```
+
+---
+
+### 2. StoryBibleService
 
 **File:** `backend/services/story_bible_service.py`
 

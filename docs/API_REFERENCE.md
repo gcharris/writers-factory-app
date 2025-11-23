@@ -9,6 +9,7 @@
 ## Table of Contents
 
 - [System](#system)
+- [The Foreman](#the-foreman)
 - [File Management](#file-management)
 - [Knowledge Graph](#knowledge-graph)
 - [Session Management](#session-management)
@@ -41,6 +42,144 @@ Health check for the Manager agent.
 **Response:**
 ```json
 {"status": "online"}
+```
+
+---
+
+## The Foreman
+
+The Foreman is the intelligent creative writing partner powered by Ollama (Llama 3.2). These endpoints manage the Foreman's lifecycle and conversation.
+
+> **Full Documentation:** See [BACKEND_SERVICES.md](BACKEND_SERVICES.md#1-the-foreman-intelligent-creative-partner) and [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md)
+
+### `POST /foreman/start`
+Initialize a new project with the Foreman.
+
+**Request Body:**
+```json
+{
+  "project_title": "Big Brain",
+  "protagonist_name": "Mickey Bardot"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "started",
+  "work_order": {
+    "project_title": "Big Brain",
+    "protagonist_name": "Mickey Bardot",
+    "mode": "architect",
+    "templates": [
+      {"name": "Protagonist", "status": "not_started", "required_fields": ["fatal_flaw", "the_lie", "arc_start", "arc_resolution"]},
+      {"name": "Beat Sheet", "status": "not_started", "required_fields": ["beat_1", "beat_2", "...", "beat_15", "midpoint_type"]},
+      {"name": "Theme", "status": "not_started", "required_fields": ["central_theme", "theme_statement"]},
+      {"name": "World Rules", "status": "not_started", "required_fields": ["fundamental_rules"]}
+    ],
+    "notebooks": {},
+    "completion_percentage": 0.0,
+    "is_complete": false,
+    "created_at": "2025-11-23T08:17:19.799329+00:00"
+  },
+  "message": "Project 'Big Brain' initialized. Ready to build Story Bible."
+}
+```
+
+### `POST /foreman/chat`
+Send a message to the Foreman and get a response.
+
+The Foreman will:
+- Consider the work order status
+- Apply craft knowledge (Fatal Flaw, The Lie, 15-beat structure)
+- Query NotebookLM notebooks if needed
+- Challenge weak structural choices
+- Track decisions in Knowledge Base
+
+**Request Body:**
+```json
+{
+  "message": "Mickey's fatal flaw is his intellectual arrogance - he believes he can solve any problem with pure logic."
+}
+```
+
+**Response:**
+```json
+{
+  "response": "That's a strong Fatal Flaw! Intellectual arrogance creates rich story potential...",
+  "actions": [
+    {"action": "save_decision", "category": "character", "key": "mickey_fatal_flaw", "result": "saved"}
+  ],
+  "work_order": {
+    "completion_percentage": 12.5,
+    "templates": [...]
+  },
+  "kb_entries_pending": 1
+}
+```
+
+### `POST /foreman/notebook`
+Register a NotebookLM notebook for the Foreman to use.
+
+**Request Body:**
+```json
+{
+  "notebook_id": "abc123xyz",
+  "role": "world"
+}
+```
+
+**Role Options:**
+- `"world"` - World-building, setting, factions
+- `"voice"` - Character voice, dialogue style
+- `"craft"` - Narrative techniques, reference works
+
+**Response:**
+```json
+{
+  "status": "registered",
+  "notebook_id": "abc123xyz",
+  "role": "world"
+}
+```
+
+### `GET /foreman/status`
+Get current Foreman state without making a chat request.
+
+**Response:**
+```json
+{
+  "active": true,
+  "mode": "architect",
+  "work_order": {...},
+  "conversation_length": 4,
+  "kb_entries_pending": 2
+}
+```
+
+### `POST /foreman/flush-kb`
+Flush pending Knowledge Base entries and return them for persistence.
+
+**Response:**
+```json
+{
+  "flushed_count": 3,
+  "entries": [
+    {"category": "character", "key": "mickey_fatal_flaw", "value": "...", "timestamp": "..."},
+    {"category": "constraint", "key": "no_personal_trauma", "value": "...", "timestamp": "..."}
+  ]
+}
+```
+
+### `POST /foreman/reset`
+Reset the Foreman to start a new project.
+
+**Response:**
+```json
+{
+  "status": "reset",
+  "message": "Foreman reset. Ready for new project."
+}
 ```
 
 ---
