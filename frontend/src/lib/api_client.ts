@@ -78,6 +78,74 @@ export interface SessionMessageResponse {
     token_count: number;
 }
 
+// --- Foreman Interfaces ---
+export interface ForemanStartRequest {
+    project_title: string;
+    protagonist_name: string;
+}
+
+export interface ForemanChatRequest {
+    message: string;
+}
+
+export interface ForemanNotebookRequest {
+    notebook_id: string;
+    role: 'world' | 'voice' | 'craft';
+}
+
+export interface ForemanTemplateRequirement {
+    name: string;
+    required_fields: string[];
+    completed_fields: string[];
+    status: 'pending' | 'partial' | 'complete';
+}
+
+export interface ForemanWorkOrder {
+    project_title: string;
+    protagonist_name: string;
+    mode: 'ARCHITECT' | 'DIRECTOR' | 'EDITOR';
+    templates: ForemanTemplateRequirement[];
+}
+
+export interface ForemanStartResponse {
+    message: string;
+    project_title: string;
+    protagonist_name: string;
+    mode: string;
+}
+
+export interface ForemanChatResponse {
+    response: string;
+    actions_executed: string[];
+    work_order_status: ForemanWorkOrder;
+}
+
+export interface ForemanStatusWorkOrder {
+    project_title: string;
+    protagonist_name: string;
+    mode: string;
+    templates: Array<{
+        name: string;
+        file_path: string;
+        status: string;
+        required_fields: string[];
+        missing_fields: string[];
+        last_updated: string | null;
+    }>;
+    notebooks: Record<string, string>;
+    completion_percentage: number;
+    is_complete: boolean;
+    created_at: string;
+}
+
+export interface ForemanStatusResponse {
+    active: boolean;
+    mode: string | null;
+    work_order: ForemanStatusWorkOrder | null;
+    conversation_length: number;
+    kb_entries_pending: number;
+}
+
 /**
  * A TypeScript client for interacting with the Writers Factory Python backend.
  */
@@ -208,6 +276,67 @@ export class WritersFactoryAPI {
      */
     async getSessionStats(sessionId: string): Promise<any> {
         return this._request(`/session/${sessionId}/stats`);
+    }
+
+    // ==========================================
+    // The Foreman (Intelligent Creative Partner)
+    // ==========================================
+
+    /**
+     * Start a new Foreman project.
+     * @param projectTitle The project/novel title.
+     * @param protagonistName The protagonist's name.
+     */
+    async foremanStart(projectTitle: string, protagonistName: string): Promise<ForemanStartResponse> {
+        const body: ForemanStartRequest = {
+            project_title: projectTitle,
+            protagonist_name: protagonistName,
+        };
+        return this._request('/foreman/start', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * Chat with the Foreman.
+     * @param message The user's message.
+     */
+    async foremanChat(message: string): Promise<ForemanChatResponse> {
+        const body: ForemanChatRequest = { message };
+        return this._request('/foreman/chat', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * Register a NotebookLM notebook with a role.
+     * @param notebookId The NotebookLM notebook ID.
+     * @param role The role: 'world', 'voice', or 'craft'.
+     */
+    async foremanRegisterNotebook(notebookId: string, role: 'world' | 'voice' | 'craft'): Promise<{ message: string }> {
+        const body: ForemanNotebookRequest = { notebook_id: notebookId, role };
+        return this._request('/foreman/notebook', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * Get Foreman status (work order, mode, etc.)
+     */
+    async foremanStatus(): Promise<ForemanStatusResponse> {
+        return this._request('/foreman/status');
+    }
+
+    /**
+     * Reset the Foreman for a new project.
+     */
+    async foremanReset(): Promise<{ message: string }> {
+        return this._request('/foreman/reset', {
+            method: 'POST',
+        });
     }
 }
 

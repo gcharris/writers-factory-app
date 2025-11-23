@@ -65,3 +65,15 @@ export const chatHistory = writable([]);
 export const sessionSceneId = persistentWritable('wf_session_scene_id', null);
 export const sessionInitialized = writable(false);
 export const sessionError = writable(null);
+
+// --- Foreman State (The Creative Partner) ---
+
+// Foreman project state
+export const foremanActive = writable(false);
+export const foremanMode = writable(null); // 'ARCHITECT' | 'DIRECTOR' | 'EDITOR'
+export const foremanProjectTitle = writable(null);
+export const foremanProtagonist = writable(null);
+export const foremanWorkOrder = writable(null);
+
+// Foreman chat history (separate from manager)
+export const foremanChatHistory = writable([]);

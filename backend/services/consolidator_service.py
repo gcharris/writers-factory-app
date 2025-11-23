@@ -28,6 +28,7 @@ from contextlib import contextmanager
 import aiohttp
 
 from backend.services.session_service import SessionService, get_session_service
+from backend.services.foreman_kb_service import get_foreman_kb_service, ForemanKBService
 
 # --- Logging ---
 logger = logging.getLogger(__name__)
@@ -409,6 +410,211 @@ Be precise. Extract only explicitly stated facts. Ignore speculation."""
             "status": "success",
             "sessions_processed": sessions_processed,
             "total_events": total_events,
+            "total_nodes_added": total_nodes,
+            "total_edges_added": total_edges,
+            "total_conflicts": total_conflicts,
+            "dry_run": dry_run
+        }
+
+    # =========================================================================
+    # Foreman KB Digestion (Phase 3: Living Brain Loop)
+    # =========================================================================
+
+    def _kb_category_to_node_type(self, category: str) -> str:
+        """
+        Map Foreman KB categories to graph node types.
+
+        KB Categories: character, world, structure, constraint, preference
+        Graph Types: CHARACTER, LOCATION, THEME, PLOT_POINT, etc.
+        """
+        mapping = {
+            "character": "CHARACTER",
+            "world": "WORLD_RULE",
+            "structure": "PLOT_POINT",
+            "constraint": "CONSTRAINT",
+            "preference": "PREFERENCE",
+        }
+        return mapping.get(category, "FACT")
+
+    def _kb_entry_to_node(self, entry) -> Dict[str, Any]:
+        """
+        Convert a ForemanKBEntry to a graph node.
+
+        Unlike session digestion (which uses LLM extraction), KB entries
+        are already structured - we just need to map them.
+        """
+        return {
+            "id": entry.key,
+            "type": self._kb_category_to_node_type(entry.category),
+            "desc": entry.value,
+            "source": entry.source or "foreman",
+            "category": entry.category,
+            "project_id": entry.project_id,
+            "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        }
+
+    async def digest_foreman_kb(
+        self,
+        project_id: str,
+        dry_run: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Digest unpromoted Foreman KB entries into the knowledge graph.
+
+        This is the "Living Brain" loop described by the Gemini Architect:
+        1. Foreman learns a fact → Writes to foreman_kb (SQLite)
+        2. Consolidator wakes up → Reads foreman_kb → Updates knowledge_graph.json
+        3. Foreman reads knowledge_graph.json for context in future chats
+
+        Key difference from digest_session():
+        - Source: foreman_kb table (crystallized decisions), not raw chat
+        - Processing: Direct mapping (no LLM needed - already structured)
+        - Marking: Uses is_promoted flag, not is_committed
+
+        Args:
+            project_id: The project to consolidate KB entries for
+            dry_run: If True, extract but don't save (for testing)
+
+        Returns:
+            Status dict with nodes_added, entries_promoted, etc.
+        """
+        logger.info(f"Starting KB consolidation for project '{project_id}'...")
+
+        # 1. Fetch unpromoted KB entries
+        kb_service = get_foreman_kb_service()
+        entries = kb_service.get_unpromoted_decisions(project_id)
+
+        if not entries:
+            logger.info("No unpromoted KB entries found - skipping")
+            return {
+                "status": "skipped",
+                "reason": "no_unpromoted_entries",
+                "project_id": project_id
+            }
+
+        entry_ids = [e.id for e in entries]
+        logger.info(f"Found {len(entries)} unpromoted KB entries")
+
+        # 2. Convert KB entries to graph nodes
+        # (No LLM extraction needed - KB entries are already structured)
+        new_nodes = [self._kb_entry_to_node(e) for e in entries]
+
+        # 3. Create edges for character-related entries
+        # Connect character facts to their protagonist
+        new_edges = []
+        for entry in entries:
+            if entry.category == "character":
+                # Create edge: Character -[HAS_TRAIT]-> Trait
+                # Extract character name from key (e.g., "mickey_fatal_flaw" -> "Mickey")
+                key_parts = entry.key.split("_")
+                if len(key_parts) >= 2:
+                    char_name = key_parts[0].title()
+                    trait_type = "_".join(key_parts[1:]).upper()
+                    new_edges.append({
+                        "source": char_name,
+                        "target": entry.key,
+                        "relation": "HAS_TRAIT",
+                        "desc": f"{char_name}'s {trait_type.replace('_', ' ').lower()}"
+                    })
+
+        logger.info(f"Converted to {len(new_nodes)} nodes, {len(new_edges)} edges")
+
+        # 4. Merge into knowledge graph
+        graph = self._load_graph()
+
+        merged_nodes, nodes_added, conflicts = self._merge_nodes(
+            graph.get("nodes", []),
+            new_nodes
+        )
+        merged_edges, edges_added = self._merge_edges(
+            graph.get("edges", []),
+            new_edges
+        )
+
+        graph["nodes"] = merged_nodes
+        graph["edges"] = merged_edges
+
+        # Track KB source in metadata
+        if "kb_consolidations" not in graph.get("metadata", {}):
+            graph.setdefault("metadata", {})["kb_consolidations"] = []
+        graph["metadata"]["kb_consolidations"].append({
+            "project_id": project_id,
+            "entries_promoted": len(entries),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        # 5. Save and mark as promoted
+        if not dry_run:
+            self._save_graph(graph)
+            logger.info(f"Graph saved: {nodes_added} new nodes, {edges_added} new edges")
+
+            # Mark entries as promoted
+            kb_service.mark_promoted(entry_ids)
+            logger.info(f"Marked {len(entry_ids)} KB entries as promoted")
+
+        return {
+            "status": "success",
+            "project_id": project_id,
+            "entries_processed": len(entries),
+            "nodes_added": nodes_added,
+            "edges_added": edges_added,
+            "conflicts": len(conflicts),
+            "total_nodes": len(merged_nodes),
+            "total_edges": len(merged_edges),
+            "dry_run": dry_run
+        }
+
+    async def digest_all_foreman_kb(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Consolidate ALL unpromoted KB entries across all projects.
+
+        Returns:
+            Aggregate stats from all project digestions
+        """
+        logger.info("Starting full KB consolidation across all projects...")
+
+        # Get all unique project IDs from KB
+        kb_service = get_foreman_kb_service()
+
+        # Query for distinct project IDs with unpromoted entries
+        from sqlalchemy import distinct
+        from backend.services.foreman_kb_service import ForemanKBEntry
+
+        project_ids = kb_service.db.query(
+            distinct(ForemanKBEntry.project_id)
+        ).filter(
+            ForemanKBEntry.is_promoted == False
+        ).all()
+
+        project_ids = [p[0] for p in project_ids]
+
+        if not project_ids:
+            return {
+                "status": "skipped",
+                "reason": "no_unpromoted_entries",
+                "projects_processed": 0
+            }
+
+        total_nodes = 0
+        total_edges = 0
+        total_entries = 0
+        total_conflicts = 0
+        projects_processed = 0
+
+        for project_id in project_ids:
+            result = await self.digest_foreman_kb(project_id, dry_run=dry_run)
+
+            if result.get("status") == "success":
+                total_nodes += result.get("nodes_added", 0)
+                total_edges += result.get("edges_added", 0)
+                total_entries += result.get("entries_processed", 0)
+                total_conflicts += result.get("conflicts", 0)
+                projects_processed += 1
+
+        return {
+            "status": "success",
+            "projects_processed": projects_processed,
+            "total_entries": total_entries,
             "total_nodes_added": total_nodes,
             "total_edges_added": total_edges,
             "total_conflicts": total_conflicts,

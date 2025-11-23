@@ -3,7 +3,19 @@
     "generated_at": "2025-11-22T18:56:29.503431",
     "engine": "ollama/llama3.2:3b",
     "source_path": "/Users/gch2024/Documents/Documents - Mac Mini/writers-factory-app/content",
-    "updated_at": "2025-11-22T15:55:58.499125+00:00"
+    "updated_at": "2025-11-23T12:54:29.475307+00:00",
+    "kb_consolidations": [
+      {
+        "project_id": "Test_Novel_E2E",
+        "entries_promoted": 5,
+        "timestamp": "2025-11-23T12:54:14.242594+00:00"
+      },
+      {
+        "project_id": "API_Test_Project",
+        "entries_promoted": 2,
+        "timestamp": "2025-11-23T12:54:29.475299+00:00"
+      }
+    ]
   },
   "nodes": [
     {
@@ -310,6 +322,69 @@
       "id": "conspiracy",
       "type": "EVENT",
       "desc": "the subject of the discovery"
+    },
+    {
+      "id": "beat_1_opening",
+      "type": "PLOT_POINT",
+      "desc": "Mickey presenting at a major tech conference",
+      "source": "foreman_test",
+      "category": "structure",
+      "project_id": "Test_Novel_E2E",
+      "created_at": "2025-11-23T12:54:14.237849"
+    },
+    {
+      "id": "setting_location",
+      "type": "WORLD_RULE",
+      "desc": "Los Angeles tech scene, 2024",
+      "source": "foreman_test",
+      "category": "world",
+      "project_id": "Test_Novel_E2E",
+      "created_at": "2025-11-23T12:54:14.237040"
+    },
+    {
+      "id": "no_magic",
+      "type": "CONSTRAINT",
+      "desc": "This is a grounded reality - no supernatural elements",
+      "source": "foreman_test",
+      "category": "constraint",
+      "project_id": "Test_Novel_E2E",
+      "created_at": "2025-11-23T12:54:14.236178"
+    },
+    {
+      "id": "mickey_the_lie",
+      "type": "CHARACTER",
+      "desc": "That intellect alone can solve any problem",
+      "source": "foreman_test",
+      "category": "character",
+      "project_id": "Test_Novel_E2E",
+      "created_at": "2025-11-23T12:54:14.235126"
+    },
+    {
+      "id": "mickey_fatal_flaw",
+      "type": "CHARACTER",
+      "desc": "Hubris - believes he's the smartest person in any room",
+      "source": "foreman_test",
+      "category": "character",
+      "project_id": "Test_Novel_E2E",
+      "created_at": "2025-11-23T12:54:14.232354"
+    },
+    {
+      "id": "word_limit",
+      "type": "CONSTRAINT",
+      "desc": "80000 words max",
+      "source": "api_test",
+      "category": "constraint",
+      "project_id": "API_Test_Project",
+      "created_at": "2025-11-23T12:54:29.429421"
+    },
+    {
+      "id": "hero_name",
+      "type": "CHARACTER",
+      "desc": "Jane Doe",
+      "source": "api_test",
+      "category": "character",
+      "project_id": "API_Test_Project",
+      "created_at": "2025-11-23T12:54:29.426755"
     }
   ],
   "edges": [
@@ -2208,6 +2283,24 @@
       "target": "Dr. Chen",
       "relation": "CONFRONTS",
       "desc": "Confrontation scene"
+    },
+    {
+      "source": "Mickey",
+      "target": "mickey_the_lie",
+      "relation": "HAS_TRAIT",
+      "desc": "Mickey's the lie"
+    },
+    {
+      "source": "Mickey",
+      "target": "mickey_fatal_flaw",
+      "relation": "HAS_TRAIT",
+      "desc": "Mickey's fatal flaw"
+    },
+    {
+      "source": "Hero",
+      "target": "hero_name",
+      "relation": "HAS_TRAIT",
+      "desc": "Hero's name"
     }
   ]
 }
