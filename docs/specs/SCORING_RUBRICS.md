@@ -1,620 +1,553 @@
 # Scoring Rubrics Specification
 
-**Version**: 1.0
-**Status**: Draft
-**Related**: ARCHITECTURE.md, Voice Consistency Tester (writers-factory-core)
+**Version**: 2.0
+**Status**: Updated for Director Mode
+**Related**: DIRECTOR_MODE.md, Voice Calibration Service
 
 ---
 
-## Problem Statement
+## Overview
 
-The Writers Factory needs objective quality metrics to:
+This spec defines the **5-category, 100-point scoring framework** used by Director Mode to evaluate scene quality. The framework is **vanilla** - it references the writer's Story Bible and Voice Bundle rather than hard-coded character-specific patterns.
 
-1. Compare scene variants from multiple AI models
-2. Track manuscript quality over time
-3. Identify specific improvement areas
-4. Maintain voice consistency across the novel
+### Key Principle: Voice Bundle as Source of Truth
 
-This spec defines the scoring rubrics and Critic Agent prompts for Stage 5 (Scoring) of the workflow pipeline.
+Unlike hard-coded rubrics, this scoring system pulls its criteria dynamically from:
+- **Voice Gold Standard** - What good voice looks like for THIS novel
+- **Voice Anti-Patterns** - What to avoid for THIS novel
+- **Voice Phase Evolution** - How voice changes across THIS novel's phases
+- **Story Bible** - Character Fatal Flaws, Lies, relationships, world rules
 
 ---
 
-## Scoring Dimensions
+## Scoring Categories
 
-### Overview
-
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| Voice Consistency | 25 | Adherence to established character/narrative voice |
-| Metaphor Discipline | 25 | Coherent domain usage, no mixed metaphors |
-| Anti-Pattern Compliance | 20 | Avoiding known bad patterns |
-| Structural Requirements | 20 | Scene beats, Goal/Conflict/Outcome |
-| Scene Functionality | 10 | Serves the story purpose |
+| Category | Weight | What It Measures |
+|----------|--------|------------------|
+| Voice Authenticity | 30 pts | Does it sound like the character? |
+| Character Consistency | 20 pts | Does behavior match established psychology? |
+| Metaphor Discipline | 20 pts | Are metaphors diverse and well-rotated? |
+| Anti-Pattern Compliance | 15 pts | Are known bad patterns avoided? |
+| Phase Appropriateness | 15 pts | Is voice complexity right for this phase? |
 
 **Total: 100 points**
 
 ---
 
-## Dimension 1: Voice Consistency (25 points)
+## Category 1: Voice Authenticity (30 points)
 
-### Rubric
+Voice Authenticity measures whether prose sounds like the POV character observing, or AI explaining the POV character. This is the most heavily weighted category because voice drift is the most common AI writing failure.
+
+### 1A: Authenticity Test (10 points)
+
+**Core Question:** Does this sound like [POV character] thinking/observing in real-time?
 
 | Score | Criteria |
 |-------|----------|
-| 25 | Perfect adherence to voice guide; indistinguishable from reference scenes |
-| 20-24 | Minor deviations; 1-2 phrases feel slightly off |
-| 15-19 | Noticeable inconsistencies; 3-5 passages diverge from voice |
-| 10-14 | Significant voice drift; character sounds different |
-| 0-9 | Voice not recognizable; sounds like different author |
+| 10 | Perfect match to Voice Gold Standard - character actively observing |
+| 7 | Mostly authentic with occasional "AI explaining character" moments |
+| 4 | Mix of authentic voice and academic commentary |
+| 0 | Sounds like AI studying the character from outside |
 
-### Critic Prompt
+**Examples (Generic):**
 
+**10 points - Character observing:**
 ```
-You are a Voice Consistency Critic for a novel-writing system.
+The bartender's hands moved too fast, cards appearing where they
+shouldn't. Another dealer with gambler's hands. Bad combination.
+```
+*Why it works:* Character is actively reading the room, making judgments in their voice.
 
-VOICE REFERENCE:
-{voice_guide}
+**4 points - AI explaining:**
+```
+The protagonist observed the bartender's rapid hand movements with
+growing suspicion. His enhanced awareness allowed him to detect the
+subtle card manipulations.
+```
+*Why it fails:* "The protagonist observed" + "enhanced awareness allowed" = AI describing character capabilities.
 
-REFERENCE SCENES (examples of correct voice):
-{reference_scenes}
+**0 points - Pure AI voice:**
+```
+Enhanced perception enabled comprehensive assessment of the
+bartender's prestidigitation techniques. The sophisticated
+analytical capabilities revealed underlying deception patterns.
+```
+*Why it fails:* Academic jargon, no personality, could be written about anyone.
 
-SCENE TO EVALUATE:
-{scene_content}
+### 1B: Purpose Test (10 points)
 
-Evaluate this scene's voice consistency on a scale of 0-25.
+**Core Question:** Does every scene beat serve the [Theme]?
 
-Consider:
-1. Sentence rhythm and length patterns
-2. Vocabulary level and word choices
-3. POV adherence (internal vs external observation)
-4. Emotional temperature
-5. Characteristic phrases or patterns from reference
+| Score | Criteria |
+|-------|----------|
+| 10 | Theme embedded in action, never stated explicitly |
+| 7 | Theme present but occasionally stated rather than shown |
+| 4 | Generic prose with theme tangential |
+| 0 | Well-written but doesn't serve the theme |
 
-Provide:
-- SCORE: [0-25]
-- VOICE DRIFT LOCATIONS: [Quote specific passages that diverge]
-- ANALYSIS: [Why these passages don't match the voice]
-- FIXES: [How to revise for voice consistency]
+**How to evaluate:** Reference Story Bible → Theme document.
+
+**10 points - Theme embedded:**
+```
+She held the door for the stranger, even running late. The small
+choice felt heavier than it should, weighted by everything she
+was trying to prove—that kindness wasn't weakness.
+```
+*Theme (kindness vs. power) woven into action.*
+
+**4 points - Theme tangential:**
+```
+She held the door for the stranger, then hurried to her meeting.
+The conference room was already full when she arrived.
+```
+*Action happens but doesn't connect to theme.*
+
+### 1C: Fusion Test (10 points)
+
+**Core Question:** Are the character's expertise domains fused with their personality?
+
+| Score | Criteria |
+|-------|----------|
+| 10 | Technical language seamlessly integrated with character voice |
+| 7 | Occasional separation between expertise and personality |
+| 4 | Either technical OR character voice, not fused |
+| 0 | Academic analysis without character grounding |
+
+**Example - Fused (10 points):**
+```
+The code was elegant—too elegant. Someone had spent serious time
+making it look amateur. Same trick every high-end con ran: dress
+down to avoid attention.
+```
+*Technical observation (code quality) fused with character's con artist psychology.*
+
+**Example - Separated (4 points):**
+```
+The code exhibited sophisticated obfuscation techniques. Maria
+recognized the pattern from her years of experience.
+```
+*Technical is technical, personality is separate statement.*
+
+---
+
+## Category 2: Character Consistency (20 points)
+
+### 2A: Psychology Consistency (8 points)
+
+**Core Question:** Does behavior match established Fatal Flaw and The Lie?
+
+| Score | Criteria |
+|-------|----------|
+| 8 | Perfect alignment - every action reflects Fatal Flaw/Lie |
+| 6 | Mostly consistent, 1-2 minor deviations |
+| 3 | Several behaviors contradict established psychology |
+| 0 | Fundamental violation of established personality |
+
+**How to evaluate:** Reference Story Bible → Protagonist → Fatal Flaw, The Lie.
+
+**Example - Fatal Flaw: "Inability to accept help" / Lie: "Everyone has an angle"**
+
+**8 points - Aligned:**
+```
+"Let me help you with that," she offered.
+His hands tightened on the box. "I've got it."
+```
+*Refuses help automatically, consistent with Flaw.*
+
+**0 points - Contradicted:**
+```
+"Let me help you with that," she offered.
+"Thanks, I appreciate it." He handed over the box gratefully.
+```
+*Accepts help without hesitation - violates Fatal Flaw.*
+
+### 2B: Capability Validation (6 points)
+
+**Core Question:** Are all actions within established character limits?
+
+| Score | Criteria |
+|-------|----------|
+| 6 | All actions justified by established abilities |
+| 4 | One plausible but unestablished capability stretch |
+| 2 | Unexplained capability used |
+| 0 | Breaks established limits |
+
+**How to evaluate:** Reference Story Bible → Character Profile → Capabilities.
+
+### 2C: Relationship Dynamics (6 points)
+
+**Core Question:** Do interactions match established relationship patterns?
+
+| Score | Criteria |
+|-------|----------|
+| 6 | Authentic to established dynamics |
+| 4 | Generally authentic, some generic beats |
+| 2 | Misaligned with established patterns |
+| 0 | Contradicts relationship fundamentals |
+
+**How to evaluate:** Reference Story Bible → Characters → Relationships and Knowledge Base → relationship entries.
+
+---
+
+## Category 3: Metaphor Discipline (20 points)
+
+### 3A: Domain Rotation (10 points)
+
+**Core Question:** Are metaphor domains diverse and properly rotated?
+
+| Score | Criteria |
+|-------|----------|
+| 10 | No domain >30%, diverse across character's experience |
+| 7 | Mostly balanced, one domain slightly overused (30-35%) |
+| 4 | Heavy reliance on 1-2 domains (35-45%) |
+| 0 | Single domain saturation (>45%) |
+
+**How to evaluate:** Count metaphors by domain, reference Voice Bundle → Metaphor Domains.
+
+**Example Domain Analysis:**
+```
+Total metaphors: 20
+- Cooking: 4 (20%) - "simmered," "recipe for disaster," "half-baked," "slow burn"
+- Music: 5 (25%) - "crescendo," "off-key," "rhythm," "harmony," "played it"
+- Medicine: 4 (20%) - "diagnosis," "symptoms," "treatment," "infection"
+- Architecture: 4 (20%) - "foundation," "scaffolding," "blueprint," "collapse"
+- Sports: 3 (15%) - "overtime," "bench," "game plan"
+
+SCORE: 10 - Good rotation, no domain over 25%
+```
+
+**Problem Example:**
+```
+Total metaphors: 15
+- Cooking: 8 (53%) - SATURATION
+- Music: 4 (27%)
+- Other: 3 (20%)
+
+SCORE: 0 - Cooking domain saturated
+```
+
+### 3B: Simile Elimination (5 points)
+
+**Core Question:** Are similes avoided in favor of direct metaphors?
+
+| Score | Criteria |
+|-------|----------|
+| 5 | Zero similes - all direct transformation |
+| 3 | 1-2 similes, mostly direct metaphors |
+| 1 | Multiple comparison structures |
+| 0 | Simile-heavy ("like", "as if" frequent) |
+
+**Direct metaphor (preferred):**
+```
+Sunlight weaponized itself against the concrete.
+Fear assembled in her chest like casino chips.
+The conversation found its tempo.
+```
+
+**Simile (avoid):**
+```
+The sunlight was like a weapon against the concrete.
+She felt fear like stacked casino chips.
+The conversation moved as if it had found a rhythm.
+```
+
+### 3C: Direct Transformation (5 points)
+
+**Core Question:** Do objects/concepts BECOME metaphors through active verbs?
+
+| Score | Criteria |
+|-------|----------|
+| 5 | Strong verb promotion - nouns become verbs |
+| 3 | Mixed transformation approaches |
+| 1 | Mostly comparison-based |
+| 0 | No active transformation |
+
+**Examples of verb promotion:**
+```
+✓ "Desperation geometried against cement" (noun → verb)
+✓ "Silence architectured around them" (noun → verb)
+✓ "The room tensioned" (noun → verb)
 ```
 
 ---
 
-## Dimension 2: Metaphor Discipline (25 points)
+## Category 4: Anti-Pattern Compliance (15 points)
 
-### Rubric
+### 4A: Zero-Tolerance Violations (10 points)
 
-| Score | Criteria |
-|-------|----------|
-| 25 | All metaphors from allowed domains; beautifully coherent |
-| 20-24 | Consistent domains; 1 minor domain stretch |
-| 15-19 | 2-3 mixed metaphors or domain violations |
-| 10-14 | Frequent mixing; metaphors clash with each other |
-| 0-9 | Chaotic metaphor usage; no discipline apparent |
+**Starting score: 10. Deduct -2 per violation.**
 
-### Allowed Metaphor Domains (Configurable per Project)
+Zero-tolerance patterns are sourced from Voice Anti-Patterns document. Common patterns:
 
-```yaml
-# config/metaphor_domains.yaml
-project: "The Explants"
-allowed_domains:
-  - quantum_mechanics:
-      terms: [entanglement, superposition, wave function, collapse, uncertainty]
-      usage: "For consciousness and identity concepts"
-  - organic_biology:
-      terms: [roots, growth, symbiosis, metabolism, decay]
-      usage: "For relationships and development"
-  - architecture:
-      terms: [foundation, scaffold, framework, structure, collapse]
-      usage: "For mental states and plans"
-  - water:
-      terms: [flow, current, depth, surface, drowning]
-      usage: "For emotions and time"
+| Pattern | Example | Why It Fails |
+|---------|---------|--------------|
+| Wrong-POV italics | `*We realized the trap*` (in 3rd person) | Breaks POV consistency |
+| "With X precision" | `with practiced precision` | Cliche, tells not shows |
+| Computer psychology | `brain processed the trauma` | Mechanical, not human |
+| "With [adj] [noun]" | `with obvious concern` | Lazy description |
 
-forbidden_domains:
-  - military: "Too aggressive for this voice"
-  - sports: "Not in character vocabulary"
-  - corporate: "Breaks the philosophical tone"
+**Example scoring:**
+```
+Scene contains:
+- Line 42: "with practiced precision" → -2
+- Line 89: "his mind processed" → -2
+
+SCORE: 10 - 4 = 6
 ```
 
-### Critic Prompt
+### 4B: Formulaic Patterns (5 points)
 
+**Starting score: 5. Deduct -1 per violation.**
+
+| Pattern | Example | Why It Fails |
+|---------|---------|--------------|
+| Adverb-verb | `walked carefully` | Weak verb + modifier |
+| "Despite the" | `despite the noise` | Overused transition |
+| Vague atmosphere | `the air seemed tense` | Tells not shows |
+| Repetition | Same pattern 3+ times | Lacks variety |
+
+**Fixes:**
 ```
-You are a Metaphor Discipline Critic for a novel-writing system.
-
-ALLOWED METAPHOR DOMAINS:
-{allowed_domains}
-
-FORBIDDEN DOMAINS:
-{forbidden_domains}
-
-SCENE TO EVALUATE:
-{scene_content}
-
-Evaluate metaphor discipline on a scale of 0-25.
-
-Tasks:
-1. Identify ALL metaphors and figurative language in the scene
-2. Categorize each by domain
-3. Flag any that violate allowed/forbidden rules
-4. Flag any mixed metaphors (combining incompatible domains)
-
-Provide:
-- SCORE: [0-25]
-- METAPHOR INVENTORY:
-  - "[metaphor text]" → Domain: [domain], Status: [OK/VIOLATION]
-- MIXED METAPHORS: [List any that clash]
-- FIXES: [Alternative metaphors from allowed domains]
+❌ "walked carefully" → ✓ "picked her way through"
+❌ "the air seemed tense" → ✓ "her collar felt tight"
+❌ "despite the noise" → ✓ "Noise erupted. She kept moving."
 ```
 
 ---
 
-## Dimension 3: Anti-Pattern Compliance (20 points)
+## Category 5: Phase Appropriateness (15 points)
 
-### Rubric
+### 5A: Voice Complexity Match (8 points)
+
+**Core Question:** Is voice complexity appropriate for story phase?
 
 | Score | Criteria |
 |-------|----------|
-| 20 | No anti-patterns detected |
-| 15-19 | 1-2 minor anti-patterns |
-| 10-14 | 3-5 anti-patterns or 1-2 severe ones |
-| 5-9 | Multiple severe anti-patterns |
-| 0-4 | Riddled with anti-patterns |
+| 8 | Perfect alignment with phase expectations |
+| 6 | Generally correct with minor anachronisms |
+| 3 | Wrong complexity level for phase |
+| 0 | Completely inappropriate voice |
 
-### Anti-Pattern Catalog
+**How to evaluate:** Reference Voice Bundle → Phase Evolution document.
 
-```yaml
-# config/anti_patterns.yaml
+**Example phases:**
 
-severe:
-  - name: "Head-Hopping"
-    description: "POV shifts within scene without clear break"
-    detection: "Multiple characters' internal thoughts in same scene"
-    penalty: -5
+- **Act 1 (Setup):** Grounded, relatable voice - reader learning the world
+- **Act 2A (Fun & Games):** Voice can flex into specialty domains
+- **Act 2B (Bad Guys Close In):** Darker, more cynical
+- **Act 3 (Finale):** Full integration of all learned voice elements
 
-  - name: "Telling Emotions"
-    description: "Stating emotions instead of showing"
-    examples: ["She felt sad", "He was angry", "They were scared"]
-    penalty: -3
+### 5B: Earned Language (7 points)
 
-  - name: "Purple Prose"
-    description: "Overwritten, flowery language that obscures meaning"
-    indicators: ["3+ adjectives per noun", "nested metaphors"]
-    penalty: -4
+**Core Question:** Is specialized terminology justified by character's experience at this point?
 
-moderate:
-  - name: "Filter Words"
-    description: "Unnecessary narrative distance"
-    examples: ["She saw", "He heard", "They noticed", "She felt"]
-    penalty: -2
+| Score | Criteria |
+|-------|----------|
+| 7 | All technical terms earned through character experience |
+| 5 | 1-2 slightly premature terms |
+| 2 | Multiple premature specialized terms |
+| 0 | Inappropriate academic jargon |
 
-  - name: "Dialogue Tags Overload"
-    description: "Excessive or creative dialogue tags"
-    examples: ["he exclaimed", "she pontificated", "they ejaculated"]
-    penalty: -2
+**Example:**
+If character learns quantum physics in Chapter 12, they shouldn't use quantum terminology in Chapter 3.
 
-  - name: "Repetitive Structure"
-    description: "Same sentence structure 3+ times consecutively"
-    penalty: -1
+---
 
-minor:
-  - name: "Adverb Overuse"
-    description: "More than 2 -ly adverbs per paragraph"
-    penalty: -1
+## Automated Pattern Detection
 
-  - name: "Weak Verbs"
-    description: "Overuse of was/were/had/have"
-    penalty: -1
+### Regex Patterns for Anti-Pattern Detection
+
+```python
+ZERO_TOLERANCE_PATTERNS = {
+    "first_person_italics": r"\*[^*]*\b(we|I)\b[^*]*\*",
+    "with_precision": r"\bwith \w+ precision\b",
+    "with_adjective_noun": r"\bwith (the |a |an )?(obvious|clear|visible|apparent) \w+\b",
+    "computer_psychology": r"\b(brain|mind|consciousness) (processed|computed|analyzed|calculated)\b"
+}
+
+FORMULAIC_PATTERNS = {
+    "adverb_verb": r"\b(walked|moved|spoke|said|looked) (carefully|slowly|quickly|quietly|loudly)\b",
+    "despite_the": r"\bdespite the \w+\b",
+    "seemed_was": r"\b(air|room|atmosphere|silence) (seemed|was|felt) \w+\b"
+}
 ```
 
-### Critic Prompt
+### Domain Detection (Populated from Voice Bundle)
 
-```
-You are an Anti-Pattern Critic for a novel-writing system.
-
-ANTI-PATTERN CATALOG:
-{anti_pattern_catalog}
-
-SCENE TO EVALUATE:
-{scene_content}
-
-Detect and catalog all anti-patterns in this scene.
-
-Provide:
-- SCORE: [0-20] (start at 20, subtract penalties)
-- VIOLATIONS:
-  - Line [N]: "[quote]" → Pattern: [name], Severity: [severe/moderate/minor], Penalty: [-N]
-- TOTAL PENALTY: [sum of penalties, cap at -20]
-- FIXES: [How to revise each violation]
+```python
+# These patterns come from Voice Bundle → Metaphor Domains
+def load_domain_patterns(voice_bundle_path):
+    """Load metaphor domain keywords from Voice Bundle."""
+    domains = load_yaml(voice_bundle_path / "metaphor_domains.yaml")
+    return {
+        domain_name: r"\b(" + "|".join(keywords) + r")\b"
+        for domain_name, keywords in domains.items()
+    }
 ```
 
 ---
 
-## Dimension 4: Structural Requirements (20 points)
-
-### Rubric
-
-| Score | Criteria |
-|-------|----------|
-| 20 | All structural elements present and well-executed |
-| 15-19 | Minor structural weakness in 1 element |
-| 10-14 | 1-2 elements missing or poorly executed |
-| 5-9 | Major structural issues; scene lacks direction |
-| 0-4 | No discernible structure |
-
-### Required Elements
-
-1. **Goal** (5 points): POV character wants something specific
-2. **Conflict** (5 points): Something opposes the goal
-3. **Outcome** (5 points): Yes/No/Yes-But/No-And resolution
-4. **Beat Alignment** (5 points): Scene serves its designated beat
-
-### Critic Prompt
-
-```
-You are a Structure Critic for a novel-writing system.
-
-SCENE STRATEGY (from Story Bible):
-Goal: {goal}
-Conflict: {conflict}
-Expected Outcome: {outcome}
-Beat Connection: {beat}
-
-SCENE TO EVALUATE:
-{scene_content}
-
-Evaluate structural requirements on a scale of 0-20.
-
-Score each element (0-5):
-1. GOAL: Is the POV character's want clear and present?
-2. CONFLICT: Is opposition to the goal shown?
-3. OUTCOME: Does the scene resolve with a clear outcome?
-4. BEAT: Does the scene serve its designated beat?
-
-Provide:
-- GOAL SCORE: [0-5] - [explanation]
-- CONFLICT SCORE: [0-5] - [explanation]
-- OUTCOME SCORE: [0-5] - [explanation]
-- BEAT SCORE: [0-5] - [explanation]
-- TOTAL: [0-20]
-- MISSING ELEMENTS: [What needs to be added]
-```
-
----
-
-## Dimension 5: Scene Functionality (10 points)
-
-### Rubric
-
-| Score | Criteria |
-|-------|----------|
-| 10 | Scene is essential; removing it would damage the story |
-| 7-9 | Scene serves clear purpose; minor fat could be trimmed |
-| 4-6 | Scene partially functional; significant filler |
-| 1-3 | Mostly filler; could be summarized in one paragraph |
-| 0 | Scene serves no purpose; should be cut |
-
-### Functionality Criteria
-
-1. **Plot Advancement** (3 points): Events that matter
-2. **Character Development** (3 points): Arc progress, flaw challenge
-3. **Information Delivery** (2 points): Reader learns something necessary
-4. **Tension/Stakes** (2 points): Stakes raised or maintained
-
-### Critic Prompt
-
-```
-You are a Scene Functionality Critic for a novel-writing system.
-
-STORY CONTEXT:
-Current Beat: {current_beat}
-Protagonist's Fatal Flaw: {fatal_flaw}
-The Lie: {the_lie}
-
-SCENE TO EVALUATE:
-{scene_content}
-
-Evaluate scene functionality on a scale of 0-10.
-
-Consider:
-1. PLOT (0-3): What plot-relevant events occur?
-2. CHARACTER (0-3): How does this challenge/develop the protagonist?
-3. INFORMATION (0-2): What essential information is delivered?
-4. STAKES (0-2): How are stakes established/maintained?
-
-Provide:
-- PLOT SCORE: [0-3] - [what advances]
-- CHARACTER SCORE: [0-3] - [arc progress]
-- INFORMATION SCORE: [0-2] - [what's learned]
-- STAKES SCORE: [0-2] - [tension level]
-- TOTAL: [0-10]
-- CUT TEST: Could this scene be cut? What would be lost?
-```
-
----
-
-## Aggregate Scoring
+## Scoring Aggregation
 
 ### Scene Score Calculation
 
 ```python
-# backend/services/scoring_service.py
-from dataclasses import dataclass
-
 @dataclass
 class SceneScore:
-    voice_consistency: int      # 0-25
-    metaphor_discipline: int    # 0-25
-    anti_pattern: int          # 0-20
-    structure: int             # 0-20
-    functionality: int         # 0-10
+    # Voice Authenticity (30 total)
+    authenticity_test: int    # 0-10
+    purpose_test: int         # 0-10
+    fusion_test: int          # 0-10
+
+    # Character Consistency (20 total)
+    psychology: int           # 0-8
+    capability: int           # 0-6
+    relationship: int         # 0-6
+
+    # Metaphor Discipline (20 total)
+    domain_rotation: int      # 0-10
+    simile_elimination: int   # 0-5
+    transformation: int       # 0-5
+
+    # Anti-Pattern Compliance (15 total)
+    zero_tolerance: int       # 0-10
+    formulaic: int            # 0-5
+
+    # Phase Appropriateness (15 total)
+    voice_complexity: int     # 0-8
+    earned_language: int      # 0-7
+
+    @property
+    def voice_authenticity(self) -> int:
+        return self.authenticity_test + self.purpose_test + self.fusion_test
+
+    @property
+    def character_consistency(self) -> int:
+        return self.psychology + self.capability + self.relationship
+
+    @property
+    def metaphor_discipline(self) -> int:
+        return self.domain_rotation + self.simile_elimination + self.transformation
+
+    @property
+    def anti_pattern_compliance(self) -> int:
+        return self.zero_tolerance + self.formulaic
+
+    @property
+    def phase_appropriateness(self) -> int:
+        return self.voice_complexity + self.earned_language
 
     @property
     def total(self) -> int:
         return (
-            self.voice_consistency +
+            self.voice_authenticity +
+            self.character_consistency +
             self.metaphor_discipline +
-            self.anti_pattern +
-            self.structure +
-            self.functionality
+            self.anti_pattern_compliance +
+            self.phase_appropriateness
         )
 
     @property
     def grade(self) -> str:
-        total = self.total
-        if total >= 90: return 'A'
-        if total >= 80: return 'B'
-        if total >= 70: return 'C'
-        if total >= 60: return 'D'
-        return 'F'
-
-    @property
-    def weakest_dimension(self) -> str:
-        scores = {
-            'Voice Consistency': self.voice_consistency / 25,
-            'Metaphor Discipline': self.metaphor_discipline / 25,
-            'Anti-Pattern': self.anti_pattern / 20,
-            'Structure': self.structure / 20,
-            'Functionality': self.functionality / 10,
-        }
-        return min(scores, key=scores.get)
-
-
-class ScoringService:
-    """
-    Orchestrates scoring across all dimensions.
-    Uses LLM as Critic for each dimension.
-    """
-
-    def __init__(self, critic_model: str = 'claude-sonnet-4-5'):
-        self.critic_model = critic_model
-        self.prompts = self._load_prompts()
-
-    async def score_scene(
-        self,
-        scene_content: str,
-        context: dict  # voice_guide, reference_scenes, scene_strategy, etc.
-    ) -> SceneScore:
-        """
-        Score a scene across all dimensions.
-
-        Runs all 5 critics and aggregates results.
-        """
-        # Run critics in parallel
-        results = await asyncio.gather(
-            self._run_voice_critic(scene_content, context),
-            self._run_metaphor_critic(scene_content, context),
-            self._run_antipattern_critic(scene_content, context),
-            self._run_structure_critic(scene_content, context),
-            self._run_functionality_critic(scene_content, context),
-        )
-
-        return SceneScore(
-            voice_consistency=results[0]['score'],
-            metaphor_discipline=results[1]['score'],
-            anti_pattern=results[2]['score'],
-            structure=results[3]['score'],
-            functionality=results[4]['score'],
-        )
-
-    async def compare_variants(
-        self,
-        variants: dict[str, str],  # model_name -> scene_content
-        context: dict
-    ) -> dict:
-        """
-        Score multiple scene variants and rank them.
-
-        Returns ranked list with scores and winner.
-        """
-        scores = {}
-        for model, content in variants.items():
-            scores[model] = await self.score_scene(content, context)
-
-        ranked = sorted(
-            scores.items(),
-            key=lambda x: x[1].total,
-            reverse=True
-        )
-
-        return {
-            'winner': ranked[0][0],
-            'rankings': [
-                {
-                    'rank': i + 1,
-                    'model': model,
-                    'score': score.total,
-                    'grade': score.grade,
-                    'breakdown': {
-                        'voice': score.voice_consistency,
-                        'metaphor': score.metaphor_discipline,
-                        'anti_pattern': score.anti_pattern,
-                        'structure': score.structure,
-                        'functionality': score.functionality,
-                    },
-                    'weakest': score.weakest_dimension,
-                }
-                for i, (model, score) in enumerate(ranked)
-            ]
-        }
+        t = self.total
+        if t >= 92: return 'A'
+        if t >= 85: return 'A-'
+        if t >= 80: return 'B+'
+        if t >= 75: return 'B'
+        if t >= 70: return 'B-'
+        if t >= 65: return 'C+'
+        if t >= 60: return 'C'
+        return 'D'
 ```
+
+### Grade Thresholds and Actions
+
+| Score | Grade | Enhancement Mode |
+|-------|-------|------------------|
+| 92-100 | A | None needed - publish |
+| 85-91 | A- | Optional polish |
+| 80-84 | B+ | Action Prompt (surgical fixes) |
+| 70-79 | B/B- | 6-Pass Enhancement |
+| <70 | C or below | Rewrite recommended |
 
 ---
 
-## Manuscript Health Aggregation
+## API Response Format
 
-```python
-# backend/services/manuscript_health.py
-
-class ManuscriptHealth:
-    """
-    Aggregate scene scores into manuscript-level metrics.
-    """
-
-    def __init__(self, db_path: Path):
-        self.db = Database(db_path)
-
-    def get_manuscript_score(self) -> dict:
-        """
-        Calculate overall manuscript health from all scored scenes.
-        """
-        scene_scores = self.db.get_all_scene_scores()
-
-        if not scene_scores:
-            return {'status': 'no_scored_scenes'}
-
-        # Aggregate by dimension
-        aggregates = {
-            'voice_consistency': [],
-            'metaphor_discipline': [],
-            'anti_pattern': [],
-            'structure': [],
-            'functionality': [],
-        }
-
-        for score in scene_scores:
-            for dim in aggregates:
-                aggregates[dim].append(getattr(score, dim))
-
-        # Calculate means and identify problem areas
-        means = {dim: sum(vals) / len(vals) for dim, vals in aggregates.items()}
-
-        # Normalize to percentages
-        max_scores = {
-            'voice_consistency': 25,
-            'metaphor_discipline': 25,
-            'anti_pattern': 20,
-            'structure': 20,
-            'functionality': 10,
-        }
-
-        percentages = {
-            dim: (means[dim] / max_scores[dim]) * 100
-            for dim in means
-        }
-
-        # Identify weakest scenes
-        weakest_scenes = sorted(
-            scene_scores,
-            key=lambda s: s.total
-        )[:5]
-
-        return {
-            'overall_percentage': sum(percentages.values()) / len(percentages),
-            'dimension_percentages': percentages,
-            'weakest_dimension': min(percentages, key=percentages.get),
-            'scenes_scored': len(scene_scores),
-            'weakest_scenes': [
-                {'scene_id': s.scene_id, 'score': s.total, 'grade': s.grade}
-                for s in weakest_scenes
-            ],
-            'recommendations': self._generate_recommendations(percentages),
-        }
-
-    def _generate_recommendations(self, percentages: dict) -> list[str]:
-        """Generate actionable recommendations based on weak areas."""
-        recs = []
-
-        if percentages['voice_consistency'] < 70:
-            recs.append("Review voice guide and reference scenes; consider voice consistency pass")
-
-        if percentages['metaphor_discipline'] < 70:
-            recs.append("Audit metaphor usage; ensure all are from allowed domains")
-
-        if percentages['anti_pattern'] < 70:
-            recs.append("Run anti-pattern detection; focus on severe patterns first")
-
-        if percentages['structure'] < 70:
-            recs.append("Review Scene Strategy documents; ensure Goal/Conflict/Outcome clarity")
-
-        if percentages['functionality'] < 70:
-            recs.append("Consider cutting or combining low-functionality scenes")
-
-        return recs
-```
-
----
-
-## API Endpoints
-
-```python
-# In api.py
-
-@app.post("/scoring/scene")
-async def score_scene(request: ScoreSceneRequest):
-    """Score a single scene across all dimensions."""
-    scorer = ScoringService()
-    score = await scorer.score_scene(request.content, request.context)
-
-    return {
-        'total': score.total,
-        'grade': score.grade,
-        'breakdown': {
-            'voice_consistency': score.voice_consistency,
-            'metaphor_discipline': score.metaphor_discipline,
-            'anti_pattern': score.anti_pattern,
-            'structure': score.structure,
-            'functionality': score.functionality,
-        },
-        'weakest': score.weakest_dimension,
+```json
+{
+  "total_score": 85,
+  "grade": "A-",
+  "categories": {
+    "voice_authenticity": {
+      "score": 26,
+      "max": 30,
+      "subcategories": {
+        "authenticity_test": { "score": 9, "max": 10, "notes": "Minor AI-explaining in lines 45-50" },
+        "purpose_test": { "score": 8, "max": 10, "notes": "Theme stated once at line 78" },
+        "fusion_test": { "score": 9, "max": 10, "notes": "Strong fusion throughout" }
+      }
+    },
+    "character_consistency": {
+      "score": 18,
+      "max": 20,
+      "subcategories": {
+        "psychology": { "score": 7, "max": 8, "notes": "One moment of trust contradicts Fatal Flaw" },
+        "capability": { "score": 6, "max": 6, "notes": "All actions justified" },
+        "relationship": { "score": 5, "max": 6, "notes": "One generic beat with mentor" }
+      }
+    },
+    "metaphor_discipline": {
+      "score": 17,
+      "max": 20,
+      "subcategories": {
+        "domain_rotation": { "score": 8, "max": 10, "notes": "Cooking at 32%" },
+        "simile_elimination": { "score": 4, "max": 5, "notes": "One simile at line 92" },
+        "transformation": { "score": 5, "max": 5, "notes": "Excellent verb promotion" }
+      }
+    },
+    "anti_pattern_compliance": {
+      "score": 12,
+      "max": 15,
+      "subcategories": {
+        "zero_tolerance": { "score": 8, "max": 10, "violations": ["with practiced precision (line 42)"] },
+        "formulaic": { "score": 4, "max": 5, "violations": ["despite the noise (line 67)"] }
+      }
+    },
+    "phase_appropriateness": {
+      "score": 12,
+      "max": 15,
+      "subcategories": {
+        "voice_complexity": { "score": 7, "max": 8, "notes": "One complexity anachronism" },
+        "earned_language": { "score": 5, "max": 7, "notes": "Two premature technical terms" }
+      }
     }
-
-@app.post("/scoring/compare")
-async def compare_variants(request: CompareVariantsRequest):
-    """Score and rank multiple scene variants."""
-    scorer = ScoringService()
-    result = await scorer.compare_variants(request.variants, request.context)
-    return result
-
-@app.get("/scoring/manuscript")
-async def manuscript_health():
-    """Get aggregate manuscript health from all scored scenes."""
-    health = ManuscriptHealth(DB_PATH)
-    return health.get_manuscript_score()
+  },
+  "enhancement_needed": true,
+  "recommended_mode": "action_prompt",
+  "action_prompt": "Fix the following 4 issues while preserving scene voice:\n1. Line 42: Replace 'with practiced precision'...\n2. Line 67: Rewrite 'despite the noise'...\n3. Line 78: Show theme through action instead of stating...\n4. Reduce cooking metaphors (replace 2 with architecture domain)"
+}
 ```
 
 ---
 
-## Integration with Voice Consistency Tester
+## Migration from V1.0
 
-The existing `voice_consistency_tester.py` from writers-factory-core already implements a similar scoring system. This spec extends it with:
+This V2.0 rubric replaces the previous 5-dimension structure. Key changes:
 
-1. **Persistent storage** of scores in database
-2. **Manuscript-level aggregation**
-3. **API endpoints** for UI integration
-4. **Configurable rubrics** per project
+| V1.0 | V2.0 | Notes |
+|------|------|-------|
+| Voice Consistency (25) | Voice Authenticity (30) | Split into 3 tests, weighted higher |
+| Metaphor Discipline (25) | Metaphor Discipline (20) | Added domain rotation tracking |
+| Anti-Pattern (20) | Anti-Pattern Compliance (15) | Split into zero-tolerance + formulaic |
+| Structure (20) | *Moved to Scaffold* | Now part of scaffold validation |
+| Functionality (10) | *Moved to Scaffold* | Now part of scaffold validation |
+| - | Character Consistency (20) | New category from Explants skills |
+| - | Phase Appropriateness (15) | New category from Explants skills |
 
-Migration path: Port the core scoring logic, wrap with service layer, expose via API.
+**Rationale:** Structure and Functionality are scaffold concerns (Does the scene serve its purpose?). The new categories focus on execution quality (How well is it written?).
 
 ---
 
-## Success Criteria
-
-- [ ] All 5 dimensions scored with explicit rubrics
-- [ ] Critic prompts produce consistent, reproducible scores
-- [ ] Scene variants can be compared and ranked
-- [ ] Manuscript health aggregated from scene scores
-- [ ] Weakest dimension identified per scene and manuscript
-- [ ] Actionable recommendations generated
-- [ ] Anti-pattern catalog configurable per project
-- [ ] Metaphor domains configurable per project
-- [ ] Scores persisted for trend tracking
+*Scoring Rubrics Specification v2.0*
+*Writers Factory - Director Mode*

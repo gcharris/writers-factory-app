@@ -4,7 +4,7 @@ import shutil
 import logging
 import yaml
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -937,17 +937,24 @@ async def foreman_status():
     """
     Get the current Foreman state.
 
-    Returns work order status, conversation length, and pending KB entries.
+    Returns work order status, conversation length, KB stats (SQLite-backed).
     """
     try:
         foreman = get_foreman()
         state = foreman.get_state()
+
+        # Get SQLite KB stats if project is active
+        kb_stats = None
+        if foreman.work_order:
+            kb_stats = foreman.get_kb_stats()
+
         return {
             "active": foreman.work_order is not None,
             "mode": foreman.mode.value,
             "work_order": state.get("work_order"),
             "conversation_length": len(foreman.conversation),
             "kb_entries_pending": len(foreman.kb_entries),
+            "kb_stats": kb_stats,  # SQLite-backed stats
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
@@ -956,18 +963,17 @@ async def foreman_status():
 @app.post("/foreman/flush-kb", summary="Flush KB entries for persistence")
 async def foreman_flush_kb():
     """
-    Flush pending KB entries.
+    Flush in-memory KB cache and get SQLite stats.
 
-    Returns the entries and clears the pending list.
-    Caller should persist these to the Knowledge Graph.
+    With SQLite persistence, entries are already saved immediately.
+    This clears the in-memory cache and returns persistence stats.
     """
     try:
         foreman = get_foreman()
-        entries = foreman.flush_kb_entries()
+        result = foreman.flush_kb_entries()
         return {
             "status": "flushed",
-            "entries": entries,
-            "count": len(entries),
+            **result,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to flush KB: {str(e)}")
@@ -978,11 +984,1439 @@ async def foreman_reset():
     """
     Reset the Foreman to initial state.
 
-    Clears the current project, conversation, and KB entries.
+    Clears the current project, conversation, KB entries (both in-memory and SQLite).
     """
     global _foreman_instance
+
+    # Clear SQLite KB for current project before resetting
+    kb_deleted = 0
+    if _foreman_instance and _foreman_instance.work_order:
+        kb_deleted = _foreman_instance.clear_project_kb()
+
     _foreman_instance = None
-    return {"status": "reset", "message": "Foreman has been reset"}
+    return {
+        "status": "reset",
+        "message": "Foreman has been reset",
+        "kb_entries_deleted": kb_deleted,
+    }
+
+
+@app.get("/foreman/mode", summary="Get current Foreman mode")
+async def foreman_get_mode():
+    """
+    Get the current Foreman mode and transition eligibility.
+    """
+    foreman = _get_or_create_foreman()
+    if not foreman.work_order:
+        return {
+            "mode": None,
+            "message": "No active project"
+        }
+
+    return {
+        "mode": foreman.mode.value,
+        "work_order_complete": foreman.work_order.is_complete,
+        "can_advance_to_voice_calibration": foreman.can_advance_to_voice_calibration(),
+        "can_advance_to_director": foreman.can_advance_to_director(),
+    }
+
+
+@app.post("/foreman/mode/voice-calibration", summary="Advance to Voice Calibration mode")
+async def foreman_advance_to_voice_calibration():
+    """
+    Advance from ARCHITECT to VOICE_CALIBRATION mode.
+
+    Requires Story Bible to be complete (all templates marked COMPLETE).
+    """
+    foreman = _get_or_create_foreman()
+    if not foreman.work_order:
+        raise HTTPException(status_code=400, detail="No active project")
+
+    result = await foreman._handle_advance_to_voice_calibration({})
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result)
+
+    return result
+
+
+@app.post("/foreman/mode/director", summary="Advance to Director mode")
+async def foreman_advance_to_director():
+    """
+    Advance from VOICE_CALIBRATION to DIRECTOR mode.
+
+    Requires voice calibration to be complete:
+    - Tournament has been run
+    - Winner has been selected
+    - Voice Bundle has been generated
+    """
+    foreman = _get_or_create_foreman()
+    if not foreman.work_order:
+        raise HTTPException(status_code=400, detail="No active project")
+
+    result = await foreman._handle_advance_to_director({"confirm": True})
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result)
+
+    return result
+
+
+# =============================================================================
+# Metabolism (Phase 3) - KB Consolidation Endpoints
+# =============================================================================
+
+@app.post("/metabolism/consolidate-kb", summary="Consolidate Foreman KB to knowledge graph")
+async def consolidate_foreman_kb(
+    project_id: Optional[str] = None,
+    dry_run: bool = False
+):
+    """
+    Promote unpromoted Foreman KB entries to the knowledge graph.
+
+    This is the "Living Brain" loop:
+    1. Foreman saves crystallized decisions to foreman_kb (SQLite)
+    2. This endpoint reads unpromoted entries and adds them to knowledge_graph.json
+    3. Entries are marked as promoted so they won't be processed again
+
+    Args:
+        project_id: Optional - consolidate a specific project. If not provided,
+                    consolidates all projects with unpromoted entries.
+        dry_run: If True, shows what would be done without saving.
+
+    Returns:
+        Stats about nodes added, edges created, entries promoted.
+    """
+    from backend.services.consolidator_service import get_consolidator_service
+
+    try:
+        consolidator = get_consolidator_service()
+
+        if project_id:
+            result = await consolidator.digest_foreman_kb(project_id, dry_run=dry_run)
+        else:
+            result = await consolidator.digest_all_foreman_kb(dry_run=dry_run)
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"KB consolidation failed: {str(e)}")
+
+
+@app.post("/metabolism/consolidate-kb/{project_id}", summary="Consolidate KB for specific project")
+async def consolidate_project_kb(
+    project_id: str,
+    dry_run: bool = False
+):
+    """
+    Consolidate Foreman KB entries for a specific project.
+
+    Shorthand for POST /metabolism/consolidate-kb?project_id=...
+    """
+    from backend.services.consolidator_service import get_consolidator_service
+
+    try:
+        consolidator = get_consolidator_service()
+        result = await consolidator.digest_foreman_kb(project_id, dry_run=dry_run)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"KB consolidation failed: {str(e)}")
+
+
+# =============================================================================
+# Voice Calibration (Phase 2B) - Tournament Endpoints
+# =============================================================================
+
+@app.get("/voice-calibration/agents", summary="Get available agents for tournament")
+async def get_available_agents(use_case: str = "tournament"):
+    """
+    Get list of agents available for voice calibration tournaments.
+
+    Returns agents with their availability status (enabled, has valid API key).
+    Writers can only select agents that are both enabled AND have valid keys.
+
+    Args:
+        use_case: Filter by use case (default: "tournament")
+
+    Returns:
+        List of agents with availability info
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+
+    try:
+        service = get_voice_calibration_service()
+        all_agents = service.get_available_agents(use_case)
+        ready_agents = service.get_ready_agents(use_case)
+
+        return {
+            "all_agents": [a.to_dict() for a in all_agents],
+            "ready_agents": [a.to_dict() for a in ready_agents],
+            "ready_count": len(ready_agents),
+            "total_count": len(all_agents),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get agents: {str(e)}")
+
+
+@app.post("/voice-calibration/tournament/start", summary="Start a voice calibration tournament")
+async def start_voice_tournament(
+    project_id: str,
+    test_prompt: str,
+    test_context: str,
+    agent_ids: List[str],
+    variants_per_agent: int = 5,
+    voice_description: Optional[str] = None,
+):
+    """
+    Start a voice calibration tournament.
+
+    Multiple agents will each generate multiple variants of the test passage,
+    using different creative strategies (Action, Character, Dialogue, Atmospheric, Balanced).
+
+    Args:
+        project_id: The project identifier
+        test_prompt: The test scene/passage to write (describe what should happen)
+        test_context: Context about the scene (setting, characters, mood)
+        agent_ids: List of agent IDs to include (use /voice-calibration/agents to see available)
+        variants_per_agent: Number of variants per agent (1-5, default 5)
+        voice_description: Optional description of desired voice from writer
+
+    Returns:
+        Tournament ID and initial status
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+
+    try:
+        service = get_voice_calibration_service()
+
+        # Validate agent_ids
+        ready_agents = service.get_ready_agents()
+        ready_ids = {a.id for a in ready_agents}
+        invalid_ids = [aid for aid in agent_ids if aid not in ready_ids]
+        if invalid_ids:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid or unavailable agents: {invalid_ids}"
+            )
+
+        # Clamp variants
+        variants_per_agent = max(1, min(5, variants_per_agent))
+
+        result = await service.start_tournament(
+            project_id=project_id,
+            test_prompt=test_prompt,
+            test_context=test_context,
+            agent_ids=agent_ids,
+            variants_per_agent=variants_per_agent,
+            voice_description=voice_description,
+        )
+
+        return {
+            "tournament_id": result.tournament_id,
+            "status": result.status.value,
+            "agents": result.selected_agents,
+            "expected_variants": len(agent_ids) * variants_per_agent,
+            "message": "Tournament started. Poll /voice-calibration/tournament/{id}/status for progress.",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start tournament: {str(e)}")
+
+
+@app.get("/voice-calibration/tournament/{tournament_id}/status", summary="Get tournament status")
+async def get_tournament_status(tournament_id: str):
+    """
+    Get the current status of a voice calibration tournament.
+
+    Returns:
+        Tournament status, variant count, and variants if complete
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+
+    try:
+        service = get_voice_calibration_service()
+        result = service.get_tournament_status(tournament_id)
+
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Tournament {tournament_id} not found")
+
+        response = {
+            "tournament_id": result.tournament_id,
+            "project_id": result.project_id,
+            "status": result.status.value,
+            "agents": result.selected_agents,
+            "variant_count": len(result.variants),
+            "created_at": result.created_at,
+        }
+
+        if result.status.value in ["awaiting_selection", "complete"]:
+            response["variants"] = [v.to_dict() for v in result.variants]
+
+        if result.status.value == "complete":
+            response["winner_agent_id"] = result.winner_agent_id
+            response["winner_variant_index"] = result.winner_variant_index
+            response["completed_at"] = result.completed_at
+
+        return response
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+
+@app.get("/voice-calibration/tournament/{tournament_id}/variants", summary="Get tournament variants")
+async def get_tournament_variants(
+    tournament_id: str,
+    agent_id: Optional[str] = None,
+):
+    """
+    Get variants from a tournament, optionally filtered by agent.
+
+    Args:
+        tournament_id: The tournament
+        agent_id: Optional filter by specific agent
+
+    Returns:
+        List of variants with content
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+
+    try:
+        service = get_voice_calibration_service()
+        variants = service.get_tournament_variants(tournament_id, agent_id)
+
+        if not variants:
+            result = service.get_tournament_status(tournament_id)
+            if not result:
+                raise HTTPException(status_code=404, detail=f"Tournament {tournament_id} not found")
+            if result.status.value == "running":
+                return {"message": "Tournament still running", "variants": []}
+
+        return {
+            "tournament_id": tournament_id,
+            "variant_count": len(variants),
+            "variants": [v.to_dict() for v in variants],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get variants: {str(e)}")
+
+
+@app.post("/voice-calibration/tournament/{tournament_id}/select", summary="Select winning variant")
+async def select_tournament_winner(
+    tournament_id: str,
+    winner_agent_id: str,
+    winner_variant_index: int,
+    pov: str = "third_limited",
+    tense: str = "past",
+    voice_type: str = "character_voice",
+    metaphor_domains: List[str] = [],
+    anti_patterns: List[str] = [],
+    characteristic_phrases: List[str] = [],
+    sentence_rhythm: str = "varied",
+    vocabulary_level: str = "literary",
+    phase_evolution: Dict[str, str] = {},
+):
+    """
+    Select the winning variant and generate Voice Calibration Document.
+
+    Args:
+        tournament_id: The tournament
+        winner_agent_id: The winning agent's ID
+        winner_variant_index: Index of winning variant (0-based within agent's variants)
+        pov: Point of view - "first_person", "third_limited", "third_omniscient"
+        tense: "past" or "present"
+        voice_type: "character_voice" or "author_voice"
+        metaphor_domains: List of metaphor domains (e.g., ["gambling", "addiction", "martial_arts"])
+        anti_patterns: List of patterns to avoid (e.g., ["similes", "computer_metaphors"])
+        characteristic_phrases: Example phrases that capture the voice
+        sentence_rhythm: Description of rhythm (e.g., "short punchy", "long flowing", "varied")
+        vocabulary_level: "colloquial", "literary", "technical"
+        phase_evolution: Dict mapping act/phase to voice description
+
+    Returns:
+        Voice Calibration Document
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+
+    try:
+        service = get_voice_calibration_service()
+
+        voice_config = {
+            "pov": pov,
+            "tense": tense,
+            "voice_type": voice_type,
+            "metaphor_domains": metaphor_domains,
+            "anti_patterns": anti_patterns,
+            "characteristic_phrases": characteristic_phrases,
+            "sentence_rhythm": sentence_rhythm,
+            "vocabulary_level": vocabulary_level,
+            "phase_evolution": phase_evolution,
+        }
+
+        voice_doc = await service.select_winner(
+            tournament_id=tournament_id,
+            winner_agent_id=winner_agent_id,
+            winner_variant_index=winner_variant_index,
+            voice_config=voice_config,
+        )
+
+        return {
+            "status": "complete",
+            "message": "Voice calibration complete. Document saved to KB.",
+            "voice_calibration": voice_doc.to_dict(),
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to select winner: {str(e)}")
+
+
+@app.post("/voice-calibration/generate-bundle/{project_id}", summary="Generate Voice Reference Bundle")
+async def generate_voice_bundle(project_id: str):
+    """
+    Generate Voice Reference Bundle files for Director Mode.
+
+    These markdown files travel with every agent call during scene writing:
+    - Voice-Gold-Standard.md - Main voice reference
+    - Voice-Anti-Pattern-Sheet.md - Patterns to avoid
+    - Phase-Evolution-Guide.md - How voice changes through story
+
+    Args:
+        project_id: The project with completed voice calibration
+
+    Returns:
+        Paths to generated files
+    """
+    from backend.services.voice_calibration_service import get_voice_calibration_service
+    from pathlib import Path
+
+    try:
+        service = get_voice_calibration_service()
+
+        # Output to project-specific directory
+        output_dir = Path("projects") / project_id / "voice_references"
+
+        files = await service.generate_voice_bundle(project_id, output_dir)
+
+        return {
+            "status": "complete",
+            "message": "Voice Reference Bundle generated",
+            "files": {k: str(v) for k, v in files.items()},
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate bundle: {str(e)}")
+
+
+@app.get("/voice-calibration/{project_id}", summary="Get voice calibration for project")
+async def get_voice_calibration(project_id: str):
+    """
+    Get the stored voice calibration document for a project.
+
+    Returns:
+        Voice Calibration Document if exists
+    """
+    from backend.services.foreman_kb_service import get_foreman_kb_service
+    import json
+
+    try:
+        kb = get_foreman_kb_service()
+        voice_json = await kb.get(project_id, "voice_calibration")
+
+        if not voice_json:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No voice calibration found for project {project_id}"
+            )
+
+        return {
+            "project_id": project_id,
+            "voice_calibration": json.loads(voice_json),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get voice calibration: {str(e)}")
+
+
+# =============================================================================
+# Scaffold Generator Endpoints (Director Mode - Phase 3B)
+# =============================================================================
+
+class BeatInfoRequest(BaseModel):
+    """Beat information for scaffold generation."""
+    beat_number: int
+    beat_name: str
+    beat_percentage: str = "50%"
+    description: str
+    beat_type: Optional[str] = None
+
+
+class CharacterContextRequest(BaseModel):
+    """Character context for scaffold generation."""
+    name: str
+    role: str  # "protagonist", "antagonist", "supporting"
+    fatal_flaw: Optional[str] = None
+    the_lie: Optional[str] = None
+    arc_state: Optional[str] = None
+
+
+class DraftSummaryRequest(BaseModel):
+    """Request for Stage 1: Draft Summary."""
+    project_id: str
+    chapter_number: int
+    scene_number: int
+    beat_info: BeatInfoRequest
+    characters: List[CharacterContextRequest]
+    scene_description: str
+    available_notebooks: Optional[List[Dict[str, str]]] = None
+
+
+class EnrichmentRequest(BaseModel):
+    """Request to fetch enrichment from NotebookLM."""
+    notebook_id: str
+    query: str
+
+
+class FullScaffoldRequest(BaseModel):
+    """Request for Stage 2: Full Scaffold."""
+    project_id: str
+    chapter_number: int
+    scene_number: int
+    title: str
+    beat_info: BeatInfoRequest
+    characters: List[CharacterContextRequest]
+    scene_description: str
+    voice_state: str
+    phase: str
+    target_word_count: str = "1500-2000"
+    theme: Optional[str] = None
+    enrichment_data: Optional[List[Dict[str, str]]] = None
+
+
+@app.post("/director/scaffold/draft-summary", summary="Generate draft summary (Stage 1)")
+async def generate_draft_summary(request: DraftSummaryRequest):
+    """
+    Generate a draft summary with enrichment suggestions.
+
+    This is the checkpoint where the writer decides whether to
+    add NotebookLM enrichment before generating the full scaffold.
+
+    Returns:
+        - Narrative summary of what happens
+        - Available context (what we know)
+        - Enrichment suggestions (optional queries)
+    """
+    from backend.services.scaffold_generator_service import (
+        get_scaffold_generator_service,
+        BeatInfo,
+        CharacterContext,
+    )
+
+    try:
+        service = get_scaffold_generator_service()
+
+        # Convert request models to service models
+        beat_info = BeatInfo(
+            beat_number=request.beat_info.beat_number,
+            beat_name=request.beat_info.beat_name,
+            beat_percentage=request.beat_info.beat_percentage,
+            description=request.beat_info.description,
+            beat_type=request.beat_info.beat_type,
+        )
+
+        characters = [
+            CharacterContext(
+                name=c.name,
+                role=c.role,
+                fatal_flaw=c.fatal_flaw,
+                the_lie=c.the_lie,
+                arc_state=c.arc_state,
+            )
+            for c in request.characters
+        ]
+
+        result = await service.generate_draft_summary(
+            project_id=request.project_id,
+            chapter_number=request.chapter_number,
+            scene_number=request.scene_number,
+            beat_info=beat_info,
+            characters=characters,
+            scene_description=request.scene_description,
+            available_notebooks=request.available_notebooks,
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        logging.error(f"Draft summary generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Draft summary failed: {str(e)}")
+
+
+@app.post("/director/scaffold/enrich", summary="Fetch enrichment from NotebookLM")
+async def fetch_scaffold_enrichment(request: EnrichmentRequest):
+    """
+    Fetch enrichment data from a NotebookLM notebook.
+
+    Call this between Stage 1 and Stage 2 if the writer
+    wants to add context from their research notebooks.
+    """
+    from backend.services.scaffold_generator_service import get_scaffold_generator_service
+    from backend.services.notebooklm_service import get_notebooklm_client
+
+    try:
+        notebooklm = get_notebooklm_client()
+        service = get_scaffold_generator_service(notebooklm_client=notebooklm)
+
+        result = await service.fetch_enrichment(
+            notebook_id=request.notebook_id,
+            query=request.query,
+        )
+
+        return {
+            "notebook_id": result.notebook_id,
+            "query": result.query,
+            "answer": result.answer,
+            "retrieved_at": result.retrieved_at,
+        }
+
+    except Exception as e:
+        logging.error(f"Enrichment fetch failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Enrichment failed: {str(e)}")
+
+
+@app.post("/director/scaffold/generate", summary="Generate full scaffold (Stage 2)")
+async def generate_full_scaffold(request: FullScaffoldRequest):
+    """
+    Generate the full scaffold document.
+
+    Call this after Stage 1 (draft summary), optionally with
+    enrichment data from NotebookLM queries.
+
+    Returns:
+        - Complete scaffold document
+        - Markdown version for display/export
+    """
+    from backend.services.scaffold_generator_service import (
+        get_scaffold_generator_service,
+        BeatInfo,
+        CharacterContext,
+        EnrichmentData,
+    )
+
+    try:
+        service = get_scaffold_generator_service()
+
+        # Convert request models
+        beat_info = BeatInfo(
+            beat_number=request.beat_info.beat_number,
+            beat_name=request.beat_info.beat_name,
+            beat_percentage=request.beat_info.beat_percentage,
+            description=request.beat_info.description,
+            beat_type=request.beat_info.beat_type,
+        )
+
+        characters = [
+            CharacterContext(
+                name=c.name,
+                role=c.role,
+                fatal_flaw=c.fatal_flaw,
+                the_lie=c.the_lie,
+                arc_state=c.arc_state,
+            )
+            for c in request.characters
+        ]
+
+        # Convert enrichment data if provided
+        enrichment_data = None
+        if request.enrichment_data:
+            enrichment_data = [
+                EnrichmentData(
+                    notebook_id=e.get("notebook_id", ""),
+                    query=e.get("query", ""),
+                    answer=e.get("answer", ""),
+                )
+                for e in request.enrichment_data
+            ]
+
+        result = await service.generate_full_scaffold(
+            project_id=request.project_id,
+            chapter_number=request.chapter_number,
+            scene_number=request.scene_number,
+            title=request.title,
+            beat_info=beat_info,
+            characters=characters,
+            scene_description=request.scene_description,
+            voice_state=request.voice_state,
+            phase=request.phase,
+            target_word_count=request.target_word_count,
+            enrichment_data=enrichment_data,
+            theme=request.theme,
+        )
+
+        return {
+            "scaffold": result.to_dict(),
+            "markdown": result.to_markdown(),
+        }
+
+    except Exception as e:
+        logging.error(f"Scaffold generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scaffold generation failed: {str(e)}")
+
+
+# =============================================================================
+# Scene Writer Endpoints (Director Mode - Phase 3B)
+# =============================================================================
+
+class StructureVariantRequest(BaseModel):
+    """Request for structure variant generation."""
+    scene_id: str
+    beat_description: str
+    scaffold: Optional[Dict[str, Any]] = None
+    pov_character: str = "protagonist"
+    target_word_count: str = "1500-2000"
+
+
+class SceneVariantRequest(BaseModel):
+    """Request for scene variant generation."""
+    scene_id: str
+    scaffold: Dict[str, Any]
+    structure_variant: Dict[str, Any]
+    voice_bundle_path: Optional[str] = None
+    story_bible: Optional[Dict[str, Any]] = None
+    models: Optional[List[Dict[str, str]]] = None
+    strategies: Optional[List[str]] = None
+    target_word_count: int = 1500
+
+
+class HybridSceneRequest(BaseModel):
+    """Request to create a hybrid scene."""
+    scene_id: str
+    variant_ids: List[str]
+    sources: List[Dict[str, str]]  # [{"variant_id": "A", "section": "opening"}, ...]
+    instructions: str
+
+
+class QuickSceneRequest(BaseModel):
+    """Request for quick single-model scene generation."""
+    scene_id: str
+    scaffold: Dict[str, Any]
+    voice_bundle_path: Optional[str] = None
+    strategy: str = "balanced"
+    target_word_count: int = 1500
+
+
+@app.post("/director/scene/structure-variants", summary="Generate structure variants (Stage 1)")
+async def generate_structure_variants(request: StructureVariantRequest):
+    """
+    Generate 5 different structural approaches to a scene.
+
+    This is the creative exploration phase - explore different
+    chapter layouts BEFORE writing prose.
+
+    Returns:
+        - 5 structure variants (A-E) with different approaches
+        - Recommendation for which seems strongest
+    """
+    from backend.services.scene_writer_service import get_scene_writer_service
+    from backend.services.scaffold_generator_service import Scaffold
+
+    try:
+        service = get_scene_writer_service()
+
+        # Convert scaffold dict if provided
+        scaffold = None
+        if request.scaffold:
+            scaffold = Scaffold(**request.scaffold)
+
+        result = await service.generate_structure_variants(
+            scene_id=request.scene_id,
+            beat_description=request.beat_description,
+            scaffold=scaffold,
+            pov_character=request.pov_character,
+            target_word_count=request.target_word_count,
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        logging.error(f"Structure variant generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Structure variants failed: {str(e)}")
+
+
+@app.post("/director/scene/generate-variants", summary="Generate scene variants (Stage 2)")
+async def generate_scene_variants(request: SceneVariantRequest):
+    """
+    Generate scene variants using multiple models and strategies.
+
+    Each model generates one variant per strategy, all scored by SceneAnalyzerService.
+
+    Returns:
+        - All variants with scores and grades
+        - Rankings (sorted by score)
+        - Winner (highest scoring variant)
+    """
+    from backend.services.scene_writer_service import (
+        get_scene_writer_service,
+        WritingStrategy,
+    )
+    from backend.services.scaffold_generator_service import Scaffold
+    from backend.services.scene_analyzer_service import (
+        VoiceBundleContext,
+        StoryBibleContext,
+    )
+    from pathlib import Path
+
+    try:
+        service = get_scene_writer_service()
+
+        # Convert scaffold
+        scaffold = Scaffold(**request.scaffold)
+
+        # Convert structure variant
+        from backend.services.scene_writer_service import StructureVariant
+        structure = StructureVariant(**request.structure_variant)
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Build story bible context
+        story_bible = None
+        if request.story_bible:
+            story_bible = StoryBibleContext(
+                protagonist_name=request.story_bible.get("protagonist_name", "protagonist"),
+                fatal_flaw=request.story_bible.get("fatal_flaw", ""),
+                the_lie=request.story_bible.get("the_lie", ""),
+                theme=request.story_bible.get("theme", ""),
+                current_phase=request.story_bible.get("phase", "act2"),
+            )
+
+        # Convert strategies
+        strategies = None
+        if request.strategies:
+            strategies = [WritingStrategy(s) for s in request.strategies]
+
+        result = await service.generate_scene_variants(
+            scene_id=request.scene_id,
+            scaffold=scaffold,
+            structure_variant=structure,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            models=request.models,
+            strategies=strategies,
+            target_word_count=request.target_word_count,
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        logging.error(f"Scene variant generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scene variants failed: {str(e)}")
+
+
+@app.post("/director/scene/create-hybrid", summary="Create hybrid scene")
+async def create_hybrid_scene(request: HybridSceneRequest):
+    """
+    Create a hybrid scene by combining the best elements from multiple variants.
+
+    After reviewing the generated variants, the writer can select
+    specific sections from different variants to combine.
+
+    Returns:
+        - New hybrid scene variant
+        - Automatically scored
+    """
+    from backend.services.scene_writer_service import (
+        get_scene_writer_service,
+        HybridRequest,
+        SceneVariant,
+    )
+
+    try:
+        service = get_scene_writer_service()
+
+        # Note: In production, variants would be retrieved from storage
+        # For now, this endpoint expects the frontend to track variants
+        hybrid_request = HybridRequest(
+            scene_id=request.scene_id,
+            sources=request.sources,
+            instructions=request.instructions,
+        )
+
+        # This would need variants passed in or retrieved from session storage
+        # For MVP, return a placeholder indicating the hybrid creation flow
+        return {
+            "status": "hybrid_creation_requested",
+            "scene_id": request.scene_id,
+            "sources": request.sources,
+            "instructions": request.instructions,
+            "note": "Full hybrid creation requires variant storage - coming in next iteration",
+        }
+
+    except Exception as e:
+        logging.error(f"Hybrid creation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Hybrid creation failed: {str(e)}")
+
+
+@app.post("/director/scene/quick-generate", summary="Quick single-model generation")
+async def quick_generate_scene(request: QuickSceneRequest):
+    """
+    Quick scene generation with a single model (no tournament).
+
+    Useful for drafts or when speed matters more than variety.
+
+    Returns:
+        - Single scene variant
+        - Automatically scored
+    """
+    from backend.services.scene_writer_service import (
+        get_scene_writer_service,
+        WritingStrategy,
+    )
+    from backend.services.scaffold_generator_service import Scaffold
+    from backend.services.scene_analyzer_service import VoiceBundleContext
+    from pathlib import Path
+
+    try:
+        service = get_scene_writer_service()
+
+        # Convert scaffold
+        scaffold = Scaffold(**request.scaffold)
+
+        # Load voice bundle
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Convert strategy
+        strategy = WritingStrategy(request.strategy)
+
+        variant = await service.generate_single_scene(
+            scene_id=request.scene_id,
+            scaffold=scaffold,
+            voice_bundle=voice_bundle,
+            strategy=strategy,
+            target_word_count=request.target_word_count,
+        )
+
+        # Score the variant
+        if voice_bundle:
+            analysis = await service.analyzer_service.analyze_scene(
+                scene_id=variant.variant_id,
+                scene_content=variant.content,
+                voice_bundle=voice_bundle,
+                phase=scaffold.phase,
+            )
+            variant.score = analysis.total_score
+            variant.grade = analysis.grade
+            variant.analysis = analysis
+
+        return variant.to_dict()
+
+    except Exception as e:
+        logging.error(f"Quick scene generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Quick generation failed: {str(e)}")
+
+
+# =============================================================================
+# Scene Analyzer Endpoints (Director Mode - Phase 3B)
+# =============================================================================
+
+class SceneAnalyzeRequest(BaseModel):
+    """Request to analyze a scene draft."""
+    scene_id: str
+    scene_content: str
+    pov_character: str = "protagonist"
+    phase: str = "act2"
+    voice_bundle_path: Optional[str] = None
+    story_bible: Optional[Dict[str, Any]] = None
+
+
+class SceneCompareRequest(BaseModel):
+    """Request to compare multiple scene variants."""
+    variants: Dict[str, str]  # model_name -> scene_content
+    pov_character: str = "protagonist"
+    phase: str = "act2"
+    voice_bundle_path: Optional[str] = None
+
+
+@app.post("/director/scene/analyze", summary="Analyze a scene draft")
+async def analyze_scene(request: SceneAnalyzeRequest):
+    """
+    Analyze a scene draft against the 5-category scoring rubric.
+
+    Returns:
+        - Total score (0-100)
+        - Grade (A to F)
+        - Category breakdown with subcategories
+        - Detected violations
+        - Metaphor analysis
+        - Enhancement recommendation
+    """
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+        StoryBibleContext,
+    )
+    from pathlib import Path
+
+    try:
+        service = get_scene_analyzer_service()
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Build story bible context if provided
+        story_bible = None
+        if request.story_bible:
+            story_bible = StoryBibleContext(
+                protagonist_name=request.story_bible.get("protagonist_name", "protagonist"),
+                fatal_flaw=request.story_bible.get("fatal_flaw", ""),
+                the_lie=request.story_bible.get("the_lie", ""),
+                theme=request.story_bible.get("theme", ""),
+                current_phase=request.phase,
+                character_capabilities=request.story_bible.get("capabilities", []),
+                relationships=request.story_bible.get("relationships", {}),
+            )
+
+        result = await service.analyze_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            pov_character=request.pov_character,
+            phase=request.phase,
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        logging.error(f"Scene analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scene analysis failed: {str(e)}")
+
+
+@app.post("/director/scene/compare", summary="Compare multiple scene variants")
+async def compare_scene_variants(request: SceneCompareRequest):
+    """
+    Analyze and rank multiple scene variants.
+
+    Returns:
+        - Winner (model with highest score)
+        - Rankings with scores and grades
+        - Individual analysis for each variant
+    """
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+    )
+    from pathlib import Path
+
+    try:
+        service = get_scene_analyzer_service()
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Analyze each variant
+        results = {}
+        for model_name, content in request.variants.items():
+            result = await service.analyze_scene(
+                scene_id=f"variant-{model_name}",
+                scene_content=content,
+                voice_bundle=voice_bundle,
+                pov_character=request.pov_character,
+                phase=request.phase,
+            )
+            results[model_name] = result
+
+        # Rank by total score
+        ranked = sorted(
+            results.items(),
+            key=lambda x: x[1].total_score,
+            reverse=True
+        )
+
+        return {
+            "winner": ranked[0][0] if ranked else None,
+            "rankings": [
+                {
+                    "rank": i + 1,
+                    "model": model,
+                    "score": result.total_score,
+                    "grade": result.grade,
+                    "enhancement_needed": result.enhancement_needed,
+                    "recommended_mode": result.recommended_mode,
+                }
+                for i, (model, result) in enumerate(ranked)
+            ],
+            "details": {
+                model: result.to_dict()
+                for model, result in results.items()
+            },
+        }
+
+    except Exception as e:
+        logging.error(f"Scene comparison failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scene comparison failed: {str(e)}")
+
+
+@app.post("/director/scene/detect-patterns", summary="Detect anti-patterns only")
+async def detect_anti_patterns(scene_content: str):
+    """
+    Quick endpoint to detect anti-patterns without full analysis.
+
+    Useful for real-time feedback during writing.
+    """
+    from backend.services.scene_analyzer_service import get_scene_analyzer_service
+
+    try:
+        service = get_scene_analyzer_service()
+        violations = service._detect_anti_patterns(scene_content)
+
+        return {
+            "violation_count": len(violations),
+            "zero_tolerance_count": sum(1 for v in violations if v.pattern_type == "zero_tolerance"),
+            "formulaic_count": sum(1 for v in violations if v.pattern_type == "formulaic"),
+            "violations": [v.to_dict() for v in violations],
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pattern detection failed: {str(e)}")
+
+
+@app.post("/director/scene/analyze-metaphors", summary="Analyze metaphor usage only")
+async def analyze_metaphors(scene_content: str, voice_bundle_path: Optional[str] = None):
+    """
+    Quick endpoint to analyze metaphor domain usage.
+
+    Returns domain distribution and saturation warnings.
+    """
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+    )
+    from pathlib import Path
+
+    try:
+        service = get_scene_analyzer_service()
+
+        voice_bundle = None
+        if voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(voice_bundle_path))
+
+        analysis = service._analyze_metaphors(scene_content, voice_bundle)
+
+        return analysis.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Metaphor analysis failed: {str(e)}")
+
+
+# =============================================================================
+# Scene Enhancement Endpoints (Director Mode - Phase 3B)
+# =============================================================================
+
+class SceneEnhanceRequest(BaseModel):
+    """Request to enhance a scene."""
+    scene_id: str
+    scene_content: str
+    pov_character: str = "protagonist"
+    phase: str = "act2"
+    voice_bundle_path: Optional[str] = None
+    story_bible: Optional[Dict[str, Any]] = None
+    force_mode: Optional[str] = None  # "action_prompt", "six_pass", "rewrite"
+
+
+class ActionPromptRequest(BaseModel):
+    """Request to generate action prompt only (without applying)."""
+    scene_id: str
+    scene_content: str
+    pov_character: str = "protagonist"
+    phase: str = "act2"
+    voice_bundle_path: Optional[str] = None
+
+
+class ApplyFixesRequest(BaseModel):
+    """Request to apply surgical fixes from action prompt."""
+    scene_id: str
+    scene_content: str
+    fixes: List[Dict[str, Any]]  # List of {old_text, new_text, ...}
+
+
+@app.post("/director/scene/enhance", summary="Enhance a scene (auto-selects mode)")
+async def enhance_scene(request: SceneEnhanceRequest):
+    """
+    Enhance a scene based on its score.
+
+    Automatically selects enhancement mode:
+    - Score 85+: Action Prompt (surgical fixes)
+    - Score 70-84: 6-Pass Enhancement (full ritual)
+    - Score <70: Returns rewrite recommendation
+
+    Returns:
+        - Enhanced content
+        - Original and final scores
+        - Mode used and details (fixes or passes)
+    """
+    from backend.services.scene_enhancement_service import (
+        get_scene_enhancement_service,
+        EnhancementMode,
+    )
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+        StoryBibleContext,
+    )
+    from pathlib import Path
+
+    try:
+        enhancement_service = get_scene_enhancement_service()
+        analyzer_service = get_scene_analyzer_service()
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Build story bible context if provided
+        story_bible = None
+        if request.story_bible:
+            story_bible = StoryBibleContext(
+                protagonist_name=request.story_bible.get("protagonist_name", "protagonist"),
+                fatal_flaw=request.story_bible.get("fatal_flaw", ""),
+                the_lie=request.story_bible.get("the_lie", ""),
+                theme=request.story_bible.get("theme", ""),
+                current_phase=request.phase,
+                character_capabilities=request.story_bible.get("capabilities", []),
+                relationships=request.story_bible.get("relationships", {}),
+            )
+
+        # First, analyze the scene to get current score
+        analysis = await analyzer_service.analyze_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            pov_character=request.pov_character,
+            phase=request.phase,
+        )
+
+        # Determine forced mode if specified
+        force_mode = None
+        if request.force_mode:
+            force_mode = EnhancementMode(request.force_mode)
+
+        # Enhance the scene
+        result = await enhancement_service.enhance_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            analysis=analysis,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            force_mode=force_mode,
+        )
+
+        return {
+            "status": "enhanced" if result.mode != EnhancementMode.REWRITE else "rewrite_needed",
+            "result": result.to_dict(),
+            "analysis_before": analysis.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Scene enhancement failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scene enhancement failed: {str(e)}")
+
+
+@app.post("/director/scene/action-prompt", summary="Generate action prompt only")
+async def generate_action_prompt(request: ActionPromptRequest):
+    """
+    Generate an action prompt with surgical fixes WITHOUT applying them.
+
+    Use this to preview fixes before applying, or to manually edit
+    the suggested fixes before application.
+
+    Returns:
+        - Action prompt document with OLD → NEW fixes
+        - Preservation notes
+        - Expected score improvement
+    """
+    from backend.services.scene_enhancement_service import get_scene_enhancement_service
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+    )
+    from pathlib import Path
+
+    try:
+        enhancement_service = get_scene_enhancement_service()
+        analyzer_service = get_scene_analyzer_service()
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Analyze the scene
+        analysis = await analyzer_service.analyze_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            voice_bundle=voice_bundle,
+            pov_character=request.pov_character,
+            phase=request.phase,
+        )
+
+        # Generate action prompt
+        action_prompt = await enhancement_service._generate_action_prompt(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            analysis=analysis,
+            voice_bundle=voice_bundle,
+        )
+
+        return {
+            "action_prompt": action_prompt.to_dict(),
+            "markdown": action_prompt.to_markdown(),
+            "analysis": analysis.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Action prompt generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Action prompt failed: {str(e)}")
+
+
+@app.post("/director/scene/apply-fixes", summary="Apply surgical fixes from action prompt")
+async def apply_surgical_fixes(request: ApplyFixesRequest):
+    """
+    Apply surgical fixes to a scene.
+
+    Use this after generating/editing an action prompt to apply
+    the OLD → NEW replacements.
+
+    Returns:
+        - Enhanced content
+        - List of applied and skipped fixes
+    """
+    try:
+        enhanced_content = request.scene_content
+        fixes_applied = []
+
+        for fix in request.fixes:
+            old_text = fix.get("old_text", "")
+            new_text = fix.get("new_text", "")
+            fix_number = fix.get("fix_number", 0)
+            description = fix.get("description", "")
+
+            if old_text and old_text in enhanced_content:
+                enhanced_content = enhanced_content.replace(old_text, new_text, 1)
+                fixes_applied.append({
+                    "fix_number": fix_number,
+                    "description": description,
+                    "status": "applied",
+                })
+            else:
+                fixes_applied.append({
+                    "fix_number": fix_number,
+                    "description": description,
+                    "status": "not_found",
+                    "old_text_preview": old_text[:50] + "..." if len(old_text) > 50 else old_text,
+                })
+
+        applied_count = sum(1 for f in fixes_applied if f["status"] == "applied")
+
+        return {
+            "scene_id": request.scene_id,
+            "enhanced_content": enhanced_content,
+            "fixes_applied": fixes_applied,
+            "applied_count": applied_count,
+            "total_fixes": len(request.fixes),
+        }
+
+    except Exception as e:
+        logging.error(f"Fix application failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Fix application failed: {str(e)}")
+
+
+@app.post("/director/scene/six-pass", summary="Run 6-pass enhancement")
+async def run_six_pass_enhancement(request: SceneEnhanceRequest):
+    """
+    Force 6-pass enhancement regardless of score.
+
+    Use this when you want the full enhancement ritual
+    even if the score would normally trigger action prompt mode.
+
+    Returns:
+        - Enhanced content
+        - All 6 pass results with changes
+        - Final score
+    """
+    from backend.services.scene_enhancement_service import (
+        get_scene_enhancement_service,
+        EnhancementMode,
+    )
+    from backend.services.scene_analyzer_service import (
+        get_scene_analyzer_service,
+        VoiceBundleContext,
+        StoryBibleContext,
+    )
+    from pathlib import Path
+
+    try:
+        enhancement_service = get_scene_enhancement_service()
+        analyzer_service = get_scene_analyzer_service()
+
+        # Load voice bundle if path provided
+        voice_bundle = None
+        if request.voice_bundle_path:
+            voice_bundle = VoiceBundleContext.from_directory(Path(request.voice_bundle_path))
+
+        # Build story bible context if provided
+        story_bible = None
+        if request.story_bible:
+            story_bible = StoryBibleContext(
+                protagonist_name=request.story_bible.get("protagonist_name", "protagonist"),
+                fatal_flaw=request.story_bible.get("fatal_flaw", ""),
+                the_lie=request.story_bible.get("the_lie", ""),
+                theme=request.story_bible.get("theme", ""),
+                current_phase=request.phase,
+            )
+
+        # Analyze the scene
+        analysis = await analyzer_service.analyze_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            pov_character=request.pov_character,
+            phase=request.phase,
+        )
+
+        # Force 6-pass mode
+        result = await enhancement_service.enhance_scene(
+            scene_id=request.scene_id,
+            scene_content=request.scene_content,
+            analysis=analysis,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            force_mode=EnhancementMode.SIX_PASS,
+        )
+
+        return {
+            "status": "enhanced",
+            "result": result.to_dict(),
+            "passes": [p.to_dict() for p in result.passes_completed],
+            "score_improvement": (result.final_score or 0) - result.original_score,
+        }
+
+    except Exception as e:
+        logging.error(f"6-pass enhancement failed: {e}")
+        raise HTTPException(status_code=500, detail=f"6-pass enhancement failed: {str(e)}")
 
 
 if __name__ == "__main__":
