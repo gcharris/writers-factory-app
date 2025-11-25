@@ -9,16 +9,18 @@
   // Panel visibility state
   let showFileTree = true;
   let showStudioPanel = true;
-  let showGraphPanel = false;  // Hide by default for cleaner initial view
   let showForemanPanel = true;
   let showChatPanel = true;
 
+  // Graph minimap state
+  let showGraphMinimap = true;
+  let graphExpanded = false;
+
   // Panel widths (percentages) - FileTree is fixed width
   let fileTreeWidth = 250; // pixels
-  let studioPanelWidth = 20; // 20%
-  let graphPanelWidth = 20;  // 20%
-  let foremanPanelWidth = 40; // 40% - main writing area
-  let chatPanelWidth = 20;   // 20%
+  let studioPanelWidth = 25; // 25%
+  let foremanPanelWidth = 50; // 50% - main writing area
+  let chatPanelWidth = 25;   // 25%
 
   // Resize state
   let isResizing = false;
@@ -250,13 +252,6 @@
         Studio
       </button>
       <button
-        class="panel-toggle {showGraphPanel ? 'active' : ''}"
-        on:click={() => togglePanel('graph')}
-        title="Toggle Graph Panel"
-      >
-        Graph
-      </button>
-      <button
         class="panel-toggle {showForemanPanel ? 'active' : ''}"
         on:click={() => togglePanel('foreman')}
         title="Toggle Writing Panel"
@@ -319,26 +314,6 @@
         ></div>
       {/if}
 
-      <!-- Graph Panel -->
-      {#if showGraphPanel}
-        <div class="panel graph-panel" style="width: {graphPanelWidth}%;">
-          <div class="panel-header">
-            <h3>Graph</h3>
-            <button class="panel-close" on:click={() => togglePanel('graph')}>×</button>
-          </div>
-          <div class="panel-content">
-            <div class="placeholder">
-              <p>Graph Panel</p>
-              <p class="placeholder-hint">Knowledge graph visualization will appear here</p>
-            </div>
-          </div>
-        </div>
-        <div
-          class="resize-handle"
-          on:mousedown={(e) => startResize('graph', e)}
-        ></div>
-      {/if}
-
       <!-- Writing/Editor Panel -->
       {#if showForemanPanel}
         <div class="panel foreman-panel" style="width: {foremanPanelWidth}%;">
@@ -366,6 +341,38 @@
       {/if}
     {/if}
     </div>
+
+    <!-- Graph Minimap (Floating Widget) -->
+    {#if showGraphMinimap}
+      <div class="graph-minimap {graphExpanded ? 'expanded' : ''}">
+        <div class="minimap-header">
+          <span class="minimap-title">🕸️ Graph</span>
+          <button
+            class="minimap-expand"
+            on:click={() => graphExpanded = !graphExpanded}
+            title={graphExpanded ? 'Collapse' : 'Expand'}
+          >
+            {graphExpanded ? '◀' : '▶'}
+          </button>
+          <button
+            class="minimap-close"
+            on:click={() => showGraphMinimap = false}
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div class="minimap-content">
+          {#if graphExpanded}
+            <p class="minimap-placeholder">Knowledge graph visualization will appear here</p>
+          {:else}
+            <div class="minimap-thumbnail">
+              <span class="thumbnail-icon">🕸️</span>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -663,5 +670,94 @@
   :global(body.resizing) {
     user-select: none;
     cursor: col-resize !important;
+  }
+
+  /* Graph Minimap (Floating Widget) */
+  .graph-minimap {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #2d2d2d;
+    border: 2px solid #00d9ff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+
+  .graph-minimap:not(.expanded) {
+    width: 120px;
+    height: 120px;
+  }
+
+  .graph-minimap.expanded {
+    width: 400px;
+    height: 400px;
+  }
+
+  .minimap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: #252525;
+    border-bottom: 1px solid #404040;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .minimap-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #00d9ff;
+  }
+
+  .minimap-expand,
+  .minimap-close {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #888888;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .minimap-expand:hover {
+    color: #00d9ff;
+  }
+
+  .minimap-close:hover {
+    color: #ff4444;
+  }
+
+  .minimap-content {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100% - 40px);
+  }
+
+  .minimap-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .thumbnail-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+  }
+
+  .minimap-placeholder {
+    color: #888888;
+    text-align: center;
+    font-size: 0.875rem;
   }
 </style>
