@@ -1,389 +1,230 @@
-<script lang="ts">
+<!--
+  MainLayout.svelte - 4-Panel IDE Layout
+
+  Layout:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  TOOLBAR                                                         │
+  ├───────────┬───────────────────┬─────────────┬───────────────────┤
+  │           │                   │             │                   │
+  │  STUDIO   │      CANVAS       │   GRAPH     │    FOREMAN        │
+  │  PANEL    │      (flex-1)     │   PANEL     │    PANEL          │
+  │  (280px)  │                   │   (300px)   │    (360px)        │
+  │           │                   │             │                   │
+  └───────────┴───────────────────┴─────────────┴───────────────────┘
+  │  STATUS BAR                                                      │
+  └──────────────────────────────────────────────────────────────────┘
+
+  Each panel can be collapsed/expanded and resized.
+-->
+<script>
   import { onMount } from 'svelte';
-  import ChatSidebar from './ChatSidebar.svelte';
-  import ForemanChatPanel from './ForemanChatPanel.svelte';
-  import StudioPanel from './StudioPanel.svelte';
-  import Editor from './Editor.svelte';
-  import FileTree from './FileTree.svelte';
+  import { foremanMode, foremanActive } from '$lib/stores';
+  import Modal from './Modal.svelte';
+  import Toast from './Toast.svelte';
+  import StatusBar from './StatusBar.svelte';
+  import SettingsPanel from './SettingsPanel.svelte';
 
-  // Panel visibility state
-  let showFileTree = true;
-  let showStudioPanel = true;
-  let showForemanPanel = true;
-  let showChatPanel = true;
+  // Panel collapse state
+  let studioPanelCollapsed = false;
+  let graphPanelCollapsed = false;
+  let foremanPanelCollapsed = false;
 
-  // Graph minimap state
-  let showGraphMinimap = true;
-  let graphExpanded = false;
+  // Panel widths (pixels)
+  let studioPanelWidth = 280;
+  let graphPanelWidth = 300;
+  let foremanPanelWidth = 360;
 
-  // Panel widths (percentages) - FileTree is fixed width
-  let fileTreeWidth = 250; // pixels
-  let studioPanelWidth = 25; // 25%
-  let foremanPanelWidth = 50; // 50% - main writing area
-  let chatPanelWidth = 25;   // 25%
+  // Settings modal
+  let showSettings = false;
 
-  // Resize state
-  let isResizing = false;
-  let resizingPanel: 'studio' | 'graph' | 'foreman' | null = null;
-  let resizeStartX = 0;
-  let resizeStartWidth = 0;
+  // Mode colors
+  const modeColors = {
+    ARCHITECT: 'var(--mode-architect, #2f81f7)',
+    VOICE_CALIBRATION: 'var(--mode-voice, #a371f7)',
+    DIRECTOR: 'var(--mode-director, #d4a574)',
+    EDITOR: 'var(--mode-editor, #3fb950)'
+  };
 
-  // Toolbar state
-  let currentProject = 'Untitled Project';
-  let foremanMode: 'ARCHITECT' | 'VOICE' | 'DIRECTOR' | 'IDLE' = 'IDLE';
+  // Mode icons
+  const modeIcons = {
+    ARCHITECT: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>`,
+    VOICE_CALIBRATION: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <line x1="12" y1="19" x2="12" y2="23"></line>
+      <line x1="8" y1="23" x2="16" y2="23"></line>
+    </svg>`,
+    DIRECTOR: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="23 7 16 12 23 17 23 7"></polygon>
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+    </svg>`,
+    EDITOR: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+    </svg>`
+  };
 
-  onMount(() => {
-    // Load saved layout preferences
-    loadLayoutPreferences();
-
-    // Check Foreman mode
-    checkForemanMode();
-
-    // Setup window resize listener
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  });
-
-  function loadLayoutPreferences() {
-    const saved = localStorage.getItem('writers-factory-layout');
-    if (saved) {
-      try {
-        const layout = JSON.parse(saved);
-        showStudioPanel = layout.showStudioPanel ?? true;
-        showGraphPanel = layout.showGraphPanel ?? true;
-        showForemanPanel = layout.showForemanPanel ?? true;
-        showChatPanel = layout.showChatPanel ?? true;
-        studioPanelWidth = layout.studioPanelWidth ?? 25;
-        graphPanelWidth = layout.graphPanelWidth ?? 25;
-        foremanPanelWidth = layout.foremanPanelWidth ?? 25;
-        chatPanelWidth = layout.chatPanelWidth ?? 25;
-      } catch (error) {
-        console.error('Failed to load layout preferences:', error);
-      }
-    }
+  function toggleStudioPanel() {
+    studioPanelCollapsed = !studioPanelCollapsed;
   }
 
-  function saveLayoutPreferences() {
-    const layout = {
-      showStudioPanel,
-      showGraphPanel,
-      showForemanPanel,
-      showChatPanel,
-      studioPanelWidth,
-      graphPanelWidth,
-      foremanPanelWidth,
-      chatPanelWidth,
-    };
-    localStorage.setItem('writers-factory-layout', JSON.stringify(layout));
+  function toggleGraphPanel() {
+    graphPanelCollapsed = !graphPanelCollapsed;
   }
 
-  async function checkForemanMode() {
-    try {
-      const response = await fetch('http://localhost:8000/foreman/status');
-      if (response.ok) {
-        const data = await response.json();
-        foremanMode = data.mode || 'IDLE';
-      }
-    } catch (error) {
-      console.error('Failed to check Foreman mode:', error);
-    }
+  function toggleForemanPanel() {
+    foremanPanelCollapsed = !foremanPanelCollapsed;
   }
 
-  function togglePanel(panel: 'studio' | 'graph' | 'foreman' | 'chat') {
-    switch (panel) {
-      case 'studio':
-        showStudioPanel = !showStudioPanel;
-        break;
-      case 'graph':
-        showGraphPanel = !showGraphPanel;
-        break;
-      case 'foreman':
-        showForemanPanel = !showForemanPanel;
-        break;
-      case 'chat':
-        showChatPanel = !showChatPanel;
-        break;
-    }
-    saveLayoutPreferences();
+  function openSettings() {
+    showSettings = true;
   }
-
-  function startResize(panel: 'studio' | 'graph' | 'foreman', event: MouseEvent) {
-    isResizing = true;
-    resizingPanel = panel;
-    resizeStartX = event.clientX;
-
-    switch (panel) {
-      case 'studio':
-        resizeStartWidth = studioPanelWidth;
-        break;
-      case 'graph':
-        resizeStartWidth = graphPanelWidth;
-        break;
-      case 'foreman':
-        resizeStartWidth = foremanPanelWidth;
-        break;
-    }
-
-    event.preventDefault();
-  }
-
-  function handleMouseMove(event: MouseEvent) {
-    if (!isResizing || !resizingPanel) return;
-
-    const containerWidth = window.innerWidth;
-    const deltaX = event.clientX - resizeStartX;
-    const deltaPercent = (deltaX / containerWidth) * 100;
-
-    let newWidth = resizeStartWidth + deltaPercent;
-
-    // Constrain width (minimum 15%, maximum 50%)
-    newWidth = Math.max(15, Math.min(50, newWidth));
-
-    switch (resizingPanel) {
-      case 'studio':
-        studioPanelWidth = newWidth;
-        break;
-      case 'graph':
-        graphPanelWidth = newWidth;
-        break;
-      case 'foreman':
-        foremanPanelWidth = newWidth;
-        break;
-    }
-
-    // Normalize widths to total 100%
-    normalizeWidths();
-  }
-
-  function handleMouseUp() {
-    if (isResizing) {
-      isResizing = false;
-      resizingPanel = null;
-      saveLayoutPreferences();
-    }
-  }
-
-  function normalizeWidths() {
-    const visiblePanels = [
-      showStudioPanel ? studioPanelWidth : 0,
-      showGraphPanel ? graphPanelWidth : 0,
-      showForemanPanel ? foremanPanelWidth : 0,
-      showChatPanel ? chatPanelWidth : 0,
-    ];
-
-    const totalWidth = visiblePanels.reduce((sum, w) => sum + w, 0);
-
-    if (totalWidth > 0) {
-      const scale = 100 / totalWidth;
-      studioPanelWidth *= scale;
-      graphPanelWidth *= scale;
-      foremanPanelWidth *= scale;
-      chatPanelWidth *= scale;
-    }
-  }
-
-  function resetLayout() {
-    showStudioPanel = true;
-    showGraphPanel = true;
-    showForemanPanel = true;
-    showChatPanel = true;
-    studioPanelWidth = 25;
-    graphPanelWidth = 25;
-    foremanPanelWidth = 25;
-    chatPanelWidth = 25;
-    saveLayoutPreferences();
-  }
-
-  function getModeColor(mode: string): string {
-    switch (mode) {
-      case 'ARCHITECT': return '#ffb000'; // Amber
-      case 'VOICE': return '#00ff88'; // Neon green
-      case 'DIRECTOR': return '#00d9ff'; // Electric blue
-      default: return '#888888'; // Gray
-    }
-  }
-
-  function getModeIcon(mode: string): string {
-    switch (mode) {
-      case 'ARCHITECT': return '📐';
-      case 'VOICE': return '🎤';
-      case 'DIRECTOR': return '🎬';
-      default: return '💤';
-    }
-  }
-
-  // Calculate visible panels count
-  $: visiblePanelsCount = [showStudioPanel, showGraphPanel, showForemanPanel, showChatPanel].filter(Boolean).length;
-  $: normalizeWidths();
 </script>
 
-<div class="main-layout">
+<div class="layout-container">
   <!-- Toolbar -->
-  <div class="toolbar">
+  <header class="toolbar">
     <div class="toolbar-left">
-      <div class="logo">
-        <span class="logo-icon">✍️</span>
-        <span class="logo-text">Writers Factory</span>
+      <div class="app-title">
+        <span class="app-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        </span>
+        <span>Writers Factory</span>
       </div>
 
-      <div class="mode-indicator" style="border-color: {getModeColor(foremanMode)};">
-        <span class="mode-icon">{getModeIcon(foremanMode)}</span>
-        <span class="mode-text">{foremanMode} Mode</span>
-      </div>
-
-      <div class="project-name">
-        <span class="project-icon">📁</span>
-        <span>{currentProject}</span>
-      </div>
-    </div>
-
-    <div class="toolbar-center">
-      <!-- Panel toggles -->
-      <button
-        class="panel-toggle {showStudioPanel ? 'active' : ''}"
-        on:click={() => togglePanel('studio')}
-        title="Toggle Studio Panel"
-      >
-        Studio
-      </button>
-      <button
-        class="panel-toggle {showForemanPanel ? 'active' : ''}"
-        on:click={() => togglePanel('foreman')}
-        title="Toggle Writing Panel"
-      >
-        Writing
-      </button>
-      <button
-        class="panel-toggle {showChatPanel ? 'active' : ''}"
-        on:click={() => togglePanel('chat')}
-        title="Toggle Foreman Panel"
-      >
-        Foreman
-      </button>
+      <!-- Mode Tabs -->
+      {#if $foremanActive}
+        <nav class="mode-tabs">
+          {#each ['ARCHITECT', 'VOICE_CALIBRATION', 'DIRECTOR', 'EDITOR'] as mode}
+            <button
+              class="mode-tab {$foremanMode === mode ? 'active' : ''}"
+              style="--mode-color: {modeColors[mode]}"
+              disabled={mode !== $foremanMode}
+            >
+              <span class="mode-icon">{@html modeIcons[mode]}</span>
+              <span class="mode-name">{mode.replace('_', ' ')}</span>
+            </button>
+          {/each}
+        </nav>
+      {/if}
     </div>
 
     <div class="toolbar-right">
-      <button class="toolbar-button" on:click={resetLayout} title="Reset Layout">
-        <span class="icon">⟲</span>
-      </button>
-      <button class="toolbar-button" title="Settings">
-        <span class="icon">⚙️</span>
-      </button>
-      <button class="toolbar-button" title="Help">
-        <span class="icon">?</span>
+      <button class="toolbar-btn" on:click={openSettings} title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- Main Content: FileTree + Panels -->
-  <div class="content-area">
-    <!-- File Tree Sidebar (Scrivener-style) -->
-    {#if showFileTree}
-      <aside class="file-tree-sidebar" style="width: {fileTreeWidth}px;">
-        <FileTree />
-      </aside>
-    {/if}
-
-    <!-- Main Panel Area -->
-    <div class="panels-container">
-      {#if visiblePanelsCount === 0}
-        <div class="empty-state">
-          <p>All panels are hidden. Click the panel toggles in the toolbar to show them.</p>
-          <button class="btn-reset" on:click={resetLayout}>Reset Layout</button>
-        </div>
-      {:else}
-      <!-- Studio Panel -->
-      {#if showStudioPanel}
-        <div class="panel studio-panel" style="width: {studioPanelWidth}%;">
-          <div class="panel-header">
-            <h3>Studio</h3>
-            <button class="panel-close" on:click={() => togglePanel('studio')}>×</button>
-          </div>
-          <div class="panel-content">
-            <StudioPanel />
-          </div>
-        </div>
-        <div
-          class="resize-handle"
-          on:mousedown={(e) => startResize('studio', e)}
-        ></div>
-      {/if}
-
-      <!-- Writing/Editor Panel -->
-      {#if showForemanPanel}
-        <div class="panel foreman-panel" style="width: {foremanPanelWidth}%;">
-          <div class="panel-header">
-            <h3>Writing</h3>
-            <button class="panel-close" on:click={() => togglePanel('foreman')}>×</button>
-          </div>
-          <div class="panel-content">
-            <Editor />
-          </div>
-        </div>
-        <div
-          class="resize-handle"
-          on:mousedown={(e) => startResize('foreman', e)}
-        ></div>
-      {/if}
-
-      <!-- Chat Panel -->
-      {#if showChatPanel}
-        <div class="panel chat-panel" style="width: {chatPanelWidth}%;">
-          <div class="panel-content">
-            <ForemanChatPanel />
-          </div>
-        </div>
-      {/if}
-    {/if}
-    </div>
-
-    <!-- Graph Minimap (Floating Widget) -->
-    {#if showGraphMinimap}
-      <div class="graph-minimap {graphExpanded ? 'expanded' : ''}">
-        <div class="minimap-header">
-          <span class="minimap-title">🕸️ Graph</span>
-          <button
-            class="minimap-expand"
-            on:click={() => graphExpanded = !graphExpanded}
-            title={graphExpanded ? 'Collapse' : 'Expand'}
-          >
-            {graphExpanded ? '◀' : '▶'}
-          </button>
-          <button
-            class="minimap-close"
-            on:click={() => showGraphMinimap = false}
-            title="Close"
-          >
-            ×
-          </button>
-        </div>
-        <div class="minimap-content">
-          {#if graphExpanded}
-            <p class="minimap-placeholder">Knowledge graph visualization will appear here</p>
-          {:else}
-            <div class="minimap-thumbnail">
-              <span class="thumbnail-icon">🕸️</span>
-            </div>
-          {/if}
-        </div>
+  <!-- Main Panel Area -->
+  <div class="panel-container">
+    <!-- Studio Panel (Left) -->
+    <aside
+      class="panel panel-studio {studioPanelCollapsed ? 'collapsed' : ''}"
+      style="--panel-width: {studioPanelWidth}px"
+    >
+      <div class="panel-header">
+        <span class="panel-title">Studio</span>
+        <button class="panel-toggle" on:click={toggleStudioPanel} title={studioPanelCollapsed ? 'Expand' : 'Collapse'}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            {#if studioPanelCollapsed}
+              <polyline points="9 18 15 12 9 6"></polyline>
+            {:else}
+              <polyline points="15 18 9 12 15 6"></polyline>
+            {/if}
+          </svg>
+        </button>
       </div>
-    {/if}
+      {#if !studioPanelCollapsed}
+        <div class="panel-content">
+          <slot name="studio" />
+        </div>
+      {/if}
+    </aside>
+
+    <!-- Canvas Panel (Center) -->
+    <main class="panel panel-canvas">
+      <slot name="canvas" />
+    </main>
+
+    <!-- Graph Panel -->
+    <aside
+      class="panel panel-graph {graphPanelCollapsed ? 'collapsed' : ''}"
+      style="--panel-width: {graphPanelWidth}px"
+    >
+      <div class="panel-header">
+        <span class="panel-title">Knowledge Graph</span>
+        <button class="panel-toggle" on:click={toggleGraphPanel} title={graphPanelCollapsed ? 'Expand' : 'Collapse'}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            {#if graphPanelCollapsed}
+              <polyline points="15 18 9 12 15 6"></polyline>
+            {:else}
+              <polyline points="9 18 15 12 9 6"></polyline>
+            {/if}
+          </svg>
+        </button>
+      </div>
+      {#if !graphPanelCollapsed}
+        <div class="panel-content">
+          <slot name="graph" />
+        </div>
+      {/if}
+    </aside>
+
+    <!-- Foreman Panel (Right) -->
+    <aside
+      class="panel panel-foreman {foremanPanelCollapsed ? 'collapsed' : ''}"
+      style="--panel-width: {foremanPanelWidth}px"
+    >
+      <div class="panel-header" style="--mode-color: {modeColors[$foremanMode] || modeColors.ARCHITECT}">
+        <span class="panel-title">Foreman</span>
+        {#if $foremanMode}
+          <span class="mode-badge">{$foremanMode.replace('_', ' ')}</span>
+        {/if}
+        <button class="panel-toggle" on:click={toggleForemanPanel} title={foremanPanelCollapsed ? 'Expand' : 'Collapse'}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            {#if foremanPanelCollapsed}
+              <polyline points="15 18 9 12 15 6"></polyline>
+            {:else}
+              <polyline points="9 18 15 12 9 6"></polyline>
+            {/if}
+          </svg>
+        </button>
+      </div>
+      {#if !foremanPanelCollapsed}
+        <div class="panel-content">
+          <slot name="foreman" />
+        </div>
+      {/if}
+    </aside>
   </div>
+
+  <!-- Status Bar -->
+  <StatusBar />
+
+  <!-- Toast Notifications -->
+  <Toast />
+
+  <!-- Settings Modal -->
+  <Modal bind:open={showSettings} title="Settings" size="large">
+    <SettingsPanel />
+  </Modal>
 </div>
 
 <style>
-  .main-layout {
+  .layout-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
     width: 100vw;
-    background: #1a1a1a;
-    color: #ffffff;
+    background: var(--bg-primary, #0f1419);
     overflow: hidden;
   }
 
@@ -392,372 +233,210 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 48px;
-    background: #2d2d2d;
-    border-bottom: 2px solid #00d9ff;
-    padding: 0 1rem;
-    flex-shrink: 0;
+    height: var(--header-height, 40px);
+    padding: 0 var(--space-4, 16px);
+    background: var(--bg-secondary, #1a2027);
+    border-bottom: 1px solid var(--border, #2d3a47);
   }
 
   .toolbar-left {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: var(--space-6, 24px);
   }
 
-  .logo {
+  .app-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 1.1rem;
+    gap: var(--space-2, 8px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #e6edf3);
   }
 
-  .logo-icon {
-    font-size: 1.5rem;
+  .app-icon {
+    display: flex;
+    color: var(--accent-gold, #d4a574);
   }
 
-  .logo-text {
-    color: #00d9ff;
+  .mode-tabs {
+    display: flex;
+    gap: var(--space-1, 4px);
   }
 
-  .mode-indicator {
+  .mode-tab {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    background: #1a1a1a;
-    border: 2px solid;
-    border-radius: 4px;
-    font-weight: 500;
-    font-size: 0.875rem;
+    gap: var(--space-1, 4px);
+    padding: var(--space-1, 4px) var(--space-3, 12px);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-muted, #6e7681);
+    font-size: var(--text-xs, 11px);
+    font-weight: var(--font-medium, 500);
+    cursor: pointer;
+    transition: all var(--transition-fast, 100ms ease);
+  }
+
+  .mode-tab:disabled {
+    cursor: default;
+  }
+
+  .mode-tab:hover:not(.active):not(:disabled) {
+    background: var(--bg-tertiary, #242d38);
+  }
+
+  .mode-tab.active {
+    background: color-mix(in srgb, var(--mode-color) 20%, transparent);
+    color: var(--mode-color);
   }
 
   .mode-icon {
-    font-size: 1rem;
-  }
-
-  .project-name {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #b0b0b0;
-    font-size: 0.875rem;
+    width: 16px;
+    height: 16px;
   }
 
-  .project-icon {
-    font-size: 1rem;
-  }
-
-  .toolbar-center {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .panel-toggle {
-    padding: 0.5rem 1rem;
-    background: #1a1a1a;
-    border: 1px solid #404040;
-    border-radius: 4px;
-    color: #b0b0b0;
-    font-weight: 500;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .panel-toggle:hover {
-    background: #252525;
-    border-color: #00d9ff;
-    color: #00d9ff;
-  }
-
-  .panel-toggle.active {
-    background: #00d9ff20;
-    border-color: #00d9ff;
-    color: #00d9ff;
+  .mode-name {
+    text-transform: capitalize;
   }
 
   .toolbar-right {
     display: flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: var(--space-2, 8px);
   }
 
-  .toolbar-button {
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 32px;
     height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #1a1a1a;
-    border: 1px solid #404040;
-    border-radius: 4px;
-    color: #b0b0b0;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .toolbar-button:hover {
-    background: #252525;
-    border-color: #00d9ff;
-    color: #00d9ff;
-  }
-
-  .icon {
-    font-size: 1rem;
-  }
-
-  /* Content Area */
-  .content-area {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* File Tree Sidebar (Scrivener-style) */
-  .file-tree-sidebar {
-    flex-shrink: 0;
-    background: #252525;
-    border-right: 1px solid #404040;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  /* Main Panels Container */
-  .panels-container {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    color: #888888;
-  }
-
-  .btn-reset {
-    margin-top: 1rem;
-    padding: 0.75rem 1.5rem;
-    background: #00d9ff;
-    color: #1a1a1a;
+    background: transparent;
     border: none;
-    border-radius: 4px;
-    font-weight: 600;
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-secondary, #8b949e);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all var(--transition-fast, 100ms ease);
   }
 
-  .btn-reset:hover {
-    background: #00b8d9;
+  .toolbar-btn:hover {
+    background: var(--bg-tertiary, #242d38);
+    color: var(--text-primary, #e6edf3);
+  }
+
+  /* Panel Container */
+  .panel-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
   }
 
   /* Panels */
   .panel {
     display: flex;
     flex-direction: column;
-    background: #252525;
-    border-right: 1px solid #404040;
-    overflow: hidden;
+    background: var(--bg-secondary, #1a2027);
+    border-right: 1px solid var(--border, #2d3a47);
+    transition: width var(--transition-normal, 200ms ease);
   }
 
-  .panel:last-of-type {
+  .panel:last-child {
     border-right: none;
+  }
+
+  .panel-studio {
+    width: var(--panel-width, 280px);
+  }
+
+  .panel-canvas {
+    flex: 1;
+    min-width: var(--panel-canvas-min, 500px);
+    background: var(--bg-primary, #0f1419);
+  }
+
+  .panel-graph {
+    width: var(--panel-width, 300px);
+  }
+
+  .panel-foreman {
+    width: var(--panel-width, 360px);
+    border-left: 1px solid var(--border, #2d3a47);
+    border-right: none;
+  }
+
+  .panel.collapsed {
+    width: 40px;
   }
 
   .panel-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 1rem;
-    background: #2d2d2d;
-    border-bottom: 1px solid #404040;
-    flex-shrink: 0;
+    gap: var(--space-2, 8px);
+    height: 36px;
+    padding: 0 var(--space-3, 12px);
+    background: var(--bg-tertiary, #242d38);
+    border-bottom: 1px solid var(--border, #2d3a47);
   }
 
-  .panel-header h3 {
-    margin: 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #00d9ff;
+  .panel.collapsed .panel-header {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .panel-title {
+    flex: 1;
+    font-size: var(--text-xs, 11px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-secondary, #8b949e);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .panel-close {
-    width: 24px;
-    height: 24px;
+  .panel.collapsed .panel-title {
+    display: none;
+  }
+
+  .mode-badge {
+    padding: 2px 6px;
+    background: color-mix(in srgb, var(--mode-color, var(--accent-cyan)) 20%, transparent);
+    border-radius: var(--radius-sm, 4px);
+    font-size: 9px;
+    font-weight: var(--font-semibold, 600);
+    color: var(--mode-color, var(--accent-cyan));
+    text-transform: uppercase;
+  }
+
+  .panel.collapsed .mode-badge {
+    display: none;
+  }
+
+  .panel-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 24px;
+    height: 24px;
     background: transparent;
     border: none;
-    color: #888888;
-    font-size: 1.5rem;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #6e7681);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: all var(--transition-fast, 100ms ease);
   }
 
-  .panel-close:hover {
-    color: #ff4444;
+  .panel-toggle:hover {
+    background: var(--bg-elevated, #2d3640);
+    color: var(--text-secondary, #8b949e);
   }
 
   .panel-content {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
   }
 
-  /* Placeholder content */
-  .placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #888888;
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .placeholder p {
-    margin: 0.5rem 0;
-  }
-
-  .placeholder-hint {
-    font-size: 0.875rem;
-    color: #666666;
-  }
-
-  /* Resize handle */
-  .resize-handle {
-    width: 4px;
-    background: #404040;
-    cursor: col-resize;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .resize-handle:hover {
-    background: #00d9ff;
-  }
-
-  /* Scrollbar styling */
-  .panel-content::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .panel-content::-webkit-scrollbar-track {
-    background: #1a1a1a;
-  }
-
-  .panel-content::-webkit-scrollbar-thumb {
-    background: #404040;
-    border-radius: 4px;
-  }
-
-  .panel-content::-webkit-scrollbar-thumb:hover {
-    background: #505050;
-  }
-
-  /* User select prevention during resize */
-  :global(body.resizing) {
-    user-select: none;
-    cursor: col-resize !important;
-  }
-
-  /* Graph Minimap (Floating Widget) */
-  .graph-minimap {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    background: #2d2d2d;
-    border: 2px solid #00d9ff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    transition: all 0.3s ease;
-  }
-
-  .graph-minimap:not(.expanded) {
-    width: 120px;
-    height: 120px;
-  }
-
-  .graph-minimap.expanded {
-    width: 400px;
-    height: 400px;
-  }
-
-  .minimap-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem;
-    background: #252525;
-    border-bottom: 1px solid #404040;
-    border-radius: 6px 6px 0 0;
-  }
-
-  .minimap-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #00d9ff;
-  }
-
-  .minimap-expand,
-  .minimap-close {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: #888888;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: color 0.2s;
-  }
-
-  .minimap-expand:hover {
-    color: #00d9ff;
-  }
-
-  .minimap-close:hover {
-    color: #ff4444;
-  }
-
-  .minimap-content {
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: calc(100% - 40px);
-  }
-
-  .minimap-thumbnail {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-  }
-
-  .thumbnail-icon {
-    font-size: 3rem;
-    opacity: 0.5;
-  }
-
-  .minimap-placeholder {
-    color: #888888;
-    text-align: center;
-    font-size: 0.875rem;
+  .panel.collapsed .panel-content {
+    display: none;
   }
 </style>

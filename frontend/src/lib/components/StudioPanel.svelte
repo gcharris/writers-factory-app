@@ -1,643 +1,339 @@
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { foremanActive, foremanMode, foremanWorkOrder } from '$lib/stores';
+<!--
+  StudioPanel.svelte - Mode-aware action cards
 
-  const BASE_URL = 'http://localhost:8000';
+  Shows different action cards based on the current Foreman mode:
+  - ARCHITECT: Create Story Bible, Define Beats, Build Protagonist
+  - VOICE_CALIBRATION: Launch Tournament, Review Variants, Generate Bundle
+  - DIRECTOR: Create Scaffold, Generate Scene, Enhance Scene
+  - EDITOR: Final polish tools
+-->
+<script>
+  import { foremanMode, foremanActive } from '$lib/stores';
 
-  let currentMode: 'ARCHITECT' | 'VOICE' | 'DIRECTOR' | 'IDLE' = 'IDLE';
+  // Card definitions by mode
+  const modeCards = {
+    ARCHITECT: [
+      {
+        id: 'create-story-bible',
+        title: 'Create Story Bible',
+        description: 'Define your novel\'s foundation: mindset, audience, premise, theme',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>`,
+        action: () => console.log('Open Story Bible wizard'),
+        status: 'ready'
+      },
+      {
+        id: 'define-beats',
+        title: 'Define Beat Sheet',
+        description: '15-beat Save the Cat! structure with percentage targets',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>`,
+        action: () => console.log('Open Beat Sheet editor'),
+        status: 'locked'
+      },
+      {
+        id: 'build-protagonist',
+        title: 'Build Protagonist',
+        description: 'Fatal Flaw, The Lie, character arc progression',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>`,
+        action: () => console.log('Open Character builder'),
+        status: 'locked'
+      },
+      {
+        id: 'register-notebooks',
+        title: 'Register NotebookLM',
+        description: 'Connect World, Voice, and Craft notebooks',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>`,
+        action: () => console.log('Open NotebookLM registration'),
+        status: 'optional'
+      }
+    ],
+    VOICE_CALIBRATION: [
+      {
+        id: 'launch-tournament',
+        title: 'Launch Voice Tournament',
+        description: 'Run multi-model competition to discover your voice',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+        </svg>`,
+        action: () => console.log('Open Voice Tournament'),
+        status: 'ready'
+      },
+      {
+        id: 'review-variants',
+        title: 'Review Variants',
+        description: 'Compare 15-25 voice variants in grid view',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>`,
+        action: () => console.log('Open Variant Grid'),
+        status: 'locked'
+      },
+      {
+        id: 'generate-bundle',
+        title: 'Generate Voice Bundle',
+        description: 'Create Gold Standard, Anti-Patterns, Phase Evolution',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        </svg>`,
+        action: () => console.log('Generate Voice Bundle'),
+        status: 'locked'
+      }
+    ],
+    DIRECTOR: [
+      {
+        id: 'create-scaffold',
+        title: 'Create Scaffold',
+        description: 'Generate strategic context for your next scene',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>`,
+        action: () => console.log('Open Scaffold Generator'),
+        status: 'ready'
+      },
+      {
+        id: 'generate-scene',
+        title: 'Generate Scene',
+        description: 'Run tournament with 15 variants (3 models x 5 strategies)',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>`,
+        action: () => console.log('Open Scene Generator'),
+        status: 'ready'
+      },
+      {
+        id: 'enhance-scene',
+        title: 'Enhance Scene',
+        description: 'Action Prompt (85+) or 6-Pass Enhancement (70-84)',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>`,
+        action: () => console.log('Open Enhancement Panel'),
+        status: 'locked'
+      },
+      {
+        id: 'view-health',
+        title: 'View Health',
+        description: 'Check manuscript structure and pacing',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>`,
+        action: () => console.log('Open Health Dashboard'),
+        status: 'ready'
+      }
+    ],
+    EDITOR: [
+      {
+        id: 'final-review',
+        title: 'Final Review',
+        description: 'Full manuscript analysis and polish',
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>`,
+        action: () => console.log('Open Final Review'),
+        status: 'ready'
+      }
+    ]
+  };
 
-  // Sync with store
-  $: currentMode = $foremanMode || 'IDLE';
+  // Get cards for current mode
+  $: currentCards = $foremanMode ? modeCards[$foremanMode] || [] : [];
 
-  function getModeColor(mode: string): string {
-    switch (mode) {
-      case 'ARCHITECT': return '#ffb000';
-      case 'VOICE': return '#00ff88';
-      case 'DIRECTOR': return '#00d9ff';
-      default: return '#888888';
-    }
-  }
-
-  function getModeIcon(mode: string): string {
-    switch (mode) {
-      case 'ARCHITECT': return '📐';
-      case 'VOICE': return '🎤';
-      case 'DIRECTOR': return '🎬';
-      default: return '💤';
-    }
-  }
-
-  // Quick action handlers
-  function handleQuickAction(action: string) {
-    console.log(`Quick action: ${action}`);
-    // These will integrate with actual components in future weeks
-    alert(`Quick action: ${action}\n\nThis will open the corresponding panel/modal in future weeks.`);
-  }
-
-  // Check if work order template is complete
-  function isTemplateComplete(templateName: string): boolean {
-    if (!$foremanWorkOrder || !$foremanWorkOrder.templates) return false;
-    const template = $foremanWorkOrder.templates.find(t => t.name === templateName);
-    return template?.status === 'complete';
-  }
-
-  // Get template progress
-  function getTemplateProgress(templateName: string): string {
-    if (!$foremanWorkOrder || !$foremanWorkOrder.templates) return '0/0';
-    const template = $foremanWorkOrder.templates.find(t => t.name === templateName);
-    if (!template) return '0/0';
-    return `${template.completed_fields?.length || 0}/${template.required_fields?.length || 0}`;
-  }
+  // Status colors and labels
+  const statusConfig = {
+    ready: { color: 'var(--success, #3fb950)', label: 'Ready' },
+    locked: { color: 'var(--text-muted, #6e7681)', label: 'Locked' },
+    active: { color: 'var(--accent-cyan, #58a6ff)', label: 'In Progress' },
+    optional: { color: 'var(--warning, #d29922)', label: 'Optional' }
+  };
 </script>
 
 <div class="studio-panel">
-  {#if currentMode === 'IDLE'}
-    <!-- Idle State: No active project -->
-    <div class="idle-state">
-      <div class="idle-icon">💤</div>
-      <h3>Studio Idle</h3>
-      <p>Start a new project with Foreman to begin your writing journey.</p>
-      <div class="mode-previews">
-        <div class="mode-preview-card" style="border-color: {getModeColor('ARCHITECT')};">
-          <span class="preview-icon">{getModeIcon('ARCHITECT')}</span>
-          <span class="preview-name">ARCHITECT</span>
-          <p class="preview-description">Build Story Bible foundations</p>
-        </div>
-        <div class="mode-preview-card" style="border-color: {getModeColor('VOICE')};">
-          <span class="preview-icon">{getModeIcon('VOICE')}</span>
-          <span class="preview-name">VOICE</span>
-          <p class="preview-description">Discover authentic character voice</p>
-        </div>
-        <div class="mode-preview-card" style="border-color: {getModeColor('DIRECTOR')};">
-          <span class="preview-icon">{getModeIcon('DIRECTOR')}</span>
-          <span class="preview-name">DIRECTOR</span>
-          <p class="preview-description">Draft scenes with precision</p>
-        </div>
+  {#if !$foremanActive}
+    <div class="welcome-state">
+      <div class="welcome-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </svg>
       </div>
+      <h3>Welcome to Writers Factory</h3>
+      <p>Start a new project with the Foreman to begin your writing journey.</p>
+      <p class="hint">Use the Foreman panel to create a new project.</p>
     </div>
-  {:else if currentMode === 'ARCHITECT'}
-    <!-- ARCHITECT Mode: Story Bible Building -->
-    <div class="mode-section">
-      <div class="mode-header" style="border-color: {getModeColor('ARCHITECT')};">
-        <span class="mode-icon">{getModeIcon('ARCHITECT')}</span>
-        <h3>ARCHITECT Mode</h3>
-      </div>
-
-      <p class="mode-description">
-        Build your Story Bible foundations. Complete templates to establish world rules, character arcs, and narrative structure.
-      </p>
-
-      <div class="quick-actions">
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Story Bible')}
-        >
-          <div class="action-icon">📖</div>
-          <div class="action-content">
-            <div class="action-title">View Story Bible</div>
-            <div class="action-subtitle">Browse completed templates</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Edit Character Fatal Flaw')}
-          class:completed={isTemplateComplete('character_fatal_flaw')}
-        >
-          <div class="action-icon">⚠️</div>
-          <div class="action-content">
-            <div class="action-title">Character Fatal Flaw</div>
-            <div class="action-subtitle">
-              {isTemplateComplete('character_fatal_flaw') ? 'Complete ✓' : `Progress: ${getTemplateProgress('character_fatal_flaw')}`}
-            </div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Edit The Lie')}
-          class:completed={isTemplateComplete('the_lie')}
-        >
-          <div class="action-icon">🎭</div>
-          <div class="action-content">
-            <div class="action-title">The Lie</div>
-            <div class="action-subtitle">
-              {isTemplateComplete('the_lie') ? 'Complete ✓' : `Progress: ${getTemplateProgress('the_lie')}`}
-            </div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Edit 15-Beat Structure')}
-          class:completed={isTemplateComplete('15_beat_structure')}
-        >
-          <div class="action-icon">📊</div>
-          <div class="action-content">
-            <div class="action-title">15-Beat Structure</div>
-            <div class="action-subtitle">
-              {isTemplateComplete('15_beat_structure') ? 'Complete ✓' : `Progress: ${getTemplateProgress('15_beat_structure')}`}
-            </div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Edit World Rules')}
-          class:completed={isTemplateComplete('world_rules')}
-        >
-          <div class="action-icon">🌍</div>
-          <div class="action-content">
-            <div class="action-title">World Rules</div>
-            <div class="action-subtitle">
-              {isTemplateComplete('world_rules') ? 'Complete ✓' : `Progress: ${getTemplateProgress('world_rules')}`}
-            </div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Knowledge Base')}
-        >
-          <div class="action-icon">🧠</div>
-          <div class="action-content">
-            <div class="action-title">Knowledge Base</div>
-            <div class="action-subtitle">Browse saved decisions</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-      </div>
+  {:else if currentCards.length === 0}
+    <div class="empty-state">
+      <p>No actions available in this mode.</p>
     </div>
-  {:else if currentMode === 'VOICE'}
-    <!-- VOICE Mode: Voice Calibration -->
-    <div class="mode-section">
-      <div class="mode-header" style="border-color: {getModeColor('VOICE')};">
-        <span class="mode-icon">{getModeIcon('VOICE')}</span>
-        <h3>VOICE Mode</h3>
-      </div>
-
-      <p class="mode-description">
-        Discover your character's authentic voice through multi-agent tournaments. Generate variants, compare results, and create your Voice Bundle.
-      </p>
-
-      <div class="quick-actions">
+  {:else}
+    <div class="card-grid">
+      {#each currentCards as card}
         <button
-          class="action-card primary"
-          on:click={() => handleQuickAction('Launch Voice Tournament')}
+          class="action-card {card.status}"
+          on:click={card.action}
+          disabled={card.status === 'locked'}
         >
-          <div class="action-icon">🏆</div>
-          <div class="action-content">
-            <div class="action-title">Launch Tournament</div>
-            <div class="action-subtitle">Generate 15-25 voice variants</div>
+          <div class="card-icon" style="color: {statusConfig[card.status].color}">
+            {@html card.icon}
           </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Voice Variants')}
-        >
-          <div class="action-icon">📊</div>
-          <div class="action-content">
-            <div class="action-title">View Variants</div>
-            <div class="action-subtitle">Compare generated samples</div>
+          <div class="card-content">
+            <h4 class="card-title">{card.title}</h4>
+            <p class="card-description">{card.description}</p>
           </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Create Gold Standard')}
-        >
-          <div class="action-icon">⭐</div>
-          <div class="action-content">
-            <div class="action-title">Gold Standard</div>
-            <div class="action-subtitle">Define perfect voice example</div>
+          <div class="card-status">
+            <span class="status-dot" style="background: {statusConfig[card.status].color}"></span>
+            <span class="status-label">{statusConfig[card.status].label}</span>
           </div>
-          <div class="action-arrow">→</div>
         </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Define Anti-Patterns')}
-        >
-          <div class="action-icon">🚫</div>
-          <div class="action-content">
-            <div class="action-title">Anti-Patterns</div>
-            <div class="action-subtitle">What NOT to write</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Phase Evolution')}
-        >
-          <div class="action-icon">📈</div>
-          <div class="action-content">
-            <div class="action-title">Phase Evolution</div>
-            <div class="action-subtitle">Voice changes over story</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card success"
-          on:click={() => handleQuickAction('Generate Voice Bundle')}
-        >
-          <div class="action-icon">📦</div>
-          <div class="action-content">
-            <div class="action-title">Generate Voice Bundle</div>
-            <div class="action-subtitle">Finalize and transition to DIRECTOR</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-      </div>
-    </div>
-  {:else if currentMode === 'DIRECTOR'}
-    <!-- DIRECTOR Mode: Scene Drafting -->
-    <div class="mode-section">
-      <div class="mode-header" style="border-color: {getModeColor('DIRECTOR')};">
-        <span class="mode-icon">{getModeIcon('DIRECTOR')}</span>
-        <h3>DIRECTOR Mode</h3>
-      </div>
-
-      <p class="mode-description">
-        Draft scenes with precision. Use the full pipeline: Scaffold → Structure → Write → Enhance.
-      </p>
-
-      <div class="quick-actions">
-        <button
-          class="action-card primary"
-          on:click={() => handleQuickAction('Create New Scene')}
-        >
-          <div class="action-icon">➕</div>
-          <div class="action-content">
-            <div class="action-title">Create New Scene</div>
-            <div class="action-subtitle">Start scene drafting pipeline</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Generate Scaffold')}
-        >
-          <div class="action-icon">🏗️</div>
-          <div class="action-content">
-            <div class="action-title">Scaffold Generator</div>
-            <div class="action-subtitle">Draft → Enrich → Generate</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Scene Variants')}
-        >
-          <div class="action-icon">🎬</div>
-          <div class="action-content">
-            <div class="action-title">Scene Variants</div>
-            <div class="action-subtitle">15 variants from tournament</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Compare Scenes')}
-        >
-          <div class="action-icon">⚖️</div>
-          <div class="action-content">
-            <div class="action-title">Compare Variants</div>
-            <div class="action-subtitle">Side-by-side analysis</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Create Hybrid')}
-        >
-          <div class="action-icon">🔀</div>
-          <div class="action-content">
-            <div class="action-title">Hybrid Creator</div>
-            <div class="action-subtitle">Combine best parts</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Enhance Scene')}
-        >
-          <div class="action-icon">✨</div>
-          <div class="action-content">
-            <div class="action-title">Enhancement Panel</div>
-            <div class="action-subtitle">Action Prompt or 6-Pass</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('View Score Breakdown')}
-        >
-          <div class="action-icon">📊</div>
-          <div class="action-content">
-            <div class="action-title">Score Breakdown</div>
-            <div class="action-subtitle">Voice 30, Character 20, Metaphor 20...</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-
-        <button
-          class="action-card"
-          on:click={() => handleQuickAction('Quick Scene Generate')}
-        >
-          <div class="action-icon">⚡</div>
-          <div class="action-content">
-            <div class="action-title">Quick Generate</div>
-            <div class="action-subtitle">Fast single-model draft</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </button>
-      </div>
+      {/each}
     </div>
   {/if}
-
-  <!-- Help Section -->
-  <div class="help-section">
-    <div class="help-icon">💡</div>
-    <div class="help-content">
-      <h4>Tips</h4>
-      {#if currentMode === 'IDLE'}
-        <p>Click "Start Project" in the Chat Panel to begin your writing journey with Foreman.</p>
-      {:else if currentMode === 'ARCHITECT'}
-        <p>Complete all Story Bible templates to unlock VOICE mode. Chat with Foreman to fill in template fields.</p>
-      {:else if currentMode === 'VOICE'}
-        <p>Launch tournaments to generate voice variants, then select the best samples to create your Voice Bundle.</p>
-      {:else if currentMode === 'DIRECTOR'}
-        <p>Follow the full pipeline: Scaffold → Structure → Write → Enhance. Foreman will guide you through each step.</p>
-      {/if}
-    </div>
-  </div>
 </div>
 
 <style>
   .studio-panel {
-    display: flex;
-    flex-direction: column;
+    padding: var(--space-4, 16px);
     height: 100%;
-    padding: 1rem;
-    overflow-y: auto;
-    background: #1a1a1a;
-    color: #ffffff;
   }
 
-  /* Idle State */
-  .idle-state {
+  .welcome-state,
+  .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 2rem;
-    flex: 1;
+    height: 100%;
+    padding: var(--space-4, 16px);
   }
 
-  .idle-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+  .welcome-icon {
+    margin-bottom: var(--space-4, 16px);
+    color: var(--accent-gold, #d4a574);
   }
 
-  .idle-state h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #888888;
+  .welcome-state h3 {
+    margin: 0 0 var(--space-2, 8px) 0;
+    font-size: var(--text-lg, 16px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #e6edf3);
   }
 
-  .idle-state p {
-    margin: 0 0 2rem 0;
-    color: #666666;
-    max-width: 300px;
+  .welcome-state p {
+    margin: 0;
+    font-size: var(--text-sm, 12px);
+    color: var(--text-secondary, #8b949e);
+    line-height: var(--leading-relaxed, 1.7);
   }
 
-  .mode-previews {
+  .welcome-state .hint {
+    margin-top: var(--space-4, 16px);
+    padding: var(--space-3, 12px);
+    background: var(--bg-tertiary, #242d38);
+    border-radius: var(--radius-md, 6px);
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #6e7681);
+  }
+
+  .card-grid {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .mode-preview-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: #2d2d2d;
-    border: 2px solid;
-    border-radius: 8px;
-  }
-
-  .preview-icon {
-    font-size: 2rem;
-  }
-
-  .preview-name {
-    font-weight: 600;
-    color: #ffffff;
-    min-width: 100px;
-  }
-
-  .preview-description {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #888888;
-    flex: 1;
-  }
-
-  /* Mode Section */
-  .mode-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .mode-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: #2d2d2d;
-    border-left: 4px solid;
-    border-radius: 4px;
-  }
-
-  .mode-icon {
-    font-size: 1.5rem;
-  }
-
-  .mode-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-
-  .mode-description {
-    margin: 0;
-    padding: 0 1rem;
-    color: #b0b0b0;
-    line-height: 1.6;
-  }
-
-  /* Quick Actions */
-  .quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3, 12px);
   }
 
   .action-card {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: #2d2d2d;
-    border: 1px solid #404040;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
+    align-items: flex-start;
+    gap: var(--space-3, 12px);
+    padding: var(--space-3, 12px);
+    background: var(--bg-tertiary, #242d38);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-md, 6px);
     text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-fast, 100ms ease);
   }
 
-  .action-card:hover {
-    background: #353535;
-    border-color: #00d9ff;
-    transform: translateX(4px);
+  .action-card:hover:not(:disabled) {
+    background: var(--bg-elevated, #2d3640);
+    border-color: var(--accent-cyan, #58a6ff);
   }
 
-  .action-card.primary {
-    border-color: #00d9ff;
-    border-width: 2px;
+  .action-card:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
-  .action-card.primary:hover {
-    background: #00d9ff10;
-  }
-
-  .action-card.success {
-    border-color: #00ff88;
-    border-width: 2px;
-  }
-
-  .action-card.success:hover {
-    background: #00ff8810;
-  }
-
-  .action-card.completed {
-    border-color: #00ff88;
-    background: #00ff8810;
-  }
-
-  .action-icon {
-    font-size: 1.75rem;
-    width: 48px;
-    height: 48px;
+  .card-icon {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #1a1a1a;
-    border-radius: 8px;
-    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-elevated, #2d3640);
+    border-radius: var(--radius-md, 6px);
   }
 
-  .action-content {
+  .card-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    min-width: 0;
   }
 
-  .action-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #ffffff;
+  .card-title {
+    margin: 0 0 var(--space-1, 4px) 0;
+    font-size: var(--text-sm, 12px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #e6edf3);
   }
 
-  .action-subtitle {
-    font-size: 0.875rem;
-    color: #888888;
-  }
-
-  .action-arrow {
-    font-size: 1.5rem;
-    color: #404040;
-    transition: color 0.2s;
-  }
-
-  .action-card:hover .action-arrow {
-    color: #00d9ff;
-  }
-
-  /* Help Section */
-  .help-section {
-    display: flex;
-    gap: 1rem;
-    margin-top: auto;
-    padding: 1rem;
-    background: #2d2d2d;
-    border: 1px solid #404040;
-    border-radius: 8px;
-  }
-
-  .help-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-
-  .help-content {
-    flex: 1;
-  }
-
-  .help-content h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #00d9ff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .help-content p {
+  .card-description {
     margin: 0;
-    font-size: 0.875rem;
-    color: #888888;
-    line-height: 1.6;
+    font-size: var(--text-xs, 11px);
+    color: var(--text-secondary, #8b949e);
+    line-height: var(--leading-normal, 1.5);
   }
 
-  /* Scrollbar */
-  .studio-panel::-webkit-scrollbar {
-    width: 8px;
+  .card-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1, 4px);
+    flex-shrink: 0;
   }
 
-  .studio-panel::-webkit-scrollbar-track {
-    background: #1a1a1a;
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
   }
 
-  .studio-panel::-webkit-scrollbar-thumb {
-    background: #404040;
-    border-radius: 4px;
-  }
-
-  .studio-panel::-webkit-scrollbar-thumb:hover {
-    background: #505050;
+  .status-label {
+    font-size: 9px;
+    font-weight: var(--font-medium, 500);
+    color: var(--text-muted, #6e7681);
+    text-transform: uppercase;
   }
 </style>
