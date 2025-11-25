@@ -4,18 +4,21 @@
   import ForemanChatPanel from './ForemanChatPanel.svelte';
   import StudioPanel from './StudioPanel.svelte';
   import Editor from './Editor.svelte';
+  import FileTree from './FileTree.svelte';
 
   // Panel visibility state
+  let showFileTree = true;
   let showStudioPanel = true;
-  let showGraphPanel = true;
+  let showGraphPanel = false;  // Hide by default for cleaner initial view
   let showForemanPanel = true;
   let showChatPanel = true;
 
-  // Panel widths (percentages)
-  let studioPanelWidth = 25; // 25%
-  let graphPanelWidth = 25;  // 25%
-  let foremanPanelWidth = 25; // 25%
-  let chatPanelWidth = 25;   // 25%
+  // Panel widths (percentages) - FileTree is fixed width
+  let fileTreeWidth = 250; // pixels
+  let studioPanelWidth = 20; // 20%
+  let graphPanelWidth = 20;  // 20%
+  let foremanPanelWidth = 40; // 40% - main writing area
+  let chatPanelWidth = 20;   // 20%
 
   // Resize state
   let isResizing = false;
@@ -282,14 +285,23 @@
     </div>
   </div>
 
-  <!-- Main Content: 4 Panels -->
+  <!-- Main Content: FileTree + Panels -->
   <div class="content-area">
-    {#if visiblePanelsCount === 0}
-      <div class="empty-state">
-        <p>All panels are hidden. Click the panel toggles in the toolbar to show them.</p>
-        <button class="btn-reset" on:click={resetLayout}>Reset Layout</button>
-      </div>
-    {:else}
+    <!-- File Tree Sidebar (Scrivener-style) -->
+    {#if showFileTree}
+      <aside class="file-tree-sidebar" style="width: {fileTreeWidth}px;">
+        <FileTree />
+      </aside>
+    {/if}
+
+    <!-- Main Panel Area -->
+    <div class="panels-container">
+      {#if visiblePanelsCount === 0}
+        <div class="empty-state">
+          <p>All panels are hidden. Click the panel toggles in the toolbar to show them.</p>
+          <button class="btn-reset" on:click={resetLayout}>Reset Layout</button>
+        </div>
+      {:else}
       <!-- Studio Panel -->
       {#if showStudioPanel}
         <div class="panel studio-panel" style="width: {studioPanelWidth}%;">
@@ -353,6 +365,7 @@
         </div>
       {/if}
     {/if}
+    </div>
   </div>
 </div>
 
@@ -493,6 +506,22 @@
     flex: 1;
     overflow: hidden;
     position: relative;
+  }
+
+  /* File Tree Sidebar (Scrivener-style) */
+  .file-tree-sidebar {
+    flex-shrink: 0;
+    background: #252525;
+    border-right: 1px solid #404040;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Main Panels Container */
+  .panels-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
   }
 
   .empty-state {
