@@ -338,6 +338,142 @@ export class WritersFactoryAPI {
             method: 'POST',
         });
     }
+
+    // ==========================================
+    // Settings Management (Phase 3C)
+    // ==========================================
+
+    /**
+     * Get a setting value.
+     * @param key The setting key (e.g., "scoring.voice_authenticity_weight")
+     * @param projectId Optional project ID for project-specific overrides
+     */
+    async getSetting(key: string, projectId?: string): Promise<{ key: string; value: any; source: string }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/settings/${key}${params}`);
+    }
+
+    /**
+     * Set a setting value.
+     * @param key The setting key
+     * @param value The value to set
+     * @param projectId Optional project ID for project-specific override
+     */
+    async setSetting(key: string, value: any, projectId?: string): Promise<{ message: string }> {
+        return this._request('/settings', {
+            method: 'POST',
+            body: JSON.stringify({ key, value, project_id: projectId }),
+        });
+    }
+
+    /**
+     * Reset a setting to default.
+     * @param key The setting key
+     * @param projectId Optional project ID to reset project override only
+     */
+    async resetSetting(key: string, projectId?: string): Promise<{ message: string }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/settings/${key}${params}`, { method: 'DELETE' });
+    }
+
+    /**
+     * Get all settings in a category.
+     * @param category The category name (e.g., "scoring", "foreman", "orchestrator")
+     * @param projectId Optional project ID
+     */
+    async getSettingsCategory(category: string, projectId?: string): Promise<{ [key: string]: any }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/settings/category/${category}${params}`);
+    }
+
+    /**
+     * Export all settings as dictionary.
+     */
+    async exportSettings(projectId?: string): Promise<{ [key: string]: any }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/settings/export${params}`);
+    }
+
+    /**
+     * Get default settings.
+     */
+    async getDefaultSettings(): Promise<{ [key: string]: any }> {
+        return this._request('/settings/defaults');
+    }
+
+    // ==========================================
+    // Model Orchestrator (Phase 3E)
+    // ==========================================
+
+    /**
+     * Get model capabilities registry.
+     */
+    async getModelCapabilities(): Promise<{
+        models: Array<{
+            model_id: string;
+            provider: string;
+            display_name: string;
+            strengths: string[];
+            quality_score: number;
+            speed: string;
+            cost_per_1m_input: number;
+            cost_per_1m_output: number;
+            requires_api_key: boolean;
+            local_only: boolean;
+            api_key_env_var: string | null;
+        }>;
+        available_providers: { [provider: string]: boolean };
+    }> {
+        return this._request('/orchestrator/capabilities');
+    }
+
+    /**
+     * Estimate monthly cost for a quality tier.
+     * @param qualityTier "budget" | "balanced" | "premium"
+     * @param tasksPerMonth Estimated number of tasks
+     */
+    async estimateCost(qualityTier: string, tasksPerMonth: number = 100): Promise<{
+        quality_tier: string;
+        estimated_monthly_cost_usd: number;
+        cost_breakdown: { [task: string]: number };
+    }> {
+        return this._request('/orchestrator/estimate-cost', {
+            method: 'POST',
+            body: JSON.stringify({ quality_tier: qualityTier, tasks_per_month: tasksPerMonth }),
+        });
+    }
+
+    /**
+     * Get model recommendations for a task type.
+     * @param taskType The task type (e.g., "coordinator", "health_check_review")
+     * @param qualityTier Optional quality tier override
+     */
+    async getModelRecommendations(taskType: string, qualityTier?: string): Promise<{
+        task_type: string;
+        recommendations: {
+            budget: string;
+            balanced: string;
+            premium: string;
+        };
+        selected: string;
+        reason: string;
+    }> {
+        const params = qualityTier ? `?quality_tier=${qualityTier}` : '';
+        return this._request(`/orchestrator/recommendations/${taskType}${params}`);
+    }
+
+    /**
+     * Get current month spending.
+     */
+    async getCurrentSpend(): Promise<{
+        month: string;
+        total_spend_usd: number;
+        budget_usd: number | null;
+        remaining_usd: number | null;
+        percentage_used: number | null;
+    }> {
+        return this._request('/orchestrator/current-spend');
+    }
 }
 
 // Export a singleton instance for easy use across the Svelte app
