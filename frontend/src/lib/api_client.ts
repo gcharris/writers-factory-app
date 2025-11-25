@@ -835,6 +835,463 @@ export class WritersFactoryAPI {
     }> {
         return this._request(`/voice-calibration/${projectId}`);
     }
+
+    // ==========================================
+    // Director Mode - Scene Creation Pipeline
+    // ==========================================
+
+    // --- Scaffold Generation ---
+
+    /**
+     * Generate draft summary for a scene scaffold (Stage 1).
+     * @param projectId Project identifier
+     * @param chapterNumber Chapter number
+     * @param sceneNumber Scene number within chapter
+     * @param beatInfo Beat this scene serves
+     * @param characters Characters in scene
+     * @param sceneDescription Writer's description of scene
+     */
+    async generateDraftSummary(
+        projectId: string,
+        chapterNumber: number,
+        sceneNumber: number,
+        beatInfo: string,
+        characters: string[],
+        sceneDescription: string
+    ): Promise<{
+        draft_summary: string;
+        enrichment_suggestions: Array<{ query: string; notebook_role: string }>;
+        context_used: {
+            protagonist: any;
+            theme: any;
+            voice_bundle: any;
+        };
+    }> {
+        return this._request('/director/scaffold/draft-summary', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                chapter_number: chapterNumber,
+                scene_number: sceneNumber,
+                beat_info: beatInfo,
+                characters: characters,
+                scene_description: sceneDescription
+            }),
+        });
+    }
+
+    /**
+     * Fetch enrichment data from NotebookLM.
+     * @param notebookId NotebookLM notebook ID
+     * @param query Query to run
+     */
+    async enrichScaffold(notebookId: string, query: string): Promise<{
+        answer: string;
+        sources: string[];
+    }> {
+        return this._request('/director/scaffold/enrich', {
+            method: 'POST',
+            body: JSON.stringify({ notebook_id: notebookId, query }),
+        });
+    }
+
+    /**
+     * Generate full scaffold with optional enrichment (Stage 2).
+     */
+    async generateScaffold(
+        projectId: string,
+        chapterNumber: number,
+        sceneNumber: number,
+        title: string,
+        beatInfo: string,
+        characters: string[],
+        sceneDescription: string,
+        enrichmentData?: Array<{ query: string; answer: string }>
+    ): Promise<{
+        scaffold: string;
+        scene_id: string;
+        enrichment_used: boolean;
+    }> {
+        return this._request('/director/scaffold/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                chapter_number: chapterNumber,
+                scene_number: sceneNumber,
+                title: title,
+                beat_info: beatInfo,
+                characters: characters,
+                scene_description: sceneDescription,
+                enrichment_data: enrichmentData
+            }),
+        });
+    }
+
+    // --- Scene Writing ---
+
+    /**
+     * Generate 5 structural approaches before writing prose.
+     */
+    async generateStructureVariants(
+        sceneId: string,
+        beatDescription: string,
+        povCharacter: string,
+        targetWordCount: number,
+        scaffold?: string
+    ): Promise<{
+        variants: Array<{
+            id: string;
+            name: string;
+            description: string;
+            scenes: Array<{ title: string; word_count: number; beat: string }>;
+            total_word_count: number;
+            pacing: string;
+        }>;
+    }> {
+        return this._request('/director/scene/structure-variants', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                beat_description: beatDescription,
+                pov_character: povCharacter,
+                target_word_count: targetWordCount,
+                scaffold: scaffold
+            }),
+        });
+    }
+
+    /**
+     * Run multi-model tournament with 5 strategies each.
+     * @param sceneId Scene identifier
+     * @param scaffold Scene scaffold
+     * @param structureVariant Selected structure variant
+     * @param voiceBundlePath Path to voice bundle
+     * @param models Models to use (default: 3)
+     * @param strategies Strategies per model (default: 5)
+     */
+    async generateSceneVariants(
+        sceneId: string,
+        scaffold: string,
+        structureVariant: string,
+        voiceBundlePath?: string,
+        models?: string[],
+        strategies?: string[]
+    ): Promise<{
+        tournament_id: string;
+        variants: Array<{
+            id: string;
+            model: string;
+            strategy: string;
+            content: string;
+            word_count: number;
+            score?: number;
+            scores?: { [category: string]: number };
+        }>;
+        total_variants: number;
+    }> {
+        return this._request('/director/scene/generate-variants', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scaffold: scaffold,
+                structure_variant: structureVariant,
+                voice_bundle_path: voiceBundlePath,
+                models: models,
+                strategies: strategies
+            }),
+        });
+    }
+
+    /**
+     * Create hybrid from multiple variants.
+     */
+    async createSceneHybrid(
+        sceneId: string,
+        variantIds: string[],
+        sources: Array<{ section: string; variant_id: string }>,
+        instructions?: string
+    ): Promise<{
+        hybrid: {
+            id: string;
+            content: string;
+            word_count: number;
+            source_variants: string[];
+        };
+    }> {
+        return this._request('/director/scene/create-hybrid', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                variant_ids: variantIds,
+                sources: sources,
+                instructions: instructions
+            }),
+        });
+    }
+
+    /**
+     * Fast single-model scene generation (no tournament).
+     */
+    async quickGenerateScene(
+        sceneId: string,
+        scaffold: string,
+        strategy: string,
+        targetWordCount: number,
+        voiceBundlePath?: string
+    ): Promise<{
+        content: string;
+        word_count: number;
+        model_used: string;
+        strategy: string;
+    }> {
+        return this._request('/director/scene/quick-generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scaffold: scaffold,
+                strategy: strategy,
+                target_word_count: targetWordCount,
+                voice_bundle_path: voiceBundlePath
+            }),
+        });
+    }
+
+    // --- Scene Analysis ---
+
+    /**
+     * Full 5-category analysis with scoring.
+     */
+    async analyzeScene(
+        sceneId: string,
+        sceneContent: string,
+        povCharacter: string,
+        phase: string,
+        voiceBundlePath?: string,
+        storyBible?: any
+    ): Promise<{
+        scene_id: string;
+        total_score: number;
+        scores: {
+            voice_authenticity: number;
+            character_consistency: number;
+            metaphor_discipline: number;
+            anti_pattern_compliance: number;
+            phase_appropriateness: number;
+        };
+        details: {
+            voice: { tests: Array<{ name: string; score: number; feedback: string }> };
+            character: { issues: string[]; strengths: string[] };
+            metaphors: { domains: Record<string, number>; violations: string[] };
+            anti_patterns: { found: Array<{ pattern: string; line: number; text: string }> };
+            phase: { current: string; appropriateness: string };
+        };
+        recommendation: string;
+        enhancement_mode: 'action_prompt' | 'six_pass' | 'rewrite';
+    }> {
+        return this._request('/director/scene/analyze', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scene_content: sceneContent,
+                pov_character: povCharacter,
+                phase: phase,
+                voice_bundle_path: voiceBundlePath,
+                story_bible: storyBible
+            }),
+        });
+    }
+
+    /**
+     * Compare multiple scene variants.
+     */
+    async compareSceneVariants(
+        variants: Record<string, string>,
+        povCharacter: string,
+        phase: string,
+        voiceBundlePath?: string
+    ): Promise<{
+        rankings: Array<{
+            model: string;
+            total_score: number;
+            scores: Record<string, number>;
+        }>;
+        recommendation: string;
+        hybrid_suggestion?: {
+            opening: string;
+            middle: string;
+            closing: string;
+        };
+    }> {
+        return this._request('/director/scene/compare', {
+            method: 'POST',
+            body: JSON.stringify({
+                variants: variants,
+                pov_character: povCharacter,
+                phase: phase,
+                voice_bundle_path: voiceBundlePath
+            }),
+        });
+    }
+
+    /**
+     * Quick anti-pattern detection (real-time feedback).
+     */
+    async detectPatterns(sceneContent: string): Promise<{
+        patterns_found: Array<{
+            type: string;
+            severity: 'error' | 'warning' | 'info';
+            line: number;
+            text: string;
+            suggestion: string;
+        }>;
+        total_violations: number;
+        zero_tolerance_violations: number;
+    }> {
+        return this._request('/director/scene/detect-patterns', {
+            method: 'POST',
+            body: JSON.stringify({ scene_content: sceneContent }),
+        });
+    }
+
+    /**
+     * Quick metaphor domain analysis.
+     */
+    async analyzeMetaphors(
+        sceneContent: string,
+        voiceBundlePath?: string
+    ): Promise<{
+        domains: Record<string, { count: number; percentage: number; examples: string[] }>;
+        saturation_warnings: string[];
+        suggestions: string[];
+    }> {
+        return this._request('/director/scene/analyze-metaphors', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_content: sceneContent,
+                voice_bundle_path: voiceBundlePath
+            }),
+        });
+    }
+
+    // --- Scene Enhancement ---
+
+    /**
+     * Auto-select enhancement mode based on score.
+     */
+    async enhanceScene(
+        sceneId: string,
+        sceneContent: string,
+        phase: string,
+        voiceBundlePath?: string,
+        storyBible?: any,
+        forceMode?: 'action_prompt' | 'six_pass'
+    ): Promise<{
+        mode_used: 'action_prompt' | 'six_pass';
+        enhanced_content: string;
+        original_score: number;
+        enhanced_score: number;
+        changes_made: number;
+        passes_completed?: number;
+    }> {
+        return this._request('/director/scene/enhance', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scene_content: sceneContent,
+                phase: phase,
+                voice_bundle_path: voiceBundlePath,
+                story_bible: storyBible,
+                force_mode: forceMode
+            }),
+        });
+    }
+
+    /**
+     * Generate surgical fixes (preview only).
+     */
+    async generateActionPrompt(
+        sceneId: string,
+        sceneContent: string,
+        phase: string,
+        voiceBundlePath?: string
+    ): Promise<{
+        fixes: Array<{
+            id: string;
+            category: string;
+            line: number;
+            old_text: string;
+            new_text: string;
+            reason: string;
+            priority: 'critical' | 'high' | 'medium';
+        }>;
+        current_score: number;
+        estimated_post_fix_score: number;
+    }> {
+        return this._request('/director/scene/action-prompt', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scene_content: sceneContent,
+                phase: phase,
+                voice_bundle_path: voiceBundlePath
+            }),
+        });
+    }
+
+    /**
+     * Apply selected OLD → NEW replacements.
+     */
+    async applyFixes(
+        sceneId: string,
+        sceneContent: string,
+        fixes: Array<{ old_text: string; new_text: string }>
+    ): Promise<{
+        updated_content: string;
+        fixes_applied: number;
+        new_score: number;
+    }> {
+        return this._request('/director/scene/apply-fixes', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scene_content: sceneContent,
+                fixes: fixes
+            }),
+        });
+    }
+
+    /**
+     * Run full 6-pass enhancement ritual.
+     */
+    async runSixPassEnhancement(
+        sceneId: string,
+        sceneContent: string,
+        phase: string,
+        voiceBundlePath?: string,
+        storyBible?: any
+    ): Promise<{
+        passes: Array<{
+            pass_number: number;
+            pass_name: string;
+            changes_made: number;
+            content_after: string;
+        }>;
+        final_content: string;
+        original_score: number;
+        final_score: number;
+        total_changes: number;
+    }> {
+        return this._request('/director/scene/six-pass', {
+            method: 'POST',
+            body: JSON.stringify({
+                scene_id: sceneId,
+                scene_content: sceneContent,
+                phase: phase,
+                voice_bundle_path: voiceBundlePath,
+                story_bible: storyBible
+            }),
+        });
+    }
 }
 
 // Export a singleton instance for easy use across the Svelte app

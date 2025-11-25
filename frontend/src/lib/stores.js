@@ -142,3 +142,48 @@ export const voiceBundleGenerated = writable(false);
 // UI state for voice calibration
 export const showVoiceTournament = writable(false);
 export const voiceTournamentStep = writable(0); // 0: Configure, 1: Running, 2: Review Variants, 3: Select Winner, 4: Generate Bundle
+
+// --- Director Mode State (DIRECTOR Mode) ---
+
+// Current scaffold state
+export const currentScaffold = writable(null); // { scene_id, scaffold, draft_summary, enrichment_data }
+export const scaffoldLoading = writable(false);
+export const scaffoldStep = writable(0); // 0: Input, 1: Draft Summary, 2: Enrichment, 3: Full Scaffold
+
+// Structure variants
+export const structureVariants = writable([]); // Array of structure variants
+export const selectedStructure = writable(null); // Selected structure variant
+
+// Scene variants (from tournament)
+export const sceneVariants = writable([]); // Array of { id, model, strategy, content, word_count, score, scores }
+export const sceneVariantsLoading = writable(false);
+export const selectedSceneVariants = writable([]); // Selected for comparison/hybrid
+
+// Scene analysis
+export const currentSceneAnalysis = writable(null); // Full analysis result
+export const sceneAnalysisLoading = writable(false);
+
+// Enhancement state
+export const enhancementMode = writable(null); // 'action_prompt' | 'six_pass' | null
+export const actionPromptFixes = writable([]); // Array of fixes from action prompt
+export const selectedFixes = writable([]); // Fixes selected for application
+export const sixPassProgress = writable(null); // { current_pass, passes_completed, total_changes }
+export const enhancementLoading = writable(false);
+
+// Current scene content (working draft)
+export const currentSceneContent = writable('');
+export const currentSceneId = writable(null);
+export const currentSceneScore = writable(null);
+
+// Scene version history
+export const sceneVersions = writable([]); // Array of { version, content, score, timestamp }
+
+// Director UI state
+export const showScaffoldGenerator = writable(false);
+export const showSceneGenerator = writable(false);
+export const showEnhancementPanel = writable(false);
+export const directorStep = writable(0); // 0: Scaffold, 1: Structure, 2: Generate, 3: Compare, 4: Enhance, 5: Complete
+
+// Beat progress tracking
+export const currentBeat = writable(null); // { number, name, percentage, description }
+export const manuscriptProgress = writable(0); // 0-100 percentage through manuscript
