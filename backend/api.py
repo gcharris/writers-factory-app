@@ -14,11 +14,9 @@ from pydantic import BaseModel
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- App Imports ---
-# [RESTORED CODE] Force load the .env file from the backend folder or root
+# Load environment variables from root .env
 from dotenv import load_dotenv
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(dotenv_path=env_path) # Load backend/.env
-load_dotenv() # Load root .env if exists
+load_dotenv()  # Loads from project root
 
 from backend.agents.wizard.setup import generate_project_config
 from backend.agents.registry import AgentRegistry

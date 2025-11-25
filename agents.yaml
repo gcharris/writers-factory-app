@@ -64,6 +64,24 @@ agents:
     use_cases: ["tournament", "plotting"]
     enabled: true
 
+  - id: "gemini-2.0-flash"
+    name: "Gemini 2.0 Flash"
+    provider: "google"
+    api_key_env: "GEMINI_API_KEY"
+    model: "gemini-2.0-flash-exp"
+    role: "The Multimodal Analyst. You excel at research, analysis, and contextual reasoning."
+    use_cases: ["tournament", "analysis", "research"]
+    enabled: true
+
+  - id: "ollama-mistral-7b"
+    name: "Ollama Mistral 7B"
+    provider: "ollama"
+    endpoint: "http://localhost:11434"
+    model: "mistral:7b"
+    role: "The Local Workhorse. You provide quality reasoning and prose at zero cost."
+    use_cases: ["tournament", "coordination", "quick_drafts", "polish", "enhancement"]
+    enabled: true
+
   - id: "ollama-llama-3.2"
     name: "Ollama Llama 3.2"
     provider: "ollama"

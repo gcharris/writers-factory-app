@@ -473,7 +473,7 @@ class Foreman:
 
     def __init__(
         self,
-        model: str = "llama3.2:3b",
+        model: str = "mistral:7b",
         ollama_url: str = "http://localhost:11434",
         notebooklm_client = None,
         story_bible_service = None,
@@ -1942,7 +1942,7 @@ def create_foreman(
     notebooklm_client=None,
     story_bible_service=None,
     content_path: Path = None,
-    model: str = "llama3.2:3b",
+    model: str = "mistral:7b",
 ) -> Foreman:
     """
     Factory function to create a configured Foreman instance.
