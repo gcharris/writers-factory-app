@@ -474,6 +474,199 @@ export class WritersFactoryAPI {
     }> {
         return this._request('/orchestrator/current-spend');
     }
+
+    // ==========================================
+    // Story Bible System (ARCHITECT Mode)
+    // ==========================================
+
+    /**
+     * Get Story Bible validation status.
+     */
+    async getStoryBibleStatus(): Promise<{
+        phase2_complete: boolean;
+        completion_score: number;
+        checks: Array<{
+            name: string;
+            passed: boolean;
+            status: string;
+        }>;
+        protagonist: {
+            name: string;
+            fatal_flaw: string;
+            the_lie: string;
+            true_character: string;
+            characterization: string;
+            arc_start: string;
+            arc_midpoint: string;
+            arc_resolution: string;
+        } | null;
+        beat_sheet: {
+            title: string | null;
+            completion: number;
+            current_beat: number | null;
+            midpoint_type: string | null;
+        };
+        can_proceed_to_execution: boolean;
+        blocking_issues: string[];
+    }> {
+        return this._request('/story-bible/status');
+    }
+
+    /**
+     * Create Story Bible scaffolding.
+     * @param projectTitle The project/novel title
+     * @param protagonistName The protagonist's name
+     * @param preFilled Optional pre-filled data for templates
+     */
+    async scaffoldStoryBible(
+        projectTitle: string,
+        protagonistName: string,
+        preFilled?: Record<string, any>
+    ): Promise<{
+        created_files: string[];
+        project_title: string;
+        protagonist_name: string;
+    }> {
+        return this._request('/story-bible/scaffold', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_title: projectTitle,
+                protagonist_name: protagonistName,
+                pre_filled: preFilled
+            }),
+        });
+    }
+
+    /**
+     * Get parsed protagonist data.
+     */
+    async getProtagonistData(): Promise<{
+        name: string;
+        fatal_flaw: string;
+        the_lie: string;
+        true_character: string;
+        characterization: string;
+        arc_start: string;
+        arc_midpoint: string;
+        arc_resolution: string;
+        relationships: Array<{ character: string; function: string }>;
+        contradiction_score: number;
+        is_valid: boolean;
+    }> {
+        return this._request('/story-bible/protagonist');
+    }
+
+    /**
+     * Get parsed beat sheet data.
+     */
+    async getBeatSheetData(): Promise<{
+        title: string;
+        beats: Array<{
+            number: number;
+            name: string;
+            percentage: string;
+            description: string;
+            scene_link: string;
+            is_complete: boolean;
+        }>;
+        current_beat: number;
+        midpoint_type: string;
+        theme_stated: string;
+        is_valid: boolean;
+        completion_percentage: number;
+    }> {
+        return this._request('/story-bible/beat-sheet');
+    }
+
+    /**
+     * Ensure Story Bible directory structure exists.
+     */
+    async ensureStoryBibleStructure(): Promise<{
+        directories: Record<string, string>;
+        created: string[];
+    }> {
+        return this._request('/story-bible/ensure-structure', { method: 'POST' });
+    }
+
+    /**
+     * Check if ready for Phase 3 (Execution).
+     */
+    async canExecute(): Promise<{
+        ready: boolean;
+        blocking_issues: string[];
+        completion_percentage: number;
+    }> {
+        return this._request('/story-bible/can-execute');
+    }
+
+    /**
+     * Run AI-powered Story Bible generation from NotebookLM.
+     * @param projectTitle The project/novel title
+     * @param protagonistName The protagonist's name
+     * @param notebookId Optional NotebookLM notebook ID
+     */
+    async runSmartScaffold(
+        projectTitle: string,
+        protagonistName: string,
+        notebookId?: string
+    ): Promise<{
+        status: string;
+        created_files: string[];
+        enrichment_used: boolean;
+        project_title: string;
+        protagonist_name: string;
+    }> {
+        return this._request('/story-bible/smart-scaffold', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_title: projectTitle,
+                protagonist_name: protagonistName,
+                notebook_id: notebookId
+            }),
+        });
+    }
+
+    // ==========================================
+    // NotebookLM Integration
+    // ==========================================
+
+    /**
+     * Get NotebookLM connection status.
+     */
+    async getNotebookLMStatus(): Promise<{
+        connected: boolean;
+        message: string;
+    }> {
+        return this._request('/notebooklm/status');
+    }
+
+    /**
+     * Get list of configured NotebookLM notebooks.
+     */
+    async getNotebookLMList(): Promise<{
+        notebooks: Array<{
+            id: string;
+            name: string;
+            role: string | null;
+        }>;
+    }> {
+        return this._request('/notebooklm/notebooks');
+    }
+
+    /**
+     * Query a NotebookLM notebook.
+     * @param notebookId The notebook ID
+     * @param query The query text
+     */
+    async queryNotebook(notebookId: string, query: string): Promise<{
+        answer: string;
+        sources: string[];
+    }> {
+        return this._request('/notebooklm/query', {
+            method: 'POST',
+            body: JSON.stringify({ notebook_id: notebookId, query }),
+        });
+    }
 }
 
 // Export a singleton instance for easy use across the Svelte app

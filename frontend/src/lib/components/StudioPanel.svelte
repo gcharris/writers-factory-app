@@ -8,10 +8,73 @@
   - EDITOR: Final polish tools
 -->
 <script>
-  import { foremanMode, foremanActive } from '$lib/stores';
+  import { createEventDispatcher } from 'svelte';
+  import {
+    foremanMode,
+    foremanActive,
+    showStoryBibleWizard,
+    showNotebookRegistration,
+    activeModal,
+    storyBibleStatus
+  } from '$lib/stores';
 
-  // Card definitions by mode
-  const modeCards = {
+  const dispatch = createEventDispatcher();
+
+  // Card click handlers
+  function openStoryBibleWizard() {
+    $showStoryBibleWizard = true;
+    $activeModal = 'story-bible';
+    dispatch('open-modal', { modal: 'story-bible' });
+  }
+
+  function openBeatSheetEditor() {
+    $activeModal = 'template-editor';
+    dispatch('open-modal', { modal: 'template-editor', data: { templateId: 'beat_sheet' } });
+  }
+
+  function openProtagonistEditor() {
+    $activeModal = 'template-editor';
+    dispatch('open-modal', { modal: 'template-editor', data: { templateId: 'protagonist' } });
+  }
+
+  function openNotebookRegistration() {
+    $showNotebookRegistration = true;
+    $activeModal = 'notebook-registration';
+    dispatch('open-modal', { modal: 'notebook-registration' });
+  }
+
+  function openVoiceTournament() {
+    dispatch('open-modal', { modal: 'voice-tournament' });
+  }
+
+  function openVariantGrid() {
+    dispatch('open-modal', { modal: 'variant-grid' });
+  }
+
+  function openScaffoldGenerator() {
+    dispatch('open-modal', { modal: 'scaffold-generator' });
+  }
+
+  function openSceneGenerator() {
+    dispatch('open-modal', { modal: 'scene-generator' });
+  }
+
+  function openEnhancementPanel() {
+    dispatch('open-modal', { modal: 'enhancement-panel' });
+  }
+
+  function openHealthDashboard() {
+    dispatch('open-modal', { modal: 'health-dashboard' });
+  }
+
+  // Determine card status based on Story Bible completion
+  $: storyBibleComplete = $storyBibleStatus?.can_proceed_to_execution ?? false;
+  $: beatSheetStatus = $storyBibleStatus?.beat_sheet?.completion >= 100 ? 'ready' :
+                       $storyBibleStatus?.beat_sheet?.completion > 0 ? 'partial' : 'locked';
+  $: protagonistStatus = $storyBibleStatus?.protagonist?.fatal_flaw ? 'ready' : 'locked';
+
+  // Card definitions by mode - now using reactive functions
+  $: modeCards = {
     ARCHITECT: [
       {
         id: 'create-story-bible',
@@ -21,7 +84,7 @@
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
         </svg>`,
-        action: () => console.log('Open Story Bible wizard'),
+        action: openStoryBibleWizard,
         status: 'ready'
       },
       {
@@ -36,8 +99,8 @@
           <line x1="3" y1="12" x2="3.01" y2="12"></line>
           <line x1="3" y1="18" x2="3.01" y2="18"></line>
         </svg>`,
-        action: () => console.log('Open Beat Sheet editor'),
-        status: 'locked'
+        action: openBeatSheetEditor,
+        status: storyBibleComplete ? 'ready' : 'locked'
       },
       {
         id: 'build-protagonist',
@@ -47,8 +110,8 @@
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
           <circle cx="12" cy="7" r="4"></circle>
         </svg>`,
-        action: () => console.log('Open Character builder'),
-        status: 'locked'
+        action: openProtagonistEditor,
+        status: storyBibleComplete ? 'ready' : 'locked'
       },
       {
         id: 'register-notebooks',
@@ -58,7 +121,7 @@
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
         </svg>`,
-        action: () => console.log('Open NotebookLM registration'),
+        action: openNotebookRegistration,
         status: 'optional'
       }
     ],
@@ -72,7 +135,7 @@
           <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
           <line x1="12" y1="19" x2="12" y2="23"></line>
         </svg>`,
-        action: () => console.log('Open Voice Tournament'),
+        action: openVoiceTournament,
         status: 'ready'
       },
       {
@@ -85,7 +148,7 @@
           <rect x="14" y="14" width="7" height="7"></rect>
           <rect x="3" y="14" width="7" height="7"></rect>
         </svg>`,
-        action: () => console.log('Open Variant Grid'),
+        action: openVariantGrid,
         status: 'locked'
       },
       {
@@ -95,7 +158,7 @@
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
         </svg>`,
-        action: () => console.log('Generate Voice Bundle'),
+        action: () => dispatch('open-modal', { modal: 'voice-bundle' }),
         status: 'locked'
       }
     ],
@@ -109,7 +172,7 @@
           <line x1="3" y1="9" x2="21" y2="9"></line>
           <line x1="9" y1="21" x2="9" y2="9"></line>
         </svg>`,
-        action: () => console.log('Open Scaffold Generator'),
+        action: openScaffoldGenerator,
         status: 'ready'
       },
       {
@@ -120,7 +183,7 @@
           <polygon points="23 7 16 12 23 17 23 7"></polygon>
           <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
         </svg>`,
-        action: () => console.log('Open Scene Generator'),
+        action: openSceneGenerator,
         status: 'ready'
       },
       {
@@ -131,7 +194,7 @@
           <path d="M12 20h9"></path>
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
         </svg>`,
-        action: () => console.log('Open Enhancement Panel'),
+        action: openEnhancementPanel,
         status: 'locked'
       },
       {
@@ -141,7 +204,7 @@
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
         </svg>`,
-        action: () => console.log('Open Health Dashboard'),
+        action: openHealthDashboard,
         status: 'ready'
       }
     ],
@@ -154,7 +217,7 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>`,
-        action: () => console.log('Open Final Review'),
+        action: () => dispatch('open-modal', { modal: 'final-review' }),
         status: 'ready'
       }
     ]

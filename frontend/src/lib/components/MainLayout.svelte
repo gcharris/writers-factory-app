@@ -18,11 +18,19 @@
 -->
 <script>
   import { onMount } from 'svelte';
-  import { foremanMode, foremanActive } from '$lib/stores';
+  import {
+    foremanMode,
+    foremanActive,
+    showStoryBibleWizard,
+    showNotebookRegistration,
+    activeModal
+  } from '$lib/stores';
   import Modal from './Modal.svelte';
   import Toast from './Toast.svelte';
   import StatusBar from './StatusBar.svelte';
   import SettingsPanel from './SettingsPanel.svelte';
+  import StoryBibleWizard from './StoryBibleWizard.svelte';
+  import NotebookRegistration from './NotebookRegistration.svelte';
 
   // Panel collapse state
   let studioPanelCollapsed = false;
@@ -80,6 +88,23 @@
 
   function openSettings() {
     showSettings = true;
+  }
+
+  // Close Story Bible wizard
+  function closeStoryBibleWizard() {
+    $showStoryBibleWizard = false;
+    $activeModal = null;
+  }
+
+  // Close Notebook Registration
+  function closeNotebookRegistration() {
+    $showNotebookRegistration = false;
+    $activeModal = null;
+  }
+
+  // Handle Story Bible completion
+  function handleStoryBibleComplete(event) {
+    closeStoryBibleWizard();
   }
 </script>
 
@@ -215,6 +240,29 @@
   <!-- Settings Modal -->
   <Modal bind:open={showSettings} title="Settings" size="large">
     <SettingsPanel />
+  </Modal>
+
+  <!-- Story Bible Wizard Modal -->
+  <Modal
+    bind:open={$showStoryBibleWizard}
+    title="Story Bible Wizard"
+    size="large"
+    on:close={closeStoryBibleWizard}
+  >
+    <StoryBibleWizard
+      on:complete={handleStoryBibleComplete}
+      on:close={closeStoryBibleWizard}
+    />
+  </Modal>
+
+  <!-- NotebookLM Registration Modal -->
+  <Modal
+    bind:open={$showNotebookRegistration}
+    title="NotebookLM Integration"
+    size="medium"
+    on:close={closeNotebookRegistration}
+  >
+    <NotebookRegistration on:close={closeNotebookRegistration} />
   </Modal>
 </div>
 

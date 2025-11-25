@@ -16,17 +16,32 @@ let toastId = 0;
 
 /**
  * Add a new toast notification
- * @param {Object} options Toast options
- * @param {string} options.type - 'success' | 'error' | 'warning' | 'info'
- * @param {string} options.message - The message to display
- * @param {number} [options.duration=3000] - Auto-dismiss time in ms (0 for no auto-dismiss)
- * @param {Object} [options.action] - Optional action button
- * @param {string} options.action.label - Button label
- * @param {Function} options.action.handler - Click handler
+ * @param {Object|string} options Toast options or message string
+ * @param {string} [typeArg] - Type if first arg is message string: 'success' | 'error' | 'warning' | 'info'
+ * @param {number} [durationArg] - Duration if using string signature
  * @returns {number} The toast ID
+ *
+ * Usage:
+ * addToast({ type: 'success', message: 'Settings saved!' });
+ * addToast('Settings saved!', 'success');
+ * addToast('Error occurred', 'error', 5000);
  */
-export function addToast({ type = 'info', message, duration = 3000, action = null }) {
+export function addToast(options, typeArg = 'info', durationArg = 3000) {
   const id = ++toastId;
+
+  // Support both object and string signatures
+  let type, message, duration, action;
+  if (typeof options === 'string') {
+    message = options;
+    type = typeArg;
+    duration = durationArg;
+    action = null;
+  } else {
+    type = options.type || 'info';
+    message = options.message;
+    duration = options.duration ?? 3000;
+    action = options.action || null;
+  }
 
   const toast = {
     id,
