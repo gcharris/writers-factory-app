@@ -2,8 +2,19 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime, timezone
+import os
 
 Base = declarative_base()
+
+# Database configuration
+DB_URL = os.getenv("DATABASE_URL", "sqlite:///./writers_factory.db")
+engine = create_engine(DB_URL, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Settings database configuration (separate DB for settings)
+SETTINGS_DB_URL = os.getenv("SETTINGS_DB_URL", "sqlite:///./settings.db")
+settings_engine = create_engine(SETTINGS_DB_URL, echo=False)
+SettingsSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=settings_engine)
 
 class Node(Base):
     __tablename__ = 'nodes'
