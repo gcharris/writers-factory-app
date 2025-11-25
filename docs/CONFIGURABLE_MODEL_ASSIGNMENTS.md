@@ -1,10 +1,12 @@
 # Configurable Model Assignments
 
-**Phase 3E Feature**: All AI model assignments are fully configurable, allowing writers to choose the optimal model for each task type based on their preferences, budget, and quality requirements.
+**✅ IMPLEMENTED (Phase 3E)**: All AI model assignments are fully configurable, allowing writers to choose the optimal model for each task type based on their preferences, budget, and quality requirements.
 
 ## Overview
 
-The Writers Factory supports multiple AI providers and allows you to assign specific models to specific tasks. You can mix and match local models (via Ollama) with cloud models (OpenAI, Anthropic, DeepSeek, Qwen) based on your needs.
+The Writers Factory supports multiple AI providers and allows you to assign specific models to specific tasks. You can mix and match local models (via Ollama) with cloud models (OpenAI, Anthropic, DeepSeek, Qwen, Google Gemini) based on your needs.
+
+**Current Status**: This feature is fully implemented and working in the codebase. All configuration examples below are functional and can be used immediately.
 
 ---
 
@@ -16,10 +18,10 @@ The Foreman uses different models for different types of tasks. Configure these 
 
 ```yaml
 foreman:
-  coordinator_model: "mistral"  # Fallback for undefined tasks
+  coordinator_model: "mistral:7b"  # Fallback for undefined tasks (local Ollama)
 
   task_models:
-    coordinator: "mistral"                      # Simple coordination
+    coordinator: "mistral:7b"                   # Simple coordination (local)
     health_check_review: "deepseek-chat"        # Health check interpretation
     voice_calibration_guidance: "deepseek-chat" # Voice tournament guidance
     beat_structure_advice: "deepseek-chat"      # Beat structure analysis
@@ -53,16 +55,16 @@ Graph Health Service checks can each use different models optimized for their sp
 ```yaml
 health_checks:
   models:
-    default_model: "llama3.2"  # Fallback
+    default_model: "llama3.2:3b"  # Fallback (local)
 
-    # Task-specific assignments (Phase 3E)
-    timeline_consistency: "claude-3-5-sonnet"  # Best at narrative reasoning
-    theme_resonance: "gpt-4o"                   # Excellent thematic analysis
-    flaw_challenges: "deepseek-chat"            # Deep character psychology
-    cast_function: "qwen-plus"                  # Fast, cheap, good enough
-    pacing_analysis: "mistral"                  # Local for fast iteration
-    beat_progress: "mistral"                    # Structural validation
-    symbolic_layering: "gpt-4o"                 # Pattern recognition
+    # Task-specific assignments (Phase 3E - Implemented)
+    timeline_consistency: "claude-3-7-sonnet-20250219"  # Best at narrative reasoning
+    theme_resonance: "gpt-4o"                            # Excellent thematic analysis
+    flaw_challenges: "deepseek-chat"                     # Deep character psychology
+    cast_function: "qwen-plus"                           # Fast, cheap, good enough
+    pacing_analysis: "mistral:7b"                        # Local for fast iteration
+    beat_progress: "mistral:7b"                          # Structural validation
+    symbolic_layering: "gpt-4o"                          # Pattern recognition
 ```
 
 ### Health Check Types
@@ -88,9 +90,9 @@ health_checks:
 
 | Model | Size | Best For | Speed |
 |-------|------|----------|-------|
-| `mistral` | 7B | Coordination, structure validation | Very Fast |
-| `llama3.2` | 3B | Simple tasks, ultra-fast responses | Fastest |
-| `llama3.1` | 8B-70B | General purpose, good quality | Fast-Medium |
+| `mistral:7b` | 7B | Coordination, structure validation, prose | Very Fast |
+| `llama3.2:3b` | 3B | Simple tasks, ultra-fast responses | Fastest |
+| `llama3.1` | 8B-70B | General purpose, good quality (if installed) | Fast-Medium |
 
 ### Cloud Models
 
@@ -145,12 +147,13 @@ task_models:
 ```yaml
 # Requires GEMINI_API_KEY in .env
 task_models:
-  theme_analysis: "gemini-1.5-pro"
-  structural_planning: "gemini-1.5-flash"  # Faster, cheaper
+  theme_analysis: "gemini-2.0-flash-exp"
+  structural_planning: "gemini-2.0-flash-exp"
 ```
 
-**Cost**: ~$1.25/1M tokens (Pro), ~$0.075/1M tokens (Flash)
-**Best For**: Multimodal analysis, long-context reasoning, creative tasks
+**Cost**: Free during experimental period, then ~$0.075/1M tokens
+**Best For**: Multimodal analysis, long-context reasoning (1M tokens), creative tasks, fast iteration
+**Model ID in agents.yaml**: `gemini-2.0-flash-exp`
 
 ---
 
@@ -367,35 +370,35 @@ POST /foreman/chat
 
 ```yaml
 foreman:
-  coordinator_model: "mistral"
+  coordinator_model: "mistral:7b"
   task_models:
-    coordinator: "mistral"
-    health_check_review: "mistral"
-    voice_calibration_guidance: "mistral"
-    beat_structure_advice: "mistral"
-    conflict_resolution: "mistral"
-    scaffold_enrichment_decisions: "mistral"
-    theme_analysis: "mistral"
-    structural_planning: "mistral"
+    coordinator: "mistral:7b"
+    health_check_review: "mistral:7b"
+    voice_calibration_guidance: "mistral:7b"
+    beat_structure_advice: "mistral:7b"
+    conflict_resolution: "mistral:7b"
+    scaffold_enrichment_decisions: "mistral:7b"
+    theme_analysis: "mistral:7b"
+    structural_planning: "mistral:7b"
 
 health_checks:
   models:
-    default_model: "mistral"
-    timeline_consistency: "mistral"
-    theme_resonance: "mistral"
-    flaw_challenges: "mistral"
-    cast_function: "mistral"
+    default_model: "mistral:7b"
+    timeline_consistency: "mistral:7b"
+    theme_resonance: "mistral:7b"
+    flaw_challenges: "mistral:7b"
+    cast_function: "mistral:7b"
 ```
 
 **Cost**: $0/month
-**Quality**: Good for structure, adequate for creativity
+**Quality**: Good for structure, adequate for creativity, decent prose
 
 ### Example 2: Smart Budget (DeepSeek First)
 
 ```yaml
 foreman:
   task_models:
-    coordinator: "mistral"  # Fast, local
+    coordinator: "mistral:7b"  # Fast, local
     health_check_review: "deepseek-chat"
     voice_calibration_guidance: "deepseek-chat"
     beat_structure_advice: "deepseek-chat"
@@ -409,7 +412,7 @@ health_checks:
     timeline_consistency: "deepseek-chat"
     theme_resonance: "deepseek-chat"
     flaw_challenges: "deepseek-chat"
-    cast_function: "mistral"  # Local is fine here
+    cast_function: "mistral:7b"  # Local is fine here
 ```
 
 **Cost**: ~$0.50-1/month
@@ -420,23 +423,23 @@ health_checks:
 ```yaml
 foreman:
   task_models:
-    coordinator: "mistral"
-    health_check_review: "claude-3-5-sonnet"
-    voice_calibration_guidance: "claude-3-5-sonnet"
-    beat_structure_advice: "claude-3-5-sonnet"
-    conflict_resolution: "claude-3-5-sonnet"
+    coordinator: "mistral:7b"
+    health_check_review: "claude-3-7-sonnet-20250219"
+    voice_calibration_guidance: "claude-3-7-sonnet-20250219"
+    beat_structure_advice: "claude-3-7-sonnet-20250219"
+    conflict_resolution: "claude-3-7-sonnet-20250219"
     scaffold_enrichment_decisions: "deepseek-chat"
     theme_analysis: "gpt-4o"
-    structural_planning: "claude-3-5-sonnet"
+    structural_planning: "claude-3-7-sonnet-20250219"
 
 health_checks:
   models:
-    timeline_consistency: "claude-3-5-sonnet"
+    timeline_consistency: "claude-3-7-sonnet-20250219"
     theme_resonance: "gpt-4o"
     flaw_challenges: "deepseek-chat"
     cast_function: "qwen-plus"
-    pacing_analysis: "mistral"
-    beat_progress: "mistral"
+    pacing_analysis: "mistral:7b"
+    beat_progress: "mistral:7b"
     symbolic_layering: "gpt-4o"
 ```
 
