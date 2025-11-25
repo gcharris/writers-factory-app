@@ -15,6 +15,12 @@
   import { createEventDispatcher } from 'svelte';
   import SettingsAgents from './SettingsAgents.svelte';
   import SettingsOrchestrator from './SettingsOrchestrator.svelte';
+  import SettingsScoring from './SettingsScoring.svelte';
+  import SettingsAntiPatterns from './SettingsAntiPatterns.svelte';
+  import SettingsEnhancement from './SettingsEnhancement.svelte';
+  import SettingsTournament from './SettingsTournament.svelte';
+  import SettingsForeman from './SettingsForeman.svelte';
+  import SettingsContext from './SettingsContext.svelte';
 
   export let activeTab = 'agents';
 
@@ -24,11 +30,11 @@
     { id: 'agents', label: 'API Keys', icon: 'key', priority: 'P0' },
     { id: 'orchestrator', label: 'AI Model', icon: 'cpu', priority: 'P0' },
     { id: 'scoring', label: 'Scoring', icon: 'chart', priority: 'P2' },
-    { id: 'voice', label: 'Voice', icon: 'mic', priority: 'P2' },
+    { id: 'anti-patterns', label: 'Anti-Patterns', icon: 'mic', priority: 'P2' },
     { id: 'enhancement', label: 'Enhancement', icon: 'wand', priority: 'P2' },
+    { id: 'tournament', label: 'Tournament', icon: 'chart', priority: 'P2' },
     { id: 'foreman', label: 'Foreman', icon: 'bot', priority: 'P2' },
-    { id: 'health', label: 'Health Checks', icon: 'heart', priority: 'P2' },
-    { id: 'advanced', label: 'Advanced', icon: 'settings', priority: 'P3' },
+    { id: 'context', label: 'Context', icon: 'settings', priority: 'P2' },
   ];
 
   // Icons for each tab
@@ -118,41 +124,17 @@
     {:else if activeTab === 'orchestrator'}
       <SettingsOrchestrator />
     {:else if activeTab === 'scoring'}
-      <div class="coming-soon">
-        <h3>Scoring Settings</h3>
-        <p>Configure rubric weights for scene scoring.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
-    {:else if activeTab === 'voice'}
-      <div class="coming-soon">
-        <h3>Voice Settings</h3>
-        <p>Configure voice authentication strictness.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsScoring />
+    {:else if activeTab === 'anti-patterns'}
+      <SettingsAntiPatterns />
     {:else if activeTab === 'enhancement'}
-      <div class="coming-soon">
-        <h3>Enhancement Settings</h3>
-        <p>Configure enhancement thresholds and passes.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsEnhancement />
+    {:else if activeTab === 'tournament'}
+      <SettingsTournament />
     {:else if activeTab === 'foreman'}
-      <div class="coming-soon">
-        <h3>Foreman Behavior</h3>
-        <p>Configure Foreman proactiveness and verbosity.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
-    {:else if activeTab === 'health'}
-      <div class="coming-soon">
-        <h3>Health Check Settings</h3>
-        <p>Configure health check thresholds and triggers.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
-    {:else if activeTab === 'advanced'}
-      <div class="coming-soon">
-        <h3>Advanced Settings</h3>
-        <p>Configure RAG, context limits, and file watching.</p>
-        <span class="badge">Coming in Phase 5.3</span>
-      </div>
+      <SettingsForeman />
+    {:else if activeTab === 'context'}
+      <SettingsContext />
     {/if}
   </div>
 </div>
@@ -254,34 +236,5 @@
     flex: 1;
     padding: var(--space-6, 24px);
     overflow-y: auto;
-  }
-
-  .coming-soon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 300px;
-    text-align: center;
-  }
-
-  .coming-soon h3 {
-    margin: 0 0 var(--space-2, 8px) 0;
-    font-size: var(--text-xl, 18px);
-    color: var(--text-primary, #e6edf3);
-  }
-
-  .coming-soon p {
-    margin: 0 0 var(--space-4, 16px) 0;
-    color: var(--text-secondary, #8b949e);
-  }
-
-  .coming-soon .badge {
-    padding: var(--space-2, 8px) var(--space-4, 16px);
-    background: var(--bg-tertiary, #242d38);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: var(--radius-full, 9999px);
-    font-size: var(--text-xs, 11px);
-    color: var(--text-muted, #6e7681);
   }
 </style>
