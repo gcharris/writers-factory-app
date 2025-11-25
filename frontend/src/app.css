@@ -1,0 +1,327 @@
+/**
+ * Writers Factory - Cyber-Noir Design System
+ *
+ * This file defines the complete design token library for the Writers Factory UI.
+ * All components should use these CSS custom properties for consistency.
+ *
+ * Visual Identity: "Cyber-Noir"
+ * - Professional IDE aesthetic (VS Code meets Bloomberg Terminal)
+ * - Dark theme with gold/cyan accents
+ * - Literary soul with technical precision
+ */
+
+:root {
+  /* ============================================
+   * BACKGROUNDS
+   * ============================================ */
+
+  /* Primary app background (deepest) */
+  --bg-primary: #0f1419;
+
+  /* Panel backgrounds */
+  --bg-secondary: #1a2027;
+
+  /* Card/elevated surface backgrounds */
+  --bg-tertiary: #242d38;
+
+  /* Hover states, elevated elements */
+  --bg-elevated: #2d3640;
+
+  /* Input field backgrounds */
+  --bg-input: #161b22;
+
+  /* ============================================
+   * TEXT COLORS
+   * ============================================ */
+
+  /* Primary text (high contrast) */
+  --text-primary: #e6edf3;
+
+  /* Secondary text (descriptions, labels) */
+  --text-secondary: #8b949e;
+
+  /* Muted text (timestamps, hints) */
+  --text-muted: #6e7681;
+
+  /* Disabled text */
+  --text-disabled: #484f58;
+
+  /* ============================================
+   * ACCENT COLORS
+   * ============================================ */
+
+  /* Gold - Director Mode, active states, primary actions */
+  --accent-gold: #d4a574;
+  --accent-gold-hover: #e0b585;
+  --accent-gold-active: #c99a69;
+  --accent-gold-muted: rgba(212, 165, 116, 0.2);
+
+  /* Cyan - Links, interactive elements, secondary actions */
+  --accent-cyan: #58a6ff;
+  --accent-cyan-hover: #79b8ff;
+  --accent-cyan-active: #388bfd;
+  --accent-cyan-muted: rgba(88, 166, 255, 0.2);
+
+  /* Purple - Voice Calibration mode accent */
+  --accent-purple: #a371f7;
+  --accent-purple-hover: #b689f9;
+  --accent-purple-muted: rgba(163, 113, 247, 0.2);
+
+  /* Blue - Architect mode accent */
+  --accent-blue: #2f81f7;
+  --accent-blue-hover: #58a6ff;
+  --accent-blue-muted: rgba(47, 129, 247, 0.2);
+
+  /* ============================================
+   * SEMANTIC COLORS
+   * ============================================ */
+
+  /* Success - Complete, valid, healthy */
+  --success: #3fb950;
+  --success-hover: #56d364;
+  --success-muted: rgba(63, 185, 80, 0.2);
+
+  /* Warning - In progress, caution, partial */
+  --warning: #d29922;
+  --warning-hover: #e3b341;
+  --warning-muted: rgba(210, 153, 34, 0.2);
+
+  /* Error - Failed, invalid, critical */
+  --error: #f85149;
+  --error-hover: #ff7b72;
+  --error-muted: rgba(248, 81, 73, 0.2);
+
+  /* Info - Neutral information */
+  --info: #58a6ff;
+  --info-muted: rgba(88, 166, 255, 0.15);
+
+  /* ============================================
+   * BORDERS
+   * ============================================ */
+
+  /* Default border */
+  --border: #2d3a47;
+
+  /* Subtle border (dividers) */
+  --border-subtle: #21262d;
+
+  /* Strong border (focus rings, active states) */
+  --border-strong: #3d4752;
+
+  /* ============================================
+   * SHADOWS
+   * ============================================ */
+
+  /* Subtle elevation (cards) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  /* Medium elevation (dropdowns, popovers) */
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+
+  /* Large elevation (modals, overlays) */
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Glow effect for active/focus states */
+  --shadow-glow-gold: 0 0 12px rgba(212, 165, 116, 0.3);
+  --shadow-glow-cyan: 0 0 12px rgba(88, 166, 255, 0.3);
+
+  /* ============================================
+   * SPACING (4px base unit)
+   * ============================================ */
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ============================================
+   * BORDER RADIUS
+   * ============================================ */
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ============================================
+   * TYPOGRAPHY
+   * ============================================ */
+
+  /* Font Families */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', monospace;
+  --font-prose: 'Merriweather', Georgia, 'Times New Roman', serif;
+
+  /* Font Sizes */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ============================================
+   * LAYOUT DIMENSIONS
+   * ============================================ */
+
+  /* Panel widths (4-panel IDE layout) */
+  --panel-binder-width: 240px;
+  --panel-foreman-width: 320px;
+  --panel-studio-width: 280px;
+  --panel-canvas-min: 500px;
+
+  /* Component heights */
+  --header-height: 40px;
+  --status-bar-height: 32px;
+  --menu-bar-height: 36px;
+  --input-height: 36px;
+  --button-height: 32px;
+
+  /* ============================================
+   * TRANSITIONS
+   * ============================================ */
+
+  --transition-fast: 100ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ============================================
+   * Z-INDEX LAYERS
+   * ============================================ */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
+
+  /* ============================================
+   * FOREMAN MODE COLORS
+   * ============================================ */
+
+  --mode-architect: var(--accent-blue);
+  --mode-voice: var(--accent-purple);
+  --mode-director: var(--accent-gold);
+  --mode-editor: var(--success);
+}
+
+/* ============================================
+ * GLOBAL RESETS & BASE STYLES
+ * ============================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* ============================================
+ * SCROLLBAR STYLING (Cyber-Noir)
+ * ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-secondary);
+}
+
+/* ============================================
+ * FOCUS STATES (Accessibility)
+ * ============================================ */
+
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* ============================================
+ * SELECTION STYLING
+ * ============================================ */
+
+::selection {
+  background: var(--accent-cyan-muted);
+  color: var(--text-primary);
+}
+
+/* ============================================
+ * UTILITY CLASSES
+ * ============================================ */
+
+/* Text colors */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-error { color: var(--error); }
+.text-gold { color: var(--accent-gold); }
+.text-cyan { color: var(--accent-cyan); }
+
+/* Background colors */
+.bg-primary { background: var(--bg-primary); }
+.bg-secondary { background: var(--bg-secondary); }
+.bg-tertiary { background: var(--bg-tertiary); }
+
+/* Font families */
+.font-ui { font-family: var(--font-ui); }
+.font-mono { font-family: var(--font-mono); }
+.font-prose { font-family: var(--font-prose); }

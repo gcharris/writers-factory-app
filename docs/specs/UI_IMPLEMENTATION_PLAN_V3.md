@@ -1,8 +1,8 @@
-# Writers Factory - Complete UI Implementation Plan v2.0
+# Writers Factory - Complete UI Implementation Plan v3.0
 
 **Date**: November 25, 2025
 **Status**: Production Ready
-**Supersedes**: UI_IMPLEMENTATION_PLAN.md (infrastructure-only version)
+**Supersedes**: UI_IMPLEMENTATION_PLAN_V2.md
 
 ---
 
@@ -11,23 +11,183 @@
 This document provides a **complete** UI implementation plan covering all 87 components required to make the Writers Factory backend features accessible to users. It consolidates:
 - Original infrastructure plan (4-panel layout, design system)
 - Complete component inventory from gap analysis
-- 3-track parallel development strategy
+- **4-track parallel development strategy** (added Track 0: Design System)
 - Phased rollout following Foreman workflow modes
+- **Direct implementation approach** (Figma optional for complex components only)
 
 **Key Metrics**:
 - **Total Components**: 87
-- **Total Effort**: 285 hours (~7-8 weeks)
 - **Backend API Coverage**: 88 endpoints across 13 categories
-- **Current Coverage**: 21% (18 components)
-- **Missing Coverage**: 79% (69 components)
+- **Current Coverage**: 21% (8 components exist)
+- **Missing Coverage**: 79% (69 components to build)
 
-**Critical Insight**: Settings Panel (specifically SettingsAgents.svelte for API keys) is a P0 blocker that prevents access to 80% of backend features. ROI: 6-8 hours of Settings UI work unlocks ~40 hours of backend functionality.
+**Critical Insight**: Settings Panel (specifically SettingsAgents.svelte for API keys) is a P0 blocker that prevents access to 80% of backend features.
+
+**Design Decision**: Direct implementation using detailed UX_DESIGN_PROMPTS.md specs. Figma reserved only for complex spatial layouts (Voice Tournament 5×5 grid, BeatSheet Editor).
 
 ---
 
-## Strategic Approach: 3-Track Parallel Development
+## Implementation Approach: Figma vs. Direct
 
-### Track 1: Critical UI (Week 1) - START IMMEDIATELY
+### Direct Implementation (DEFAULT)
+
+The UX_DESIGN_PROMPTS.md contains detailed specifications with:
+- Exact pixel dimensions (240px binder, 320px foreman, etc.)
+- Complete color palette (hex codes for all states)
+- Typography scale (sizes, weights, line heights)
+- Component states (default, hover, active, disabled, focus)
+- Spacing system (4px base grid)
+
+**Use direct implementation for:**
+- Settings panels (forms + tabs - patterns exist)
+- 4-panel layout (flex layout - pattern exists)
+- Studio panel (card grid - `.agent-card` pattern exists)
+- Status bar, toasts, loading states (standard patterns)
+- Menu bar (standard desktop pattern)
+- Chat interfaces (existing ChatSidebar pattern)
+
+### Figma Validation (OPTIONAL)
+
+**Use Figma only when visual validation would prevent rework:**
+
+| Component | Reason for Figma |
+|-----------|------------------|
+| VoiceVariantGrid (5×5) | Complex 25-cell grid needs spatial validation |
+| BeatSheetEditor | 15-beat table with drag-drop reordering |
+| SceneHybridCreator | Multi-section merge UI is novel |
+| GraphVisualization | Force-directed layout needs visual tuning |
+
+**Figma workflow:**
+1. Feed specific prompt from UX_DESIGN_PROMPTS.md to Figma AI
+2. Generate mockup
+3. Validate layout decisions
+4. Implement based on mockup + specs
+
+### Existing Patterns to Reuse
+
+From the 8 existing components (~2,050 lines):
+
+| Pattern | Source Component | Reuse For |
+|---------|------------------|-----------|
+| Card with status | AgentPanel.svelte | Studio cards, Story Bible progress |
+| Chat bubbles | ChatSidebar.svelte | Foreman chat, any chat UI |
+| Tab switcher | TabbedPanel.svelte | Settings tabs, mode tabs |
+| File tree | FileTree.svelte | Binder panel |
+| Status indicators | AgentPanel.svelte | Health indicators, progress dots |
+| Form inputs | NotebookPanel.svelte | Settings forms, wizards |
+| Loading states | Multiple | All async operations |
+
+---
+
+## Design System: Cyber-Noir Theme
+
+### Current State vs. Target
+
+The existing 8 components use a **light theme with purple accent**. The target is a **dark Cyber-Noir theme** per UX_DESIGN_PROMPTS.md.
+
+| Aspect | Current | Cyber-Noir Target |
+|--------|---------|-------------------|
+| Mode | Light theme | Dark theme |
+| Background | `#f8fafc` | `#0f1419` |
+| Panel BG | `#ffffff` | `#1a2027` |
+| Card BG | `#f3f4f6` | `#242d38` |
+| Text Primary | `#111827` | `#e6edf3` |
+| Text Secondary | `#6b7280` | `#8b949e` |
+| Accent | `#8b5cf6` (purple) | `#d4a574` (gold) / `#58a6ff` (cyan) |
+| Borders | `#e5e7eb` | `#2d3a47` |
+
+### Design Tokens (CSS Variables)
+
+All components will use CSS custom properties defined in `frontend/src/app.css`:
+
+```css
+:root {
+  /* Backgrounds */
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a2027;
+  --bg-tertiary: #242d38;
+  --bg-elevated: #2d3640;
+
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+
+  /* Accents */
+  --accent-gold: #d4a574;
+  --accent-cyan: #58a6ff;
+  --accent-gold-hover: #e0b585;
+  --accent-cyan-hover: #79b8ff;
+
+  /* Semantic */
+  --success: #3fb950;
+  --warning: #d29922;
+  --error: #f85149;
+
+  /* Borders */
+  --border: #2d3a47;
+  --border-subtle: #21262d;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-ui: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  --font-prose: 'Merriweather', Georgia, serif;
+}
+```
+
+---
+
+## Strategic Approach: 4-Track Parallel Development
+
+### Track 0: Design System (PREREQUISITE)
+
+**Goal**: Establish Cyber-Noir foundation before building new components
+
+**Tasks**:
+1. Create `frontend/src/app.css` with design tokens
+2. Import tokens in `frontend/src/app.html`
+3. Migrate 8 existing components to use CSS variables
+4. Validate dark theme renders correctly
+
+**Components to Migrate**:
+| Component | Lines | Effort |
+|-----------|-------|--------|
+| ChatSidebar.svelte | 549 | 1h |
+| HealthDashboard.svelte | 495 | 1h |
+| NotebookPanel.svelte | 384 | 45min |
+| AgentPanel.svelte | 209 | 30min |
+| FileTree.svelte | 187 | 30min |
+| TabbedPanel.svelte | 79 | 15min |
+| Editor.svelte | 55 | 15min |
+| +page.svelte | 92 | 15min |
+
+**Total Track 0 Effort**: 5-6 hours
+
+**Outcome**: All existing components use Cyber-Noir theme. New components inherit automatically.
+
+---
+
+### Track 1: Critical UI - START AFTER TRACK 0
 
 **Goal**: Unblock backend features and enable basic cloud functionality
 
