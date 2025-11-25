@@ -102,5 +102,43 @@ export const registeredNotebooks = writable([]); // Array of { id, name, role }
 export const showNotebookRegistration = writable(false);
 
 // --- UI Modal State ---
-export const activeModal = writable(null); // 'story-bible' | 'notebook-registration' | 'template-editor' | null
+export const activeModal = writable(null); // 'story-bible' | 'notebook-registration' | 'template-editor' | 'voice-tournament' | null
 export const modalData = writable(null); // Data passed to modal (e.g., which template to edit)
+
+// --- Voice Calibration State (VOICE_CALIBRATION Mode) ---
+
+// Available agents for tournament
+export const voiceAgents = writable([]);
+export const voiceAgentsLoading = writable(false);
+
+// Current tournament state
+export const currentTournament = writable(null); // { tournament_id, status, selected_agents, variants }
+export const tournamentLoading = writable(false);
+export const tournamentStatus = writable(null); // 'not_started' | 'running' | 'awaiting_selection' | 'complete' | 'failed'
+
+// Tournament variants
+export const tournamentVariants = writable([]); // Array of variants from all agents
+export const selectedVariants = writable([]); // Variants selected for comparison
+
+// Voice configuration (set during winner selection)
+export const voiceConfig = writable({
+    pov: 'third_limited',
+    tense: 'past',
+    voice_type: 'character_voice',
+    metaphor_domains: [],
+    anti_patterns: [],
+    phase_evolution: {
+        'Act 1': '',
+        'Act 2A': '',
+        'Act 2B': '',
+        'Act 3': ''
+    }
+});
+
+// Voice calibration result
+export const voiceCalibration = writable(null); // Final voice calibration document
+export const voiceBundleGenerated = writable(false);
+
+// UI state for voice calibration
+export const showVoiceTournament = writable(false);
+export const voiceTournamentStep = writable(0); // 0: Configure, 1: Running, 2: Review Variants, 3: Select Winner, 4: Generate Bundle

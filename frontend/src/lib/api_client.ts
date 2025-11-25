@@ -667,6 +667,174 @@ export class WritersFactoryAPI {
             body: JSON.stringify({ notebook_id: notebookId, query }),
         });
     }
+
+    // ==========================================
+    // Voice Calibration (VOICE_CALIBRATION Mode)
+    // ==========================================
+
+    /**
+     * Get available agents for voice tournament.
+     */
+    async getVoiceCalibrationAgents(): Promise<{
+        agents: Array<{
+            id: string;
+            name: string;
+            provider: string;
+            model: string;
+            role: string;
+            enabled: boolean;
+            has_valid_key: boolean;
+            use_cases: string[];
+        }>;
+    }> {
+        return this._request('/voice-calibration/agents');
+    }
+
+    /**
+     * Start a voice calibration tournament.
+     * @param projectId Project identifier
+     * @param testPrompt The test passage prompt
+     * @param testContext Context about the scene
+     * @param agentIds List of agent IDs to include
+     * @param variantsPerAgent Number of variants per agent (default 5)
+     * @param voiceDescription Optional writer's voice description
+     */
+    async startVoiceTournament(
+        projectId: string,
+        testPrompt: string,
+        testContext: string,
+        agentIds: string[],
+        variantsPerAgent: number = 5,
+        voiceDescription?: string
+    ): Promise<{
+        tournament_id: string;
+        project_id: string;
+        status: string;
+        selected_agents: string[];
+    }> {
+        return this._request('/voice-calibration/tournament/start', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                test_prompt: testPrompt,
+                test_context: testContext,
+                agent_ids: agentIds,
+                variants_per_agent: variantsPerAgent,
+                voice_description: voiceDescription
+            }),
+        });
+    }
+
+    /**
+     * Get tournament status.
+     * @param tournamentId The tournament ID
+     */
+    async getTournamentStatus(tournamentId: string): Promise<{
+        tournament_id: string;
+        status: string;
+        selected_agents: string[];
+        variant_count: number;
+        created_at: string;
+        completed_at: string | null;
+    }> {
+        return this._request(`/voice-calibration/tournament/${tournamentId}/status`);
+    }
+
+    /**
+     * Get tournament variants.
+     * @param tournamentId The tournament ID
+     * @param agentId Optional filter by agent
+     */
+    async getTournamentVariants(tournamentId: string, agentId?: string): Promise<{
+        variants: Array<{
+            agent_id: string;
+            agent_name: string;
+            variant_number: number;
+            strategy: string;
+            content: string;
+            word_count: number;
+            generated_at: string;
+        }>;
+    }> {
+        const params = agentId ? `?agent_id=${agentId}` : '';
+        return this._request(`/voice-calibration/tournament/${tournamentId}/variants${params}`);
+    }
+
+    /**
+     * Select winning variant and create voice calibration document.
+     * @param tournamentId The tournament ID
+     * @param winnerAgentId The winning agent's ID
+     * @param winnerVariantIndex Index of winning variant
+     * @param voiceConfig Voice configuration choices
+     */
+    async selectVoiceWinner(
+        tournamentId: string,
+        winnerAgentId: string,
+        winnerVariantIndex: number,
+        voiceConfig: {
+            pov: string;
+            tense: string;
+            voice_type: string;
+            metaphor_domains: string[];
+            anti_patterns: string[];
+            phase_evolution: Record<string, string>;
+        }
+    ): Promise<{
+        message: string;
+        voice_calibration: {
+            project_id: string;
+            pov: string;
+            tense: string;
+            voice_type: string;
+            winning_agent: string;
+        };
+    }> {
+        return this._request(`/voice-calibration/tournament/${tournamentId}/select`, {
+            method: 'POST',
+            body: JSON.stringify({
+                winner_agent_id: winnerAgentId,
+                winner_variant_index: winnerVariantIndex,
+                voice_config: voiceConfig
+            }),
+        });
+    }
+
+    /**
+     * Generate Voice Reference Bundle files.
+     * @param projectId Project identifier
+     */
+    async generateVoiceBundle(projectId: string): Promise<{
+        files: {
+            gold_standard: string;
+            anti_patterns: string;
+            phase_evolution?: string;
+        };
+        message: string;
+    }> {
+        return this._request(`/voice-calibration/generate-bundle/${projectId}`, {
+            method: 'POST',
+        });
+    }
+
+    /**
+     * Get existing voice calibration for project.
+     * @param projectId Project identifier
+     */
+    async getVoiceCalibration(projectId: string): Promise<{
+        calibration: {
+            project_id: string;
+            pov: string;
+            tense: string;
+            voice_type: string;
+            metaphor_domains: string[];
+            anti_patterns: string[];
+            phase_evolution: Record<string, string>;
+            winning_agent: string;
+            reference_sample: string;
+        } | null;
+    }> {
+        return this._request(`/voice-calibration/${projectId}`);
+    }
 }
 
 // Export a singleton instance for easy use across the Svelte app
