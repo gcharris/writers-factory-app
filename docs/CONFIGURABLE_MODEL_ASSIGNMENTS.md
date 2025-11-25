@@ -141,6 +141,17 @@ task_models:
 **Cost**: ~$0.40/1M tokens (Plus), ~$0.12/1M tokens (Turbo)
 **Best For**: Fast iteration, supporting character tracking, general tasks
 
+#### Google Gemini
+```yaml
+# Requires GEMINI_API_KEY in .env
+task_models:
+  theme_analysis: "gemini-1.5-pro"
+  structural_planning: "gemini-1.5-flash"  # Faster, cheaper
+```
+
+**Cost**: ~$1.25/1M tokens (Pro), ~$0.075/1M tokens (Flash)
+**Best For**: Multimodal analysis, long-context reasoning, creative tasks
+
 ---
 
 ## Configuration Methods
@@ -302,6 +313,17 @@ health_checks:
 ✅ Fast iteration tasks
 ✅ General coordination (cloud alternative)
 ✅ Budget-conscious cloud option
+
+### When to Use Gemini (Pro/Flash)
+
+✅ Long-context analysis (up to 1M tokens)
+✅ Multimodal tasks (images, diagrams)
+✅ Creative writing assistance
+✅ Thematic exploration
+✅ Fast iteration (Flash is very cheap and fast)
+
+❌ Highly structured reasoning (use Claude)
+❌ Deep character psychology (use DeepSeek)
 
 ---
 
