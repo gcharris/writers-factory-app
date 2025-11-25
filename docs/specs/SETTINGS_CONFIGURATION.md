@@ -1,8 +1,9 @@
 # Settings & Configuration Specification
 
-**Version**: 1.0 (Draft)
-**Status**: Future Phase - Captured for Later
-**Priority**: Phase 5 (Polish & Release) or as-needed earlier
+**Version**: 2.0
+**Status**: Phase 3C - Implementation In Progress
+**Priority**: P0 Critical - Blocks Universal Framework Goal
+**Moved Up From**: Phase 5 → Phase 3C (November 24, 2025)
 
 ---
 
@@ -195,6 +196,95 @@ custom_patterns:
 
 ---
 
+### 8. AI Intelligence & Model Orchestration (Phase 3E)
+
+**Location:** Settings → AI Intelligence
+
+This category provides intelligent model selection and multi-model consensus for critical decisions. Phase 3E transforms the Writers Factory from manual model assignment into an intelligent orchestrator with budget controls and quality tiers.
+
+#### 8.1 Model Orchestrator (Phase 3)
+
+Automatic model selection based on quality requirements and budget constraints.
+
+| Setting | Type | Default | Range | Description |
+|---------|------|---------|-------|-------------|
+| Enable Orchestrator | bool | false | - | When enabled, overrides manual task_models with automatic selection |
+| Quality Tier | select | Balanced | Budget/Balanced/Premium | Automatic model selection strategy |
+| Monthly Budget | number | None | $0-100 USD | Cost limit per month (None = unlimited) |
+| Prefer Local Models | bool | false | - | Prefer local Ollama models when quality is similar |
+| Cost Tracking Enabled | bool | true | - | Track and display monthly AI spending |
+
+**Quality Tiers**:
+- **Budget** - Cheapest models with quality ≥ 6/10 (mostly local Mistral + DeepSeek for critical tasks)
+- **Balanced** - Best quality per dollar (DeepSeek for strategic reasoning, local for coordination)
+- **Premium** - Highest quality available (Claude 3.5 Sonnet for narrative, GPT-4o for themes, DeepSeek for psychology)
+
+**Cost Estimates** (typical usage patterns):
+- **Budget**: $0/month (all local Ollama models)
+- **Balanced**: ~$0.50-1.00/month (DeepSeek for 7/8 strategic tasks, local for coordination)
+- **Premium**: ~$3-5/month (optimal model per task: Claude, GPT-4o, DeepSeek mix)
+
+**How It Works**:
+1. Writer sets Quality Tier (or Monthly Budget)
+2. System consults capabilities matrix (model strengths, costs, quality scores)
+3. For each task, orchestrator selects optimal model within constraints
+4. Budget tracking prevents overspending (falls back to local when exhausted)
+
+#### 8.2 Multi-Model Tournament (Phase 4)
+
+Query multiple models in parallel for critical story decisions to detect consensus or disagreement.
+
+| Setting | Type | Default | Range | Description |
+|---------|------|---------|-------|-------------|
+| Enable Tournaments | bool | false | - | Query 3+ models for critical tasks |
+| Critical Tasks | multi-select | [beat_structure_advice, structural_planning, theme_analysis] | - | Which task types trigger tournaments |
+| Models per Tournament | number | 3 | 2-5 | How many models to query in parallel |
+| Consensus Threshold | number | 0.7 | 0.5-0.9 | Agreement level to declare consensus |
+| Max Tournaments per Day | number | 10 | 1-50 | Cost control limit |
+| Show All Responses | bool | true | - | Display all model outputs or just consensus |
+
+**Critical Tasks** (default tournament triggers):
+- `beat_structure_advice` - Major structural decisions (Midpoint placement, Act 2 length)
+- `structural_planning` - High-level story planning (How to structure Act 2?)
+- `theme_analysis` - Thematic interpretation (What does this symbol mean?)
+
+**Tournament Flow**:
+1. Foreman detects critical task type
+2. Queries 3 models in parallel (diverse providers: local + 2 cloud)
+3. Analyzes responses for consensus (semantic similarity ≥ 0.7)
+4. **Consensus**: Returns agreed-upon response (high confidence)
+5. **Dispute**: Flags disagreement, shows all responses for human review
+
+**Cost Warning**: Tournaments are expensive (~$0.02-0.05 per tournament). Daily limits prevent budget overruns.
+
+**Configuration Example:**
+```yaml
+# settings.yaml
+orchestrator:
+  enabled: true
+  quality_tier: "balanced"
+  monthly_budget: 2.00  # $2/month limit
+  prefer_local: false
+  cost_tracking_enabled: true
+
+  # Current month tracking (auto-updated)
+  current_month: "2025-11"
+  current_month_spend: 0.47
+
+tournament:
+  enabled: false  # Optional advanced feature
+  critical_tasks:
+    - beat_structure_advice
+    - structural_planning
+    - theme_analysis
+  num_models: 3
+  consensus_threshold: 0.7
+  max_tournaments_per_day: 10
+  show_all_responses: true
+```
+
+---
+
 ### 9. Context Window Management
 
 **Location:** Settings → Advanced
@@ -205,6 +295,72 @@ custom_patterns:
 | KB Context Limit | 1000 | Tokens allocated to KB entries |
 | Voice Bundle Injection | Full | Full / Summary / Minimal |
 | Continuity Context Depth | 3 | How many previous scenes to include |
+
+---
+
+### 10. Graph Health Checks (Phase 3D)
+
+**Location:** Settings → Health Checks
+
+Writers can configure sensitivity for macro-level structural validation.
+
+| Setting | Default | Range | Description |
+|---------|---------|-------|-------------|
+| Health Check Model | llama3.2 | select | Which Ollama model to use for semantic analysis (timeline, theme scoring) |
+| Pacing Plateau Window | 3 | 2-5 | How many consecutive chapters to check for flat tension |
+| Pacing Plateau Tolerance | 1.0 | 0.5-2.0 | Max tension variation to still flag as plateau |
+| Beat Deviation Warning | 5 | 3-10 | % off target to trigger warning |
+| Beat Deviation Error | 10 | 8-15 | % off target to trigger error |
+| Flaw Challenge Frequency | 10 | 5-20 | Max scenes before protagonist's flaw must be tested |
+| Min Cast Appearances | 3 | 1-5 | Minimum appearances for supporting characters |
+| Min Symbol Occurrences | 3 | 2-6 | Minimum recurrences for thematic symbols |
+| Min Resonance Score | 6 | 4-8 | Minimum theme resonance at critical beats |
+| Timeline Analysis Model | Same as Health Check Model | select | Model for timeline consistency checks (can override) |
+| Theme Scoring Model | Same as Health Check Model | select | Model for theme resonance auto-scoring (can override) |
+
+**Configuration Example:**
+```yaml
+# voice_settings.yaml
+health_checks:
+  enabled: true
+
+  # Model Selection for LLM-powered checks
+  models:
+    health_check_model: "llama3.2"  # Default for all semantic analysis
+    timeline_analysis_model: "llama3.2"  # Can override for timeline checks
+    theme_scoring_model: "llama3.2"  # Can override for theme scoring
+
+  pacing:
+    plateau_window: 3
+    plateau_tolerance: 1.0
+    enabled: true
+
+  structure:
+    beat_deviation_warning: 5
+    beat_deviation_error: 10
+    enabled: true
+
+  character:
+    flaw_challenge_frequency: 10
+    min_cast_appearances: 3
+    enabled: true
+
+  theme:
+    min_symbol_occurrences: 3
+    min_resonance_score: 6
+    enabled: true
+```
+
+**Model Selection Notes:**
+- **Default Model**: Uses Ollama, can be any available model (llama3.2, mistral, etc.)
+- **Override Flexibility**: Timeline and theme checks can use different models if needed
+- **Performance Consideration**: Larger models = better accuracy but slower analysis
+- **Recommended**: llama3.2 for speed, llama3.1-70b for maximum accuracy
+
+**Strictness Presets:**
+- **Lenient** - Plateau tolerance 2.0, Flaw frequency 20, Beat deviation 10%
+- **Balanced (Default)** - Current defaults
+- **Strict** - Plateau tolerance 0.5, Flaw frequency 5, Beat deviation 3%
 
 ---
 
@@ -359,19 +515,23 @@ foreman:
 
 ## Implementation Notes
 
-### Phase 5 Tasks
-1. Create Settings SQLite schema
-2. Build Settings service with caching
-3. Create Settings UI panel
-4. Add per-project override support
-5. Implement export/import
-6. Integrate settings into scoring/enhancement services
+### Phase 3C Tasks (Current - November 2025)
+**Priority**: Backend settings infrastructure without UI
 
-### Earlier Integration Points
-If needed before Phase 5, these can be added incrementally:
-- **API Keys** - Could be added to existing agent registry
-- **Scoring Weights** - SceneAnalyzer can read from settings
-- **Anti-Pattern customization** - Pattern lists can be externalized
+1. ✅ **Create Settings Service** - SQLite-backed settings with 3-tier resolution
+2. ✅ **Voice Bundle YAML Generation** - Auto-generate `voice_settings.yaml` during Voice Calibration
+3. ✅ **Refactor Scene Analyzer** - Dynamic weights, patterns, thresholds
+4. ✅ **Refactor Scene Enhancement** - Dynamic enhancement thresholds
+5. ✅ **Update VoiceBundleContext** - Load structured settings from YAML
+
+**See**: [PHASE_3C_SETTINGS_IMPLEMENTATION.md](../dev_logs/PHASE_3C_SETTINGS_IMPLEMENTATION.md) for detailed implementation plan.
+
+### Phase 5 Tasks (Future - UI Layer)
+1. Create Settings UI panel (Svelte frontend)
+2. Visual editing for `voice_settings.yaml`
+3. Preset system (Literary Fiction, Thriller, Romance)
+4. Export/Import functionality
+5. Live preview of scoring changes
 
 ---
 

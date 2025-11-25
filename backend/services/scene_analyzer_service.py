@@ -24,15 +24,21 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from backend.services.llm_service import LLMService
+from backend.services.settings_service import settings_service
 
 logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Constants
+# Constants (Fallback defaults - overridden by Settings Service)
 # =============================================================================
 
-# Default scoring weights (can be overridden via settings)
+# DEFAULT VALUES - These are used ONLY if Settings Service fails to load
+# The actual values come from settings_service.get() which uses 3-tier resolution:
+# 1. Project-specific override (from voice_settings.yaml)
+# 2. Global user setting
+# 3. These defaults
+
 DEFAULT_WEIGHTS = {
     "voice_authenticity": 30,
     "character_consistency": 20,
@@ -41,55 +47,7 @@ DEFAULT_WEIGHTS = {
     "phase_appropriateness": 15,
 }
 
-# Zero-tolerance patterns: -2 points each
-ZERO_TOLERANCE_PATTERNS = {
-    "first_person_italics": {
-        "pattern": r"\*[^*]*\b(we|I)\b[^*]*\*",
-        "description": "First-person in italics (breaks POV in 3rd person)",
-        "penalty": -2,
-    },
-    "with_precision": {
-        "pattern": r"\bwith \w+ precision\b",
-        "description": "'With X precision' cliche",
-        "penalty": -2,
-    },
-    "computer_psychology": {
-        "pattern": r"\b(brain|mind|consciousness) (processed|computed|analyzed|calculated)\b",
-        "description": "Computer psychology (mechanical, not human)",
-        "penalty": -2,
-    },
-    "with_obvious_adjective": {
-        "pattern": r"\bwith (obvious|clear|visible|apparent|evident) \w+\b",
-        "description": "'With obvious X' lazy description",
-        "penalty": -2,
-    },
-}
-
-# Formulaic patterns: -1 point each
-FORMULAIC_PATTERNS = {
-    "adverb_verb": {
-        "pattern": r"\b(walked|moved|spoke|said|looked|turned|stood) (carefully|slowly|quickly|quietly|loudly|suddenly)\b",
-        "description": "Weak adverb-verb combination",
-        "penalty": -1,
-    },
-    "despite_the": {
-        "pattern": r"\bdespite the \w+\b",
-        "description": "Overused 'despite the' transition",
-        "penalty": -1,
-    },
-    "atmosphere_seemed": {
-        "pattern": r"\b(air|room|atmosphere|silence) (seemed|was|felt) \w+\b",
-        "description": "Vague atmosphere description",
-        "penalty": -1,
-    },
-    "suddenly": {
-        "pattern": r"\bsuddenly\b",
-        "description": "Overused surprise word",
-        "penalty": -1,
-    },
-}
-
-# Grade thresholds
+# Grade thresholds (currently static, could be made dynamic in future)
 GRADE_THRESHOLDS = {
     "A": 92,
     "A-": 85,
@@ -196,44 +154,96 @@ class SceneAnalysisResult:
 
 @dataclass
 class VoiceBundleContext:
-    """Voice Bundle files loaded for analysis."""
+    """
+    Voice Bundle files loaded for analysis.
+
+    The Voice Bundle now includes voice_settings.yaml (Phase 3C) which contains
+    structured settings for scoring weights, anti-patterns, and enhancement thresholds.
+    """
     gold_standard: str
     anti_patterns: str
     phase_evolution: str
     metaphor_domains: Dict[str, List[str]]  # domain_name -> keywords
+    settings: Optional[Dict[str, Any]] = None  # NEW: voice_settings.yaml content
 
     @classmethod
-    def from_directory(cls, voice_bundle_path: Path) -> "VoiceBundleContext":
-        """Load Voice Bundle from directory."""
+    def from_directory(cls, voice_bundle_path: Path, load_settings: bool = True) -> "VoiceBundleContext":
+        """
+        Load Voice Bundle from directory.
+
+        Args:
+            voice_bundle_path: Path to voice bundle directory
+            load_settings: If True, load voice_settings.yaml (default: True)
+
+        Returns:
+            VoiceBundleContext with all voice bundle files loaded
+        """
+        import yaml
+
         gold_standard = ""
         anti_patterns = ""
         phase_evolution = ""
         metaphor_domains = {}
+        settings = None
 
-        gold_path = voice_bundle_path / "voice_gold_standard.md"
+        gold_path = voice_bundle_path / "Voice-Gold-Standard.md"
         if gold_path.exists():
             gold_standard = gold_path.read_text()
+        else:
+            # Try lowercase version (backward compatibility)
+            gold_path_lower = voice_bundle_path / "voice_gold_standard.md"
+            if gold_path_lower.exists():
+                gold_standard = gold_path_lower.read_text()
 
-        anti_path = voice_bundle_path / "voice_anti_patterns.md"
+        anti_path = voice_bundle_path / "Voice-Anti-Pattern-Sheet.md"
         if anti_path.exists():
             anti_patterns = anti_path.read_text()
+        else:
+            # Try lowercase version (backward compatibility)
+            anti_path_lower = voice_bundle_path / "voice_anti_patterns.md"
+            if anti_path_lower.exists():
+                anti_patterns = anti_path_lower.read_text()
 
-        phase_path = voice_bundle_path / "voice_phase_evolution.md"
+        phase_path = voice_bundle_path / "Phase-Evolution-Guide.md"
         if phase_path.exists():
             phase_evolution = phase_path.read_text()
+        else:
+            # Try lowercase version (backward compatibility)
+            phase_path_lower = voice_bundle_path / "voice_phase_evolution.md"
+            if phase_path_lower.exists():
+                phase_evolution = phase_path_lower.read_text()
 
         domains_path = voice_bundle_path / "metaphor_domains.yaml"
         if domains_path.exists():
-            import yaml
             with open(domains_path) as f:
                 metaphor_domains = yaml.safe_load(f) or {}
+
+        # Load voice_settings.yaml (Phase 3C addition)
+        if load_settings:
+            settings_path = voice_bundle_path / "voice_settings.yaml"
+            if settings_path.exists():
+                with open(settings_path) as f:
+                    settings = yaml.safe_load(f) or {}
+                logger.info(f"Loaded voice_settings.yaml from {voice_bundle_path}")
 
         return cls(
             gold_standard=gold_standard,
             anti_patterns=anti_patterns,
             phase_evolution=phase_evolution,
             metaphor_domains=metaphor_domains,
+            settings=settings,
         )
+
+    def get_project_id(self) -> Optional[str]:
+        """
+        Extract project_id from voice_settings.yaml.
+
+        Returns:
+            Project ID if found in settings, None otherwise
+        """
+        if self.settings:
+            return self.settings.get("project_id")
+        return None
 
 
 @dataclass
@@ -265,25 +275,282 @@ class SceneAnalyzerService:
         self,
         llm_service: Optional[LLMService] = None,
         weights: Optional[Dict[str, int]] = None,
+        project_id: Optional[str] = None,
     ):
+        """
+        Initialize Scene Analyzer with dynamic settings.
+
+        Args:
+            llm_service: LLM service for AI-based scoring
+            weights: Optional weight overrides (if None, loads from Settings Service)
+            project_id: Optional project ID for project-specific settings
+        """
         self.llm_service = llm_service or LLMService()
-        self.weights = weights or DEFAULT_WEIGHTS.copy()
+        self.project_id = project_id
 
-        # Compiled regex patterns for performance
-        self._compiled_zero_tolerance = {
-            name: re.compile(info["pattern"], re.IGNORECASE)
-            for name, info in ZERO_TOLERANCE_PATTERNS.items()
-        }
-        self._compiled_formulaic = {
-            name: re.compile(info["pattern"], re.IGNORECASE)
-            for name, info in FORMULAIC_PATTERNS.items()
+        # Load settings dynamically from Settings Service
+        self._load_settings()
+
+        # Override weights if explicitly provided
+        if weights:
+            self.weights = weights
+
+    def _load_settings(self):
+        """
+        Load dynamic settings from Settings Service.
+
+        This method is called during initialization and loads:
+        - Scoring weights
+        - Anti-pattern definitions
+        - Metaphor discipline thresholds
+        """
+        try:
+            # Load scoring weights
+            self.weights = {
+                "voice_authenticity": settings_service.get(
+                    "scoring.voice_authenticity_weight", self.project_id
+                ) or DEFAULT_WEIGHTS["voice_authenticity"],
+                "character_consistency": settings_service.get(
+                    "scoring.character_consistency_weight", self.project_id
+                ) or DEFAULT_WEIGHTS["character_consistency"],
+                "metaphor_discipline": settings_service.get(
+                    "scoring.metaphor_discipline_weight", self.project_id
+                ) or DEFAULT_WEIGHTS["metaphor_discipline"],
+                "anti_pattern_compliance": settings_service.get(
+                    "scoring.anti_pattern_compliance_weight", self.project_id
+                ) or DEFAULT_WEIGHTS["anti_pattern_compliance"],
+                "phase_appropriateness": settings_service.get(
+                    "scoring.phase_appropriateness_weight", self.project_id
+                ) or DEFAULT_WEIGHTS["phase_appropriateness"],
+            }
+
+            # Load anti-pattern definitions
+            # Note: anti_patterns is a category, not a flat key
+            anti_patterns_settings = settings_service.get_category("anti_patterns", self.project_id)
+
+            # Convert flat keys back to nested structure
+            anti_patterns_config = {
+                "zero_tolerance": {},
+                "formulaic": {},
+                "custom": []
+            }
+
+            for key, value in anti_patterns_settings.items():
+                if key.startswith("anti_patterns.zero_tolerance."):
+                    pattern_name = key.replace("anti_patterns.zero_tolerance.", "")
+                    anti_patterns_config["zero_tolerance"][pattern_name] = value
+                elif key.startswith("anti_patterns.formulaic."):
+                    pattern_name = key.replace("anti_patterns.formulaic.", "")
+                    anti_patterns_config["formulaic"][pattern_name] = value
+                elif key == "anti_patterns.custom":
+                    anti_patterns_config["custom"] = value if isinstance(value, list) else []
+
+            # Build zero-tolerance patterns dictionary
+            zero_tolerance_config = anti_patterns_config.get("zero_tolerance", {})
+            self.zero_tolerance_patterns = {}
+            for pattern_name, pattern_def in zero_tolerance_config.items():
+                if pattern_def.get("enabled", True):
+                    # Get pattern from defaults or skip if not found
+                    default_pattern = self._get_default_pattern(pattern_name, "zero_tolerance")
+                    if default_pattern:
+                        self.zero_tolerance_patterns[pattern_name] = {
+                            "pattern": default_pattern,
+                            "description": pattern_def.get("description", f"Zero-tolerance: {pattern_name}"),
+                            "penalty": pattern_def.get("penalty", -2),
+                        }
+
+            # Build formulaic patterns dictionary
+            formulaic_config = anti_patterns_config.get("formulaic", {})
+            self.formulaic_patterns = {}
+            for pattern_name, pattern_def in formulaic_config.items():
+                if pattern_def.get("enabled", True):
+                    default_pattern = self._get_default_pattern(pattern_name, "formulaic")
+                    if default_pattern:
+                        self.formulaic_patterns[pattern_name] = {
+                            "pattern": default_pattern,
+                            "description": pattern_def.get("description", f"Formulaic: {pattern_name}"),
+                            "penalty": pattern_def.get("penalty", -1),
+                        }
+
+            # Add custom patterns
+            custom_patterns = anti_patterns_config.get("custom", [])
+            for custom in custom_patterns:
+                pattern_name = custom.get("pattern_name", custom.get("pattern", "custom"))
+                severity = custom.get("severity", "formulaic")
+
+                pattern_dict = {
+                    "pattern": custom.get("pattern", ""),
+                    "description": custom.get("reason", custom.get("description", "")),
+                    "penalty": -2 if severity == "zero_tolerance" else -1,
+                }
+
+                if severity == "zero_tolerance":
+                    self.zero_tolerance_patterns[pattern_name] = pattern_dict
+                else:
+                    self.formulaic_patterns[pattern_name] = pattern_dict
+
+            # Compile regex patterns for performance
+            self._compiled_zero_tolerance = {
+                name: re.compile(info["pattern"], re.IGNORECASE)
+                for name, info in self.zero_tolerance_patterns.items()
+                if info.get("pattern")
+            }
+            self._compiled_formulaic = {
+                name: re.compile(info["pattern"], re.IGNORECASE)
+                for name, info in self.formulaic_patterns.items()
+                if info.get("pattern")
+            }
+
+            # Load metaphor settings
+            self.saturation_threshold = settings_service.get(
+                "scoring.saturation_threshold", self.project_id
+            ) or 30
+            self.simile_tolerance = settings_service.get(
+                "scoring.simile_tolerance", self.project_id
+            ) or 2
+
+            # Simile detection pattern
+            self._simile_pattern = re.compile(
+                r"\b(like|as if|as though|resembled|similar to)\b",
+                re.IGNORECASE
+            )
+
+            logger.info(
+                f"Scene Analyzer settings loaded: "
+                f"weights={self.weights}, "
+                f"zero_tolerance={len(self.zero_tolerance_patterns)}, "
+                f"formulaic={len(self.formulaic_patterns)}, "
+                f"saturation_threshold={self.saturation_threshold}%"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to load settings, using defaults: {e}")
+            # Fall back to hard-coded defaults
+            self.weights = DEFAULT_WEIGHTS.copy()
+            self.zero_tolerance_patterns = self._get_default_zero_tolerance_patterns()
+            self.formulaic_patterns = self._get_default_formulaic_patterns()
+            self.saturation_threshold = 30
+            self.simile_tolerance = 2
+
+            self._compiled_zero_tolerance = {
+                name: re.compile(info["pattern"], re.IGNORECASE)
+                for name, info in self.zero_tolerance_patterns.items()
+            }
+            self._compiled_formulaic = {
+                name: re.compile(info["pattern"], re.IGNORECASE)
+                for name, info in self.formulaic_patterns.items()
+            }
+            self._simile_pattern = re.compile(
+                r"\b(like|as if|as though|resembled|similar to)\b",
+                re.IGNORECASE
+            )
+
+    def _get_default_pattern(self, pattern_name: str, pattern_type: str) -> Optional[str]:
+        """
+        Get default regex pattern for a named anti-pattern.
+
+        Args:
+            pattern_name: Name of the pattern (e.g., "first_person_italics")
+            pattern_type: "zero_tolerance" or "formulaic"
+
+        Returns:
+            Regex pattern string or None if not found
+        """
+        default_patterns = {
+            "zero_tolerance": {
+                "first_person_italics": r"\*[^*]*\b(we|I)\b[^*]*\*",
+                "with_precision": r"\bwith \w+ precision\b",
+                "computer_psychology": r"\b(brain|mind|consciousness) (processed|computed|analyzed|calculated)\b",
+                "with_obvious_adjective": r"\bwith (obvious|clear|visible|apparent|evident) \w+\b",
+                "explaining_to_camera": r"\b(obviously|clearly|evidently|apparently)\b",
+                "ai_explaining_character": r"\b(as a|being a|was a) \w+ (meant|required|demanded)\b",
+            },
+            "formulaic": {
+                "adverb_verb": r"\b(walked|moved|spoke|said|looked|turned|stood) (carefully|slowly|quickly|quietly|loudly|suddenly)\b",
+                "despite_the": r"\bdespite the \w+\b",
+                "atmosphere_seemed": r"\b(air|room|atmosphere|silence) (seemed|was|felt) \w+\b",
+                "suddenly": r"\bsuddenly\b",
+                "eyes_widened": r"\beyes? widened\b",
+                "breath_caught": r"\bbreath caught\b",
+                "pulse_quickened": r"\bpulse (quickened|raced|pounded)\b",
+            },
         }
 
-        # Simile detection pattern
-        self._simile_pattern = re.compile(
-            r"\b(like|as if|as though|resembled|similar to)\b",
-            re.IGNORECASE
-        )
+        return default_patterns.get(pattern_type, {}).get(pattern_name)
+
+    def _get_default_zero_tolerance_patterns(self) -> Dict[str, Dict[str, Any]]:
+        """Get default zero-tolerance patterns as fallback."""
+        return {
+            "first_person_italics": {
+                "pattern": r"\*[^*]*\b(we|I)\b[^*]*\*",
+                "description": "First-person in italics (breaks POV in 3rd person)",
+                "penalty": -2,
+            },
+            "with_precision": {
+                "pattern": r"\bwith \w+ precision\b",
+                "description": "'With X precision' cliche",
+                "penalty": -2,
+            },
+            "computer_psychology": {
+                "pattern": r"\b(brain|mind|consciousness) (processed|computed|analyzed|calculated)\b",
+                "description": "Computer psychology (mechanical, not human)",
+                "penalty": -2,
+            },
+            "with_obvious_adjective": {
+                "pattern": r"\bwith (obvious|clear|visible|apparent|evident) \w+\b",
+                "description": "'With obvious X' lazy description",
+                "penalty": -2,
+            },
+        }
+
+    def _get_default_formulaic_patterns(self) -> Dict[str, Dict[str, Any]]:
+        """Get default formulaic patterns as fallback."""
+        return {
+            "adverb_verb": {
+                "pattern": r"\b(walked|moved|spoke|said|looked|turned|stood) (carefully|slowly|quickly|quietly|loudly|suddenly)\b",
+                "description": "Weak adverb-verb combination",
+                "penalty": -1,
+            },
+            "despite_the": {
+                "pattern": r"\bdespite the \w+\b",
+                "description": "Overused 'despite the' transition",
+                "penalty": -1,
+            },
+            "atmosphere_seemed": {
+                "pattern": r"\b(air|room|atmosphere|silence) (seemed|was|felt) \w+\b",
+                "description": "Vague atmosphere description",
+                "penalty": -1,
+            },
+            "suddenly": {
+                "pattern": r"\bsuddenly\b",
+                "description": "Overused surprise word",
+                "penalty": -1,
+            },
+        }
+
+    def _parse_json_response(self, response: str) -> dict:
+        """
+        Parse JSON from LLM response, handling markdown code blocks.
+
+        LLMs often wrap JSON in ```json ... ``` which breaks json.loads().
+        This helper strips those wrappers before parsing.
+        """
+        if not response:
+            raise ValueError("Empty response")
+
+        # Strip markdown code blocks if present
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            # Remove opening fence (```json or ```)
+            lines = cleaned.split("\n")
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            # Remove closing fence
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            cleaned = "\n".join(lines)
+
+        return json.loads(cleaned)
 
     # -------------------------------------------------------------------------
     # Main Analysis Entry Point
@@ -445,11 +712,10 @@ class SceneAnalyzerService:
             for domain, count in domain_counts.items()
         }
 
-        # Find saturated domains (over 30%)
-        saturation_threshold = 30.0
+        # Find saturated domains (using dynamic threshold from settings)
         saturated = [
             domain for domain, pct in percentages.items()
-            if pct > saturation_threshold and domain_counts[domain] > 0
+            if pct > self.saturation_threshold and domain_counts[domain] > 0
         ]
 
         # Count similes
@@ -651,7 +917,7 @@ Respond in JSON format:
             )
 
             # Parse JSON response
-            result = json.loads(response)
+            result = self._parse_json_response(response)
 
             return CategoryScore(
                 name="voice_authenticity",
@@ -718,31 +984,43 @@ CHARACTER CONTEXT:
 - Capabilities: {', '.join(story_bible.character_capabilities) if story_bible.character_capabilities else 'Not specified'}
 """
 
+        # Add instruction for handling missing context
+        no_context_instruction = ""
+        if not story_bible:
+            no_context_instruction = """
+NOTE: No explicit character bible provided. Evaluate based on what the prose IMPLIES about the character:
+- Infer psychological consistency from how the character thinks and acts
+- Assess whether actions feel plausible for the implied character type
+- If no relationships shown, evaluate potential for relationship dynamics
+Score based on internal consistency of what IS shown, not penalize for missing context.
+"""
+
         prompt = f"""You are a Character Consistency Critic evaluating a scene draft.
 
 SCENE TO EVALUATE:
 {content[:4000]}
 {story_context}
-
+{no_context_instruction}
 Evaluate character consistency in three areas:
 
-1. PSYCHOLOGY (0-8): Does character behavior match their established Fatal Flaw and The Lie?
-   - 8: Perfect alignment - every action reflects the Fatal Flaw/Lie
-   - 6: Mostly consistent, 1-2 minor deviations
-   - 3: Several behaviors contradict established psychology
-   - 0: Fundamental violation of established personality
+1. PSYCHOLOGY (0-8): Does character behavior feel internally consistent?
+   - 8: Highly consistent psychology throughout - character feels real
+   - 6: Mostly consistent, character psychology is clear
+   - 3: Some inconsistent behaviors or unclear motivations
+   - 0: Character behavior feels random or contradictory
 
-2. CAPABILITY (0-6): Are all character actions within established abilities?
-   - 6: All actions justified by established abilities
-   - 4: One plausible but unestablished capability
-   - 2: Unexplained capability used
-   - 0: Breaks established limits
+2. CAPABILITY (0-6): Do character actions feel plausible?
+   - 6: All actions feel natural and within implied abilities
+   - 4: Actions mostly plausible, one stretch
+   - 2: Some implausible actions
+   - 0: Actions break believability
 
-3. RELATIONSHIP (0-6): Do character interactions match established relationship dynamics?
-   - 6: Authentic to established dynamics
-   - 4: Generally authentic, some generic beats
-   - 2: Misaligned with established patterns
-   - 0: Contradicts relationship fundamentals
+3. RELATIONSHIP (0-6): Are relationship dynamics (if present) authentic?
+   - 6: Rich, authentic interpersonal dynamics
+   - 4: Solid relationships, some generic beats
+   - 2: Relationships feel flat or forced
+   - 0: No relationships or completely inauthentic
+   (If solo scene with no relationships: score 4 as neutral)
 
 Respond in JSON format:
 {{
@@ -759,7 +1037,7 @@ Respond in JSON format:
                 prompt=prompt,
             )
 
-            result = json.loads(response)
+            result = self._parse_json_response(response)
 
             return CategoryScore(
                 name="character_consistency",
@@ -860,7 +1138,7 @@ Respond in JSON format:
                 prompt=prompt,
             )
 
-            result = json.loads(response)
+            result = self._parse_json_response(response)
 
             return CategoryScore(
                 name="phase_appropriateness",

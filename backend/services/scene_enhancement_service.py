@@ -28,12 +28,13 @@ from backend.services.scene_analyzer_service import (
     VoiceBundleContext,
     StoryBibleContext,
 )
+from backend.services.settings_service import settings_service
 
 logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Constants
+# Constants (Fallback defaults - overridden by Settings Service)
 # =============================================================================
 
 class EnhancementMode(str, Enum):
@@ -43,7 +44,8 @@ class EnhancementMode(str, Enum):
     REWRITE = "rewrite"              # Score <70: Return to Scene Writer
 
 
-# Score thresholds
+# DEFAULT THRESHOLD VALUES - Used ONLY if Settings Service fails to load
+# The actual values come from settings_service.get() which uses 3-tier resolution
 ACTION_PROMPT_THRESHOLD = 85
 SIX_PASS_THRESHOLD = 70
 
@@ -206,9 +208,56 @@ class SceneEnhancementService:
         self,
         llm_service: Optional[LLMService] = None,
         analyzer_service: Optional[SceneAnalyzerService] = None,
+        project_id: Optional[str] = None,
     ):
+        """
+        Initialize Scene Enhancement Service with dynamic settings.
+
+        Args:
+            llm_service: LLM service for enhancement
+            analyzer_service: Scene analyzer for re-scoring
+            project_id: Optional project ID for project-specific settings
+        """
         self.llm_service = llm_service or LLMService()
         self.analyzer_service = analyzer_service or get_scene_analyzer_service()
+        self.project_id = project_id
+
+        # Load dynamic thresholds from Settings Service
+        self._load_settings()
+
+    def _load_settings(self):
+        """Load dynamic enhancement thresholds from Settings Service."""
+        try:
+            self.action_prompt_threshold = settings_service.get(
+                "enhancement.action_prompt_threshold", self.project_id
+            ) or ACTION_PROMPT_THRESHOLD
+
+            self.six_pass_threshold = settings_service.get(
+                "enhancement.six_pass_threshold", self.project_id
+            ) or SIX_PASS_THRESHOLD
+
+            self.rewrite_threshold = settings_service.get(
+                "enhancement.rewrite_threshold", self.project_id
+            ) or 60
+
+            self.aggressiveness = settings_service.get(
+                "enhancement.aggressiveness", self.project_id
+            ) or "medium"
+
+            logger.info(
+                f"Scene Enhancement settings loaded: "
+                f"action_prompt={self.action_prompt_threshold}, "
+                f"six_pass={self.six_pass_threshold}, "
+                f"rewrite={self.rewrite_threshold}, "
+                f"aggressiveness={self.aggressiveness}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to load enhancement settings, using defaults: {e}")
+            self.action_prompt_threshold = ACTION_PROMPT_THRESHOLD
+            self.six_pass_threshold = SIX_PASS_THRESHOLD
+            self.rewrite_threshold = 60
+            self.aggressiveness = "medium"
 
     # -------------------------------------------------------------------------
     # Main Enhancement Entry Point
@@ -270,10 +319,15 @@ class SceneEnhancementService:
         )
 
     def _determine_mode(self, score: int) -> EnhancementMode:
-        """Determine enhancement mode from score."""
-        if score >= ACTION_PROMPT_THRESHOLD:
+        """
+        Determine enhancement mode from score using dynamic thresholds.
+
+        Thresholds are loaded from Settings Service and can be configured
+        per-project via voice_settings.yaml.
+        """
+        if score >= self.action_prompt_threshold:
             return EnhancementMode.ACTION_PROMPT
-        elif score >= SIX_PASS_THRESHOLD:
+        elif score >= self.six_pass_threshold:
             return EnhancementMode.SIX_PASS
         else:
             return EnhancementMode.REWRITE

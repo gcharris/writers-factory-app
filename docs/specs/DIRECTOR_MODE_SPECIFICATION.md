@@ -569,12 +569,17 @@ GET /foreman/mode
 - [x] Auto-mode selection based on score
 - [x] Re-scoring after enhancement
 
-### Remaining Work (Phase 5)
+### Phase 5: Foreman Orchestration ✅
+- [x] Director Mode action handlers in foreman.py
+- [x] `generate_draft_summary`, `enrich_scaffold`, `generate_scaffold` actions
+- [x] `write_scene`, `analyze_scene`, `enhance_scene` actions
+- [x] `advance_to_editor` mode transition
+
+### Remaining Work (Phase 5 - Frontend)
 - [ ] Frontend UI for scaffold review
 - [ ] Structure variant selection UI
 - [ ] Scene variant comparison/selection UI
 - [ ] Enhancement review UI
-- [ ] Foreman orchestration integration
 
 ---
 
@@ -961,36 +966,48 @@ After applying fixes:
 
 #### Mode 2: Full Enhancement (6-Pass)
 
+*Based on the proven explants-scene-enhancement skill workflow (see AGENT_HANDOFF_WISDOM.md).*
+
 ```
-Pass 1: ANTI-PATTERN SWEEP
-- Apply all zero-tolerance fixes from Action Prompt
-- Search for formulaic patterns
-- Eliminate detected violations
+Pass 1: SENSORY ANCHORING
+- Find abstract mood descriptions ("the atmosphere was tense")
+- Replace with concrete sensory details: air, light, texture, sound, smell
+- Target 3 sensory anchors per major section
+- Do NOT change dialogue or major plot points
 
-Pass 2: VOICE CALIBRATION
-- Verify voice matches phase_evolution for current act
-- Strengthen characteristic_phrases presence
-- Ensure metaphor_domains rotation
+Pass 2: VERB PROMOTION + SIMILE ELIMINATION
+- Make environment ACT: "lobby air wheezed," "architecture confessed"
+- Convert ALL similes ("like X", "as if") to direct metaphors
+- Use literal-metaphorical reality: things BECOME, not resemble
+- Promote nouns to verbs where possible
+- Examples: "like a weapon" → "weaponized itself"
 
-Pass 3: CHARACTER GROUNDING
-- Verify all actions within character capabilities
-- Check relationship dynamics authenticity
-- Validate psychology consistency
+Pass 3: METAPHOR ROTATION
+- No single domain should exceed 30% of metaphors
+- Gambling metaphors: max 2-3 per scene
+- Rotate between available domains from Voice Bundle
+- Replace some metaphors from saturated domains with alternatives
 
-Pass 4: RHYTHM REFINEMENT
-- Apply sentence_rhythm pattern from Voice Calibration
-- Vary short/medium/long sentences
-- Check dialogue pacing
+Pass 4: VOICE EMBED (Not Hover)
+- Delete sentences that "explain" what the previous sentence showed
+- Insights should be EMBEDDED in action, not floating above it
+- No academic meta-commentary ("Enhanced perspective analyzing...")
+- Test each insight: Is it IN the action or ABOUT the action?
+- BAD: "He noticed the pattern. This suggested danger."
+- GOOD: "The pattern screamed danger."
 
-Pass 5: SENSORY ENHANCEMENT
-- Ensure 3+ sensory anchors per section
-- Environmental objects acting with agency
-- Physical grounding for abstract concepts
+Pass 5: ITALICS GATE
+- Count current italics usage
+- If 0-1: No change needed
+- If >1: Reduce to maximum of 1
+- Keep italics ONLY for: character arc moments, earned wisdom, critical turning points
+- Insight should work without italics emphasis
 
-Pass 6: FINAL POLISH
-- Read aloud test (natural flow)
-- Compression pass (remove redundant words)
-- Transition smoothing
+Pass 6: VOICE AUTHENTICATION
+- Observer Test: Character thinking vs AI explaining?
+- Purpose Test: Every beat serves the theme?
+- Fusion Test: Analytical precision fused with character voice?
+- Make minimal changes - only fix what fails the tests
 ```
 
 ---
@@ -1259,6 +1276,349 @@ ai_pattern_overrides:
     ai_vocabulary: "ignore"  # Writer doesn't care about this
     promotional_puffery: "error"  # Absolutely not in this project
 ```
+
+---
+
+## Part E: Graph Health Service (Phase 3D) 🚧
+
+**Status**: In Implementation
+**Context**: Macro-level structural validation to complement scene-level quality checks
+
+### E.1 The Two-Tier Quality System
+
+Director Mode uses a **two-tier analysis pyramid**:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│          TIER 2: Macro-Level Health                     │
+│          (Graph Health Service - Phase 3D)              │
+│          • Pacing across chapters                       │
+│          • Beat structure compliance                    │
+│          • Character arc tracking                       │
+│          • Timeline consistency                         │
+│          • Theme resonance at critical beats            │
+├─────────────────────────────────────────────────────────┤
+│          TIER 1: Scene-Level Quality                    │
+│          (Scene Analyzer - Phase 3B)                    │
+│          • Voice authenticity                           │
+│          • Anti-pattern compliance                      │
+│          • Metaphor discipline                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Analogy**: If Scene Analyzer is the **line editor**, Graph Health Service is the **structural engineer**.
+
+---
+
+### E.2 Strategic Architecture Decisions
+
+#### Decision 1: Full LLM Semantic Analysis for Timeline Consistency
+
+**Problem**: Timeline conflicts are nuanced and require semantic understanding:
+- "Character arrives at sunset" vs. "It's still noon"
+- "The missing documents mentioned in Ch. 2" never resolved
+
+**Solution**: Full Ollama LLM-powered semantic analysis (not simplified regex)
+
+**Settings**:
+```yaml
+health_checks:
+  timeline:
+    enabled: true
+    semantic_analysis: true  # Use LLM
+    check_character_locations: true
+    check_world_rules: true
+    check_dropped_threads: true
+    confidence_threshold: 0.7
+```
+
+---
+
+#### Decision 2: Hybrid LLM + Manual Override for Theme Resonance
+
+**Problem**: Thematic success is subjective - LLM may miss subtle writer intent
+
+**Solution**: Automated LLM scoring with manual override capability
+
+**Workflow**:
+1. LLM auto-scores theme resonance at critical beats (0-10)
+2. Writer reviews scores in health report
+3. Writer can override via API: `POST /health/theme/override`
+4. Future health checks respect manual overrides
+
+**Settings**:
+```yaml
+health_checks:
+  theme:
+    auto_score: true  # Enable LLM scoring
+    allow_manual_override: true
+    min_resonance_score: 6
+```
+
+---
+
+#### Decision 3: Auto-Trigger After Every Chapter
+
+**Problem**: Balance between proactive detection and workflow interruption
+
+**Solution**: Automatically run health checks after each chapter assembly, respecting Foreman proactiveness
+
+**Behavior by Proactiveness Level**:
+- **High**: Show all warnings, block on critical errors
+- **Medium** (default): Show warnings, allow continue with acknowledgment
+- **Low**: Silent mode, store reports but don't interrupt
+
+**Settings**:
+```yaml
+health_checks:
+  reporting:
+    auto_trigger: true
+    notification_mode: "foreman_proactive"  # Respects foreman.proactiveness
+```
+
+---
+
+#### Decision 4: SQLite Persistence for Longitudinal Analysis
+
+**Problem**: On-demand generation is simpler, but historical data enables trend analysis
+
+**Solution**: Store all health reports in SQLite with 365-day retention
+
+**Benefits**:
+- Trend analysis: "Is chapter pacing improving over time?"
+- A/B testing: "Did tighter flaw challenge frequency improve character arc?"
+- Writer learning: Historical health metrics
+
+**API**:
+```python
+GET /health/trends/pacing_plateaus?start_date=2025-01-01&end_date=2025-11-24
+# Returns: [
+#   {"chapter_id": "1.2", "plateaus_detected": 1, "timestamp": "2025-05-10"},
+#   {"chapter_id": "2.3", "plateaus_detected": 0, "timestamp": "2025-08-15"}
+# ]
+```
+
+**Settings**:
+```yaml
+health_checks:
+  reporting:
+    store_history: true
+    retention_days: 365
+```
+
+---
+
+### E.3 Health Check Categories
+
+#### A. Structural Integrity
+
+1. **Pacing Plateau Detection**
+   - Detects 3+ consecutive chapters with flat tension (within 1 point)
+   - Warns before reader boredom sets in
+
+2. **Beat Progress Validation**
+   - Ensures 15-beat structure compliance
+   - Warns if beats deviate >5% from target manuscript position
+   - Errors if deviation >10%
+
+3. **Timeline Consistency** (Full LLM Semantic Analysis)
+   - Character location tracking
+   - World rules compliance
+   - Dropped thread detection
+   - Semantic contradiction analysis
+
+#### B. Character Arc Health
+
+1. **Fatal Flaw Challenge Monitoring**
+   - Tracks scenes since protagonist's Fatal Flaw was tested
+   - Warns if gap exceeds threshold (default: 10 scenes)
+
+2. **Cast Function Verification**
+   - Ensures supporting characters serve their narrative function
+   - Warns if characters appear too rarely (<3 times)
+
+#### C. Thematic Health
+
+1. **Symbolic Layering**
+   - Tracks symbol recurrence (min: 3 occurrences)
+   - Detects static vs. evolving symbol meanings
+
+2. **Theme Resonance** (Hybrid LLM + Manual Override)
+   - LLM auto-scores theme presence at critical beats
+   - Writers can override scores via `/health/theme/override`
+   - Warns if theme absent from critical structural beats
+
+---
+
+### E.4 API Endpoints (Phase 3D)
+
+```python
+# Core health checks
+POST /health/check
+  Body: {"scope": "chapter", "chapter_id": "2.5"}
+        {"scope": "act", "act_number": 2}
+        {"scope": "manuscript"}
+
+GET /health/report/{report_id}
+
+POST /health/export
+  Body: {"report_id": "health_report_123", "format": "markdown"}
+
+# Longitudinal analysis
+GET /health/trends/{metric}?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+  Metrics: pacing_plateaus, beat_deviations, flaw_challenges, theme_resonance, overall_health
+
+# Theme manual override
+POST /health/theme/override
+  Body: {"beat_id": "beat_7", "theme_id": "theme_identity", "manual_score": 9, "reason": "..."}
+
+GET /health/theme/overrides?project_id={id}
+```
+
+---
+
+### E.5 Integration with Scene Analyzer
+
+**Scene Analyzer (Tier 1)** runs on every scene generation:
+- Immediate feedback (< 5 seconds)
+- Voice authenticity, anti-patterns, metaphor discipline
+- Score determines enhancement mode
+
+**Graph Health Service (Tier 2)** runs after chapter assembly:
+- Asynchronous background job (30-60 seconds)
+- Macro-level structure, pacing, character arcs, theme
+- Foreman integrates warnings into guidance
+
+**Complementary, Not Redundant**: Scene Analyzer validates **prose quality**, Graph Health validates **narrative structure**.
+
+---
+
+### E.6 Foreman Integration
+
+After chapter assembly:
+
+```python
+async def on_chapter_complete(self, chapter_id: str):
+    # 1. Assemble chapter
+    # 2. Trigger Graph Health check (background)
+    health_report = await graph_health_service.run_chapter_health_check(chapter_id)
+
+    # 3. Store report
+    self.kb_service.set(f"chapter_{chapter_id}_health", health_report.to_json())
+
+    # 4. Present warnings to writer
+    if health_report.has_critical_warnings():
+        return self._create_challenge_message(health_report)
+    elif health_report.has_warnings():
+        return self._create_guidance_message(health_report)
+    else:
+        return "Chapter health: CLEAN. Excellent structural integrity."
+```
+
+---
+
+### E.7 Health Report Format
+
+```json
+{
+  "report_id": "health_report_123",
+  "scope": "chapter",
+  "chapter_id": "chapter_2.5",
+  "overall_score": 87,
+  "timestamp": "2025-11-24T15:30:00Z",
+  "warnings": [
+    {
+      "type": "PACING_PLATEAU",
+      "severity": "warning",
+      "message": "Flat pacing detected: Chapters 2.3 through 2.5 have similar tension (6, 6, 6)",
+      "recommendation": "Next scene should escalate tension significantly",
+      "chapters": ["chapter_2.3", "chapter_2.4", "chapter_2.5"]
+    },
+    {
+      "type": "WEAK_THEME",
+      "severity": "warning",
+      "beat": "Midpoint",
+      "theme": "theme_identity",
+      "resonance": 5,
+      "message": "Theme resonance at 'Midpoint' is weak (5/10)",
+      "recommendation": "Strengthen thematic callback in Midpoint scene"
+    }
+  ]
+}
+```
+
+**Markdown Export**:
+```markdown
+# Health Report: Chapter 2.5
+**Overall Score**: 87/100 (Good)
+**Timestamp**: 2025-11-24 15:30 UTC
+
+## Warnings
+
+### ⚠️ Pacing Plateau Detected
+**Severity**: Warning
+**Chapters**: 2.3, 2.4, 2.5
+**Issue**: Flat pacing - tension scores are 6, 6, 6 (too similar)
+**Recommendation**: Next scene should escalate tension significantly
+
+### ⚠️ Weak Theme Resonance
+**Severity**: Warning
+**Beat**: Midpoint
+**Theme**: Identity Integration
+**Score**: 5/10 (below threshold of 6)
+**Recommendation**: Strengthen thematic callback in Midpoint scene
+```
+
+---
+
+### E.8 Settings Summary
+
+All Phase 3D settings live in `voice_settings.yaml` or Settings Service:
+
+```yaml
+health_checks:
+  enabled: true
+
+  pacing:
+    plateau_window: 3
+    plateau_tolerance: 1.0
+    enabled: true
+
+  structure:
+    beat_deviation_warning: 5  # % off target
+    beat_deviation_error: 10
+    enabled: true
+
+  character:
+    flaw_challenge_frequency: 10  # Max scenes without test
+    min_cast_appearances: 3
+    enabled: true
+
+  theme:
+    min_symbol_occurrences: 3
+    min_resonance_score: 6
+    auto_score: true  # LLM scoring
+    allow_manual_override: true
+    enabled: true
+
+  timeline:
+    enabled: true
+    semantic_analysis: true  # Full LLM analysis
+    check_character_locations: true
+    check_world_rules: true
+    check_dropped_threads: true
+    confidence_threshold: 0.7
+
+  reporting:
+    store_history: true
+    retention_days: 365
+    auto_trigger: true
+    notification_mode: "foreman_proactive"
+```
+
+---
+
+*End of Part E (Phase 3D Specification)*
 
 ---
 

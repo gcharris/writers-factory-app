@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import httpx
+import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
@@ -381,6 +382,32 @@ With Story Bible complete and Voice calibrated, you now orchestrate scene creati
 3. GUIDE scene-by-scene progression
 4. CHALLENGE scenes that drift from structure or voice
 5. TRACK continuity across scenes
+6. MONITOR manuscript health after completing chapters
+
+## GRAPH HEALTH CHECKS (Phase 3D)
+
+After completing a chapter, consider running a health check to catch structural issues early:
+
+**When to run health checks:**
+- After completing a chapter (recommended)
+- After completing an act (milestone check)
+- When the writer asks about pacing or structure
+- Before major transitions (e.g., moving to Act 2 or 3)
+
+**What health checks detect:**
+- Pacing plateaus (flat tension across consecutive chapters)
+- Beat structure deviations (15-beat alignment issues)
+- Timeline consistency problems (character locations, world rules)
+- Fatal Flaw challenge frequency (protagonist arc health)
+- Supporting character underutilization
+- Symbol and theme resonance at critical beats
+
+**How to use:**
+```json
+{"action": "run_health_check", "scope": "chapter", "chapter_id": "chapter_4"}
+```
+
+If the health check reveals issues (score < 80), bring them to the writer's attention with specific recommendations from the report.
 
 ## SCAFFOLD GENERATION (Two-Stage Process)
 
@@ -418,6 +445,7 @@ After scaffold is approved, every scene call includes:
 {"action": "write_scene", "scaffold_id": "ch4-sc1", "context": {...}}
 {"action": "query_notebook", "notebook_id": "...", "query": "..."}
 {"action": "save_decision", "category": "continuity", "key": "...", "value": "...", "source": "scene"}
+{"action": "run_health_check", "scope": "chapter", "chapter_id": "chapter_4"}
 {"action": "advance_to_editor", "confirm": true}
 ```
 
@@ -470,6 +498,12 @@ class Foreman:
         # Voice calibration service (lazy loaded)
         self._voice_calibration_service = None
 
+        # Director Mode services (lazy loaded)
+        self._scaffold_service = None
+        self._scene_writer_service = None
+        self._scene_analyzer_service = None
+        self._scene_enhancement_service = None
+
         # Action handlers
         self._action_handlers: Dict[str, Callable] = {
             "query_notebook": self._handle_query_notebook,
@@ -482,6 +516,16 @@ class Foreman:
             "generate_bundle": self._handle_generate_bundle,
             "advance_to_director": self._handle_advance_to_director,
             "advance_to_voice_calibration": self._handle_advance_to_voice_calibration,
+            # Director Mode actions
+            "generate_draft_summary": self._handle_generate_draft_summary,
+            "enrich_scaffold": self._handle_enrich_scaffold,
+            "generate_scaffold": self._handle_generate_scaffold,
+            "write_scene": self._handle_write_scene,
+            "analyze_scene": self._handle_analyze_scene,
+            "enhance_scene": self._handle_enhance_scene,
+            "advance_to_editor": self._handle_advance_to_editor,
+            # Graph Health Check actions (Phase 3D)
+            "run_health_check": self._handle_run_health_check,
         }
 
     # -------------------------------------------------------------------------
@@ -556,6 +600,8 @@ class Foreman:
         3. Respond with craft-aware guidance
         4. Optionally take actions (query, write, etc.)
 
+        Phase 3E: Now uses intelligent model routing based on task complexity.
+
         Returns:
             Dict with response, any actions taken, and updated work order
         """
@@ -565,11 +611,33 @@ class Foreman:
         # Add user message to conversation
         self.conversation.append(ConversationMessage(role="user", content=user_message))
 
-        # Build context for Ollama
-        context = self._build_context()
+        # Classify task complexity for model selection
+        task_type = self._classify_task_complexity(user_message, self.get_context())
 
-        # Call Ollama
-        response_text = await self._call_ollama(context)
+        # Get system prompt
+        system_prompt = self._get_system_prompt()
+
+        # Add work order status to system prompt
+        work_order_status = self.work_order.get_status_summary()
+        system_prompt += f"\n\n## CURRENT WORK ORDER\n\n```\n{work_order_status}\n```"
+
+        # Add KB context
+        kb_context = self._get_kb_context()
+        if kb_context:
+            system_prompt += f"\n\n## KNOWLEDGE BASE (Relevant Entries)\n\n{kb_context}"
+
+        # Build conversation history for prompt (last N messages)
+        conversation_history = "\n\n".join([
+            f"{msg.role.upper()}: {msg.content}"
+            for msg in self.conversation[-10:]  # Last 10 messages for context
+        ])
+
+        # Query with task-appropriate model (Phase 3E)
+        response_text = await self._query_llm(
+            prompt=conversation_history,
+            system_prompt=system_prompt,
+            task_type=task_type  # Triggers automatic model selection
+        )
 
         # Add assistant response to conversation
         self.conversation.append(ConversationMessage(role="assistant", content=response_text))
@@ -582,6 +650,10 @@ class Foreman:
             "actions": actions_taken,
             "work_order": self.work_order.to_dict(),
             "kb_entries_pending": len(self.kb_entries),
+            "model_routing": {
+                "task_type": task_type,
+                "is_advisor_task": task_type != "coordinator"
+            }
         }
 
     def _build_context(self) -> List[Dict]:
@@ -647,6 +719,14 @@ class Foreman:
             lines.append(f"- [{entry.entry_type}] {entry.key}: {entry.value}")
         return "\n".join(lines)
 
+    def get_context(self) -> Dict:
+        """Get current context for task classification."""
+        return {
+            "work_order": self.work_order.to_dict() if self.work_order else None,
+            "mode": self.mode.value,
+            "conversation_length": len(self.conversation),
+        }
+
     # -------------------------------------------------------------------------
     # Ollama Integration
     # -------------------------------------------------------------------------
@@ -676,6 +756,262 @@ class Foreman:
         except Exception as e:
             logger.error(f"Ollama error: {e}")
             return f"Error communicating with Ollama: {str(e)}"
+
+    # -------------------------------------------------------------------------
+    # Phase 3E: Multi-Model Cloud Integration
+    # -------------------------------------------------------------------------
+
+    def _detect_available_providers(self) -> Dict[str, bool]:
+        """Detect which cloud providers have API keys configured."""
+        return {
+            "openai": bool(os.getenv("OPENAI_API_KEY")),
+            "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
+            "deepseek": bool(os.getenv("DEEPSEEK_API_KEY")),
+            "qwen": bool(os.getenv("QWEN_API_KEY")),
+        }
+
+    async def _query_openai(self, prompt: str, system_prompt: str, model: str) -> str:
+        """Query OpenAI models (GPT-4o, etc.)."""
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning("OPENAI_API_KEY not found, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ],
+                    }
+                )
+                response.raise_for_status()
+                return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(f"OpenAI query failed: {e}, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+    async def _query_anthropic(self, prompt: str, system_prompt: str, model: str) -> str:
+        """Query Anthropic models (Claude Sonnet, etc.)."""
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            logger.warning("ANTHROPIC_API_KEY not found, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": 4096,
+                        "system": system_prompt,
+                        "messages": [{"role": "user", "content": prompt}]
+                    }
+                )
+                response.raise_for_status()
+                return response.json()["content"][0]["text"]
+        except Exception as e:
+            logger.error(f"Anthropic query failed: {e}, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+    async def _query_deepseek(self, prompt: str, system_prompt: str, model: str) -> str:
+        """Query DeepSeek models."""
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            logger.warning("DEEPSEEK_API_KEY not found, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ]
+                    }
+                )
+                response.raise_for_status()
+                return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(f"DeepSeek query failed: {e}, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+    async def _query_qwen(self, prompt: str, system_prompt: str, model: str) -> str:
+        """Query Qwen (Alibaba) models."""
+        api_key = os.getenv("QWEN_API_KEY")
+        if not api_key:
+            logger.warning("QWEN_API_KEY not found, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "input": {
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": prompt}
+                            ]
+                        }
+                    }
+                )
+                response.raise_for_status()
+                return response.json()["output"]["text"]
+        except Exception as e:
+            logger.error(f"Qwen query failed: {e}, falling back to Ollama")
+            return await self._query_ollama(prompt, system_prompt, self.model)
+
+    async def _query_llm(
+        self,
+        prompt: str,
+        system_prompt: str,
+        model: str = None,
+        task_type: str = "coordinator"
+    ) -> str:
+        """
+        Query LLM with intelligent model selection.
+
+        Phase 3E: Uses configurable task-specific models from settings.
+
+        Args:
+            prompt: User message
+            system_prompt: System context
+            model: Optional specific model (overrides automatic selection)
+            task_type: Type of task for automatic routing
+
+        Returns:
+            LLM response text
+        """
+        # Load settings
+        from backend.services.settings_service import settings_service
+        from backend.services.model_orchestrator import orchestrator, SelectionCriteria
+
+        foreman_settings = settings_service.get_category("foreman")
+        orchestrator_settings = settings_service.get_category("orchestrator")
+
+        # Determine which model to use
+        if model is None:
+            # Check if orchestrator is enabled (Phase 3E)
+            if orchestrator_settings.get("enabled", False):
+                # Use orchestrator for automatic model selection
+                criteria = SelectionCriteria(
+                    task_type=task_type,
+                    quality_tier=orchestrator_settings.get("quality_tier", "balanced"),
+                    monthly_budget=orchestrator_settings.get("monthly_budget"),
+                    current_month_spend=orchestrator_settings.get("current_month_spend", 0.0),
+                    prefer_local=orchestrator_settings.get("prefer_local", False)
+                )
+                model = orchestrator.select_model(criteria)
+                logger.info(f"🎯 Orchestrator selected {model} for {task_type} ({criteria.quality_tier} tier)")
+            else:
+                # Use manual task_models configuration (existing behavior)
+                task_models = foreman_settings.get("task_models", {})
+                model = task_models.get(task_type, foreman_settings.get("coordinator_model", "mistral"))
+
+                # Log model selection with visual indicators
+                if task_type == "coordinator":
+                    logger.debug(f"📋 Using {model} for {task_type}")
+                else:
+                    logger.info(f"🧠 Using {model} for {task_type}")
+
+        # Route to appropriate provider based on model name
+        if model.startswith("gpt-"):
+            return await self._query_openai(prompt, system_prompt, model)
+        elif model.startswith("claude-"):
+            return await self._query_anthropic(prompt, system_prompt, model)
+        elif model.startswith("deepseek-"):
+            return await self._query_deepseek(prompt, system_prompt, model)
+        elif model.startswith("qwen-"):
+            return await self._query_qwen(prompt, system_prompt, model)
+        else:
+            # Default to Ollama for local models (mistral, llama, etc.)
+            return await self._query_ollama(prompt, system_prompt, model)
+
+    async def _query_ollama(self, prompt: str, system_prompt: str, model: str) -> str:
+        """Query local Ollama models."""
+        url = f"{self.ollama_url}/api/chat"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": False,
+        }
+
+        logger.debug(f"Calling Ollama at {url} with model {model}")
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                result = response.json()
+                return result.get("message", {}).get("content", "")
+        except Exception as e:
+            logger.error(f"Ollama error: {e}")
+            return f"Error communicating with Ollama: {str(e)}"
+
+    def _classify_task_complexity(self, message: str, context: Dict = None) -> str:
+        """
+        Classify task to determine if advisor model is needed.
+
+        Returns: Task type string (e.g., "health_check_review", "coordinator")
+        """
+        message_lower = message.lower()
+
+        # Health check interpretation
+        if any(word in message_lower for word in ["health check", "score", "interpret", "what does this mean"]):
+            return "health_check_review"
+
+        # Voice calibration guidance
+        if any(word in message_lower for word in ["voice", "tournament", "which variant", "calibration"]):
+            return "voice_calibration_guidance"
+
+        # Beat structure advice
+        if any(word in message_lower for word in ["beat", "structure", "pacing", "act", "midpoint"]):
+            return "beat_structure_advice"
+
+        # Conflict resolution
+        if any(word in message_lower for word in ["conflict", "contradiction", "timeline issue", "consistency"]):
+            return "conflict_resolution"
+
+        # Scaffold enrichment
+        if any(word in message_lower for word in ["enrich", "scaffold", "notebook", "research"]):
+            return "scaffold_enrichment_decisions"
+
+        # Theme analysis
+        if any(word in message_lower for word in ["theme", "symbolism", "meaning", "resonance"]):
+            return "theme_analysis"
+
+        # Structural planning
+        if any(word in message_lower for word in ["plan", "outline", "strategy", "approach"]):
+            return "structural_planning"
+
+        # Default to simple coordination
+        return "coordinator"
 
     # -------------------------------------------------------------------------
     # Action Handling
@@ -1100,6 +1436,423 @@ class Foreman:
             }
 
         return {"can_advance": True, "reason": "Voice calibration complete"}
+
+    # -------------------------------------------------------------------------
+    # Director Mode Actions
+    # -------------------------------------------------------------------------
+
+    def _get_director_services(self):
+        """Lazy-load all Director Mode services."""
+        if self._scaffold_service is None:
+            from backend.services.scaffold_generator_service import ScaffoldGeneratorService
+            from backend.services.scene_writer_service import SceneWriterService
+            from backend.services.scene_analyzer_service import SceneAnalyzerService
+            from backend.services.scene_enhancement_service import SceneEnhancementService
+
+            self._scaffold_service = ScaffoldGeneratorService()
+            self._scene_writer_service = SceneWriterService()
+            self._scene_analyzer_service = SceneAnalyzerService()
+            self._scene_enhancement_service = SceneEnhancementService()
+
+        return {
+            "scaffold": self._scaffold_service,
+            "writer": self._scene_writer_service,
+            "analyzer": self._scene_analyzer_service,
+            "enhancement": self._scene_enhancement_service,
+        }
+
+    async def _handle_generate_draft_summary(self, action: Dict) -> Dict:
+        """
+        Handle generating a draft scaffold summary.
+
+        Action format:
+        {"action": "generate_draft_summary", "chapter": 4, "scene": 1,
+         "beat": "catalyst", "description": "..."}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode to generate scaffolds"}
+
+        if not self.work_order:
+            return {"error": "No active project"}
+
+        from backend.services.scaffold_generator_service import BeatInfo, CharacterContext
+
+        services = self._get_director_services()
+        scaffold_service = services["scaffold"]
+
+        # Build BeatInfo from action
+        beat_info = BeatInfo(
+            beat_number=action.get("beat_number", 1),
+            beat_name=action.get("beat", "Unknown Beat"),
+            beat_percentage=action.get("beat_percentage", ""),
+            description=action.get("description", ""),
+            beat_type=action.get("beat_type", ""),
+        )
+
+        # Build character context from work order
+        characters = [
+            CharacterContext(
+                name=self.work_order.protagonist_name,
+                role="protagonist",
+            )
+        ]
+
+        try:
+            result = await scaffold_service.generate_draft_summary(
+                project_id=self.work_order.project_title,
+                chapter_number=action.get("chapter", 1),
+                scene_number=action.get("scene", 1),
+                beat_info=beat_info,
+                characters=characters,
+                scene_description=action.get("description", ""),
+            )
+
+            return {
+                "status": "success",
+                "scene_id": result.scene_id,
+                "summary": result.narrative_summary,
+                "ready_to_generate": result.ready_to_generate,
+                "enrichment_suggestions": [s.to_dict() for s in result.enrichment_suggestions] if result.enrichment_suggestions else [],
+            }
+        except Exception as e:
+            logger.error(f"Draft summary generation failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_enrich_scaffold(self, action: Dict) -> Dict:
+        """
+        Handle enriching scaffold with NotebookLM data.
+
+        Action format:
+        {"action": "enrich_scaffold", "notebook_id": "...", "query": "..."}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode"}
+
+        # Use existing notebook query handler
+        return await self._handle_query_notebook(action)
+
+    async def _handle_generate_scaffold(self, action: Dict) -> Dict:
+        """
+        Handle generating a full scaffold after enrichment.
+
+        Action format:
+        {"action": "generate_scaffold", "chapter": 4, "scene": 1,
+         "title": "...", "enrichment": [...]}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode"}
+
+        if not self.work_order:
+            return {"error": "No active project"}
+
+        from backend.services.scaffold_generator_service import BeatInfo, CharacterContext
+
+        services = self._get_director_services()
+        scaffold_service = services["scaffold"]
+
+        beat_info = BeatInfo(
+            beat_number=action.get("beat_number", 1),
+            beat_name=action.get("beat", "Unknown Beat"),
+            beat_percentage=action.get("beat_percentage", ""),
+            description=action.get("description", ""),
+            beat_type=action.get("beat_type", ""),
+        )
+
+        characters = [
+            CharacterContext(
+                name=self.work_order.protagonist_name,
+                role="protagonist",
+            )
+        ]
+
+        try:
+            result = await scaffold_service.generate_full_scaffold(
+                project_id=self.work_order.project_title,
+                chapter_number=action.get("chapter", 1),
+                scene_number=action.get("scene", 1),
+                title=action.get("title", f"Chapter {action.get('chapter', 1)}, Scene {action.get('scene', 1)}"),
+                beat_info=beat_info,
+                characters=characters,
+                scene_description=action.get("description", ""),
+                enrichment_data=action.get("enrichment", []),
+            )
+
+            return {
+                "status": "success",
+                "scaffold": result.to_dict(),
+            }
+        except Exception as e:
+            logger.error(f"Scaffold generation failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_write_scene(self, action: Dict) -> Dict:
+        """
+        Handle writing a scene using the SceneWriterService.
+
+        Action format:
+        {"action": "write_scene", "scaffold_id": "ch4-sc1",
+         "structure_variant": "A", "strategy": "BALANCED"}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode"}
+
+        services = self._get_director_services()
+        writer_service = services["writer"]
+
+        scene_id = action.get("scaffold_id", action.get("scene_id", "unknown"))
+        strategy = action.get("strategy", "BALANCED")
+
+        try:
+            # Use quick_generate for single scene generation
+            result = await writer_service.generate_single_scene(
+                scene_id=scene_id,
+                beat_description=action.get("beat_description", ""),
+                voice_bundle=None,  # TODO: Load from voice bundle path
+                strategy=strategy,
+                target_word_count=action.get("target_word_count", "1500-2000"),
+            )
+
+            return {
+                "status": "success",
+                "scene_id": scene_id,
+                "content": result.content if hasattr(result, 'content') else str(result),
+                "word_count": result.word_count if hasattr(result, 'word_count') else None,
+            }
+        except Exception as e:
+            logger.error(f"Scene writing failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_analyze_scene(self, action: Dict) -> Dict:
+        """
+        Handle analyzing a scene for quality scoring.
+
+        Action format:
+        {"action": "analyze_scene", "scene_id": "ch4-sc1", "content": "..."}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode"}
+
+        services = self._get_director_services()
+        analyzer_service = services["analyzer"]
+
+        scene_id = action.get("scene_id", "unknown")
+        content = action.get("content", "")
+
+        if not content:
+            return {"error": "Missing scene content"}
+
+        try:
+            result = await analyzer_service.analyze_scene(
+                scene_id=scene_id,
+                scene_content=content,
+                voice_bundle=None,
+                story_bible=None,
+                pov_character=action.get("pov_character", self.work_order.protagonist_name if self.work_order else "protagonist"),
+                phase=action.get("phase", "act2"),
+            )
+
+            return {
+                "status": "success",
+                "scene_id": scene_id,
+                "total_score": result.total_score,
+                "grade": result.grade,
+                "recommended_mode": result.recommended_mode,
+                "categories": {k: v.to_dict() for k, v in result.categories.items()},
+                "violations": len(result.violations),
+                "enhancement_needed": result.enhancement_needed,
+            }
+        except Exception as e:
+            logger.error(f"Scene analysis failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_enhance_scene(self, action: Dict) -> Dict:
+        """
+        Handle enhancing a scene based on its score.
+
+        Action format:
+        {"action": "enhance_scene", "scene_id": "ch4-sc1", "content": "...",
+         "force_mode": "six_pass"}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode"}
+
+        services = self._get_director_services()
+        analyzer_service = services["analyzer"]
+        enhancement_service = services["enhancement"]
+
+        scene_id = action.get("scene_id", "unknown")
+        content = action.get("content", "")
+
+        if not content:
+            return {"error": "Missing scene content"}
+
+        try:
+            # First analyze
+            analysis = await analyzer_service.analyze_scene(
+                scene_id=scene_id,
+                scene_content=content,
+                voice_bundle=None,
+                story_bible=None,
+            )
+
+            # Determine force mode
+            force_mode = None
+            if action.get("force_mode"):
+                from backend.services.scene_enhancement_service import EnhancementMode
+                force_mode = EnhancementMode(action["force_mode"])
+
+            # Then enhance
+            result = await enhancement_service.enhance_scene(
+                scene_id=scene_id,
+                scene_content=content,
+                analysis=analysis,
+                voice_bundle=None,
+                story_bible=None,
+                force_mode=force_mode,
+            )
+
+            return {
+                "status": "enhanced" if result.mode.value != "rewrite" else "rewrite_needed",
+                "scene_id": scene_id,
+                "mode_used": result.mode.value,
+                "original_score": result.original_score,
+                "final_score": result.final_score,
+                "enhanced_content": result.enhanced_content,
+                "passes_completed": len(result.passes_completed) if result.passes_completed else 0,
+            }
+        except Exception as e:
+            logger.error(f"Scene enhancement failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_run_health_check(self, action: Dict) -> Dict:
+        """
+        Handle running a health check on manuscript structure (Phase 3D).
+
+        Action format:
+        {"action": "run_health_check", "scope": "chapter", "chapter_id": "chapter_4.2"}
+        {"action": "run_health_check", "scope": "act", "act_number": 2}
+        {"action": "run_health_check", "scope": "manuscript"}
+
+        Strategic Decision 3: Auto-trigger after chapter completion
+        - Respects foreman proactiveness setting (high/medium/low)
+        - High: Auto-run and notify on warnings
+        - Medium: Auto-run but only notify on errors
+        - Low: Manual trigger only
+        """
+        if self.mode not in [ForemanMode.DIRECTOR, ForemanMode.EDITOR]:
+            return {"error": "Health checks only available in DIRECTOR or EDITOR mode"}
+
+        if not self.work_order:
+            return {"error": "No active project"}
+
+        from backend.services.graph_health_service import get_graph_health_service
+
+        scope = action.get("scope", "chapter")
+        chapter_id = action.get("chapter_id")
+        act_number = action.get("act_number")
+
+        try:
+            # Get health service for this project
+            health_service = get_graph_health_service(self.work_order.project_title)
+
+            # Run appropriate health check based on scope
+            if scope == "chapter":
+                if not chapter_id:
+                    return {"error": "chapter_id required for chapter scope"}
+                report = await health_service.run_chapter_health_check(chapter_id)
+
+            elif scope == "act":
+                if not act_number:
+                    return {"error": "act_number required for act scope"}
+                report = await health_service.run_act_health_check(act_number)
+
+            elif scope == "manuscript":
+                report = await health_service.run_full_manuscript_check()
+
+            else:
+                return {"error": f"Invalid scope: {scope}"}
+
+            # Extract key metrics for Foreman's awareness
+            warnings_by_severity = {
+                "error": [w for w in report.warnings if w.severity == "error"],
+                "warning": [w for w in report.warnings if w.severity == "warning"],
+                "info": [w for w in report.warnings if w.severity == "info"],
+            }
+
+            # Save key findings to KB if significant
+            if warnings_by_severity["error"]:
+                await self._handle_save_decision({
+                    "category": "health_check",
+                    "key": f"health_issues_{scope}_{chapter_id or act_number or 'manuscript'}",
+                    "value": {
+                        "report_id": report.report_id,
+                        "overall_score": report.overall_score,
+                        "error_count": len(warnings_by_severity["error"]),
+                        "warning_count": len(warnings_by_severity["warning"]),
+                        "timestamp": report.timestamp,
+                    },
+                    "source": "graph_health_service"
+                })
+
+            return {
+                "status": "complete",
+                "report_id": report.report_id,
+                "scope": scope,
+                "overall_score": report.overall_score,
+                "warnings": {
+                    "error_count": len(warnings_by_severity["error"]),
+                    "warning_count": len(warnings_by_severity["warning"]),
+                    "info_count": len(warnings_by_severity["info"]),
+                },
+                "top_issues": [
+                    {
+                        "type": w.type,
+                        "severity": w.severity,
+                        "message": w.message,
+                        "recommendation": w.recommendation,
+                    }
+                    for w in (warnings_by_severity["error"][:3] + warnings_by_severity["warning"][:3])
+                ],
+                "markdown_summary": report.to_markdown()[:500] + "..." if len(report.to_markdown()) > 500 else report.to_markdown(),
+            }
+
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return {"error": str(e)}
+
+    async def _handle_advance_to_editor(self, action: Dict) -> Dict:
+        """
+        Handle transition from DIRECTOR to EDITOR mode.
+
+        Action format:
+        {"action": "advance_to_editor", "confirm": true}
+        """
+        if self.mode != ForemanMode.DIRECTOR:
+            return {"error": "Must be in DIRECTOR mode to advance to EDITOR"}
+
+        if not action.get("confirm"):
+            return {"error": "Must confirm advancement with 'confirm': true"}
+
+        # TODO: Check if all scenes are complete before advancing
+
+        self.mode = ForemanMode.EDITOR
+        if self.work_order:
+            self.work_order.mode = ForemanMode.EDITOR
+
+        await self._handle_save_decision({
+            "category": "mode_transition",
+            "key": "entered_editor",
+            "value": datetime.now(timezone.utc).isoformat(),
+            "source": "foreman"
+        })
+
+        logger.info(f"Transitioned to EDITOR mode for {self.work_order.project_title if self.work_order else 'unknown'}")
+
+        return {
+            "status": "transitioned",
+            "new_mode": "editor",
+            "message": "Director Mode complete! Now entering Editor mode for revision and polish."
+        }
 
     # -------------------------------------------------------------------------
     # KB Operations

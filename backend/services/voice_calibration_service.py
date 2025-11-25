@@ -829,6 +829,98 @@ the voice accordingly:
 *Use this guide alongside the Voice Gold Standard for phase-appropriate scene generation.*
 """
 
+    def _generate_voice_settings_yaml(self, voice_doc: Dict, project_id: str) -> str:
+        """
+        Generate voice_settings.yaml file with configurable scoring parameters.
+
+        This file is consumed by Scene Analyzer and Scene Enhancement services
+        to make them dynamic rather than hard-coded to Explants patterns.
+
+        Args:
+            voice_doc: Voice calibration document
+            project_id: Project identifier
+
+        Returns:
+            YAML content as string
+        """
+        from backend.services.settings_service import settings_service
+
+        # Get current settings for this project (or defaults)
+        settings_dict = settings_service.export_settings(project_id)
+
+        # Add metadata
+        settings_dict['project_id'] = project_id
+        settings_dict['voice_calibration'] = {
+            'pov': voice_doc['pov'],
+            'tense': voice_doc['tense'],
+            'voice_type': voice_doc['voice_type'],
+            'metaphor_domains': voice_doc.get('metaphor_domains', []),
+            'calibrated_at': datetime.now().isoformat(),
+        }
+
+        # Convert to YAML with nice formatting
+        yaml_content = yaml.dump(
+            settings_dict,
+            default_flow_style=False,
+            sort_keys=False,
+            indent=2,
+            allow_unicode=True
+        )
+
+        # Add header comment
+        header = f"""# Voice Settings - {project_id}
+# Generated during Voice Calibration
+# This file defines scoring parameters, anti-patterns, and enhancement thresholds
+# for this specific project's narrative voice.
+#
+# These settings override global defaults and make Director Mode services
+# adapt to your unique writing style.
+
+"""
+        return header + yaml_content
+
+    def generate_voice_bundle_with_settings(
+        self,
+        project_id: str,
+        output_dir: str
+    ) -> Dict[str, Path]:
+        """
+        Generate Voice Bundle files INCLUDING voice_settings.yaml.
+
+        This is the updated version of generate_voice_bundle that creates
+        the settings file required for dynamic Director Mode services.
+
+        Args:
+            project_id: Project identifier
+            output_dir: Directory to write files to
+
+        Returns:
+            Dictionary mapping file type to path:
+                - 'gold_standard': Voice-Gold-Standard.md
+                - 'anti_patterns': Voice-Anti-Pattern-Sheet.md
+                - 'phase_evolution': Phase-Evolution-Guide.md
+                - 'settings': voice_settings.yaml (NEW)
+        """
+        # Generate the markdown files (existing logic)
+        files = self.generate_voice_bundle(project_id, output_dir)
+
+        # Add voice_settings.yaml
+        voice_json = self.voice_calibrations.get(project_id)
+        if not voice_json:
+            raise ValueError(f"No voice calibration found for project {project_id}")
+
+        voice_doc = json.loads(voice_json)
+        output_dir_path = Path(output_dir)
+
+        settings_path = output_dir_path / "voice_settings.yaml"
+        settings_content = self._generate_voice_settings_yaml(voice_doc, project_id)
+        settings_path.write_text(settings_content)
+        files['settings'] = settings_path
+
+        logger.info(f"Generated Voice Bundle with settings for {project_id}: {list(files.keys())}")
+
+        return files
+
 
 # =============================================================================
 # Singleton Access

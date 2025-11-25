@@ -32,6 +32,7 @@ from backend.services.notebooklm_service import get_notebooklm_client
 from backend.services.session_service import SessionService, get_session_service
 from backend.services.consolidator_service import ConsolidatorService, get_consolidator_service
 from backend.services.story_bible_service import StoryBibleService
+from backend.services.settings_service import SettingsService, settings_service
 
 # --- SQLAlchemy Imports ---
 from sqlalchemy import create_engine
@@ -873,6 +874,34 @@ class ForemanChatRequest(BaseModel):
 class ForemanNotebookRequest(BaseModel):
     notebook_id: str
     role: str  # "world", "voice", "craft"
+
+
+# --- Settings API Models ---
+class SettingGetRequest(BaseModel):
+    key: str
+    project_id: Optional[str] = None
+
+
+class SettingSetRequest(BaseModel):
+    key: str
+    value: Any
+    project_id: Optional[str] = None
+    category: str = "general"
+
+
+class SettingResetRequest(BaseModel):
+    key: str
+    project_id: Optional[str] = None
+
+
+class SettingsCategoryRequest(BaseModel):
+    category: str
+    project_id: Optional[str] = None
+
+
+class SettingsImportRequest(BaseModel):
+    settings: Dict[str, Any]
+    project_id: Optional[str] = None
 
 
 @app.post("/foreman/start", summary="Start a new project with the Foreman")
@@ -2417,6 +2446,699 @@ async def run_six_pass_enhancement(request: SceneEnhanceRequest):
     except Exception as e:
         logging.error(f"6-pass enhancement failed: {e}")
         raise HTTPException(status_code=500, detail=f"6-pass enhancement failed: {str(e)}")
+
+
+# ============================================================================
+# SETTINGS API
+# ============================================================================
+
+@app.get("/settings/{key}", summary="Get a setting value")
+async def get_setting(key: str, project_id: Optional[str] = None):
+    """
+    Get a setting value using 3-tier resolution.
+
+    Resolution order:
+    1. Project-specific override (if project_id provided)
+    2. Global user setting
+    3. Default value
+
+    Examples:
+        GET /settings/scoring.voice_authenticity_weight
+        GET /settings/scoring.voice_authenticity_weight?project_id=proj_123
+    """
+    try:
+        value = settings_service.get(key, project_id)
+        return {
+            "key": key,
+            "value": value,
+            "project_id": project_id,
+        }
+    except Exception as e:
+        logging.error(f"Failed to get setting {key}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get setting: {str(e)}")
+
+
+@app.post("/settings", summary="Set a setting value")
+async def set_setting(request: SettingSetRequest):
+    """
+    Set a setting value.
+
+    If project_id is provided, sets project-specific override.
+    Otherwise, sets global setting.
+
+    Examples:
+        POST /settings
+        {
+            "key": "scoring.voice_authenticity_weight",
+            "value": 40,
+            "project_id": "proj_123"
+        }
+    """
+    try:
+        success = settings_service.set(
+            key=request.key,
+            value=request.value,
+            project_id=request.project_id,
+            category=request.category
+        )
+
+        if not success:
+            raise HTTPException(status_code=400, detail="Setting validation failed")
+
+        return {
+            "status": "success",
+            "key": request.key,
+            "value": request.value,
+            "project_id": request.project_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to set setting {request.key}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to set setting: {str(e)}")
+
+
+@app.delete("/settings/{key}", summary="Reset a setting to default")
+async def reset_setting(key: str, project_id: Optional[str] = None):
+    """
+    Reset a setting to its default value.
+
+    If project_id is provided, removes the project-specific override.
+    If project_id is None, removes the global setting.
+
+    Examples:
+        DELETE /settings/scoring.voice_authenticity_weight
+        DELETE /settings/scoring.voice_authenticity_weight?project_id=proj_123
+    """
+    try:
+        success = settings_service.reset(key, project_id)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to reset setting")
+
+        return {
+            "status": "success",
+            "key": key,
+            "project_id": project_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to reset setting {key}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset setting: {str(e)}")
+
+
+@app.get("/settings/category/{category}", summary="Get all settings in a category")
+async def get_settings_category(category: str, project_id: Optional[str] = None):
+    """
+    Get all settings for a category.
+
+    Categories: scoring, anti_patterns, enhancement, tournament, foreman, context, health_checks, orchestrator, tournament_consensus
+
+    Examples:
+        GET /settings/category/scoring
+        GET /settings/category/scoring?project_id=proj_123
+    """
+    try:
+        settings = settings_service.get_category(category, project_id)
+        return {
+            "category": category,
+            "settings": settings,
+            "project_id": project_id,
+        }
+    except Exception as e:
+        logging.error(f"Failed to get category {category}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get category: {str(e)}")
+
+
+@app.get("/settings/project/{project_id}/overrides", summary="Get all project overrides")
+async def get_project_overrides(project_id: str):
+    """
+    Get all project-specific setting overrides.
+
+    Examples:
+        GET /settings/project/proj_123/overrides
+    """
+    try:
+        overrides = settings_service.get_all_project_overrides(project_id)
+        return {
+            "project_id": project_id,
+            "overrides": overrides,
+        }
+    except Exception as e:
+        logging.error(f"Failed to get project overrides for {project_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get project overrides: {str(e)}")
+
+
+@app.get("/settings/export", summary="Export settings as YAML-ready dictionary")
+async def export_settings(project_id: Optional[str] = None):
+    """
+    Export settings to a dictionary suitable for YAML export.
+
+    If project_id is provided, exports project-specific settings.
+    Otherwise, exports global settings.
+
+    Examples:
+        GET /settings/export
+        GET /settings/export?project_id=proj_123
+    """
+    try:
+        settings_dict = settings_service.export_settings(project_id)
+        return settings_dict
+    except Exception as e:
+        logging.error(f"Failed to export settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to export settings: {str(e)}")
+
+
+@app.post("/settings/import", summary="Import settings from dictionary")
+async def import_settings(request: SettingsImportRequest):
+    """
+    Import settings from a dictionary (typically from YAML).
+
+    If project_id is provided, imports as project-specific settings.
+    Otherwise, imports as global settings.
+
+    Examples:
+        POST /settings/import
+        {
+            "settings": {
+                "scoring": {"voice_authenticity_weight": 40, ...},
+                "enhancement": {...}
+            },
+            "project_id": "proj_123"
+        }
+    """
+    try:
+        success = settings_service.import_settings(request.settings, request.project_id)
+
+        if not success:
+            raise HTTPException(status_code=400, detail="Settings import failed")
+
+        return {
+            "status": "success",
+            "project_id": request.project_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to import settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to import settings: {str(e)}")
+
+
+@app.get("/settings/defaults", summary="Get all default values")
+async def get_defaults():
+    """
+    Get all default setting values.
+
+    Useful for understanding the baseline configuration.
+    """
+    try:
+        defaults = settings_service.defaults.get_flat_dict()
+        return {
+            "defaults": defaults,
+        }
+    except Exception as e:
+        logging.error(f"Failed to get defaults: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get defaults: {str(e)}")
+
+
+# =============================================================================
+# Model Orchestrator API (Phase 3E)
+# =============================================================================
+
+@app.get("/orchestrator/capabilities", summary="Get model capabilities registry")
+async def get_model_capabilities():
+    """
+    Get full model capabilities registry with costs, strengths, and quality scores.
+
+    Returns detailed information about all available models for intelligent selection.
+
+    Example:
+        GET /orchestrator/capabilities
+    """
+    try:
+        from backend.services.model_capabilities import MODEL_REGISTRY
+
+        models = [
+            {
+                "model_id": m.model_id,
+                "provider": m.provider,
+                "display_name": m.display_name,
+                "strengths": [s.value for s in m.strengths],
+                "quality_score": m.quality_score,
+                "speed": m.speed,
+                "cost_per_1m_input": m.cost_per_1m_input,
+                "cost_per_1m_output": m.cost_per_1m_output,
+                "requires_api_key": m.requires_api_key,
+                "local_only": m.local_only,
+            }
+            for m in MODEL_REGISTRY
+        ]
+
+        return {"models": models}
+    except Exception as e:
+        logging.error(f"Failed to get model capabilities: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get model capabilities: {str(e)}")
+
+
+@app.post("/orchestrator/estimate-cost", summary="Estimate monthly cost for quality tier")
+async def estimate_monthly_cost(request: Dict[str, Any]):
+    """
+    Estimate monthly cost for a quality tier based on typical usage.
+
+    Request body:
+        {
+            "quality_tier": "balanced",
+            "estimated_usage": {
+                "health_check_review": 50,  // 50 calls/month
+                "theme_analysis": 30,
+                "coordinator": 200
+            }
+        }
+
+    Example:
+        POST /orchestrator/estimate-cost
+    """
+    try:
+        from backend.services.model_orchestrator import orchestrator
+
+        quality_tier = request.get("quality_tier", "balanced")
+        usage = request.get("estimated_usage", {})
+
+        cost_estimate = orchestrator.estimate_monthly_cost(quality_tier, usage)
+        return cost_estimate
+    except Exception as e:
+        logging.error(f"Failed to estimate cost: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to estimate cost: {str(e)}")
+
+
+@app.get("/orchestrator/recommendations/{task_type}", summary="Get model recommendations for task")
+async def get_model_recommendations(task_type: str):
+    """
+    Get recommended models for a task across all quality tiers.
+
+    Args:
+        task_type: Task type (e.g., "health_check_review", "theme_analysis")
+
+    Returns:
+        {
+            "task_type": "health_check_review",
+            "recommendations": {
+                "budget": "mistral",
+                "balanced": "deepseek-chat",
+                "premium": "claude-3-5-sonnet-20241022"
+            }
+        }
+
+    Example:
+        GET /orchestrator/recommendations/health_check_review
+    """
+    try:
+        from backend.services.model_orchestrator import orchestrator
+
+        recommendations = orchestrator.get_model_recommendations(task_type)
+        return {
+            "task_type": task_type,
+            "recommendations": recommendations
+        }
+    except Exception as e:
+        logging.error(f"Failed to get recommendations for {task_type}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get recommendations: {str(e)}")
+
+
+@app.get("/orchestrator/current-spend", summary="Get current month spending")
+async def get_current_spend():
+    """
+    Get current month's AI spending and budget status.
+
+    Returns:
+        {
+            "current_month": "2025-11",
+            "spend": 0.47,
+            "budget": 2.00,
+            "budget_remaining": 1.53
+        }
+
+    Example:
+        GET /orchestrator/current-spend
+    """
+    try:
+        orchestrator_settings = settings_service.get_category("orchestrator")
+
+        budget = orchestrator_settings.get("monthly_budget")
+        spend = orchestrator_settings.get("current_month_spend", 0.0)
+
+        return {
+            "current_month": orchestrator_settings.get("current_month"),
+            "spend": spend,
+            "budget": budget,
+            "budget_remaining": (budget - spend) if budget is not None else None
+        }
+    except Exception as e:
+        logging.error(f"Failed to get current spend: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current spend: {str(e)}")
+
+
+# =============================================================================
+# Graph Health Check API (Phase 3D)
+# =============================================================================
+
+class HealthCheckRequest(BaseModel):
+    """Request to run a health check."""
+    project_id: str
+    scope: str  # "chapter", "act", "manuscript"
+    chapter_id: Optional[str] = None
+    act_number: Optional[int] = None
+
+
+class ThemeOverrideRequest(BaseModel):
+    """Request to manually override a theme resonance score."""
+    project_id: str
+    beat_id: str
+    theme_id: str
+    manual_score: float
+    reason: str
+
+
+@app.post("/health/check", summary="Run health check on chapter/act/manuscript")
+async def run_health_check(request: HealthCheckRequest):
+    """
+    Run a comprehensive health check on manuscript structure.
+
+    Scope options:
+    - "chapter": Run checks on a specific chapter (requires chapter_id)
+    - "act": Run checks on an entire act (requires act_number)
+    - "manuscript": Run checks on the full manuscript
+
+    Returns:
+        - Health report with overall score (0-100)
+        - Warnings categorized by severity (error, warning, info)
+        - Recommendations for fixes
+        - Stored report_id for later retrieval
+
+    Health Checks:
+    - Pacing Plateau Detection: Detects flat tension across consecutive chapters
+    - Beat Progress Validation: Ensures 15-beat structure compliance
+    - Timeline Consistency: LLM-powered semantic analysis of timeline conflicts
+    - Fatal Flaw Challenge Monitoring: Tracks protagonist's flaw testing frequency
+    - Cast Function Verification: Ensures supporting characters appear regularly
+    - Symbolic Layering: Tracks symbol recurrence and evolution
+    - Theme Resonance: Hybrid LLM + manual override for theme scoring at beats
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+
+    try:
+        service = get_graph_health_service(request.project_id)
+
+        # Route to appropriate check based on scope
+        if request.scope == "chapter":
+            if not request.chapter_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="chapter_id required for chapter scope"
+                )
+            report = await service.run_chapter_health_check(request.chapter_id)
+
+        elif request.scope == "act":
+            if not request.act_number:
+                raise HTTPException(
+                    status_code=400,
+                    detail="act_number required for act scope"
+                )
+            report = await service.run_act_health_check(request.act_number)
+
+        elif request.scope == "manuscript":
+            report = await service.run_full_manuscript_check()
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid scope: {request.scope}. Must be 'chapter', 'act', or 'manuscript'"
+            )
+
+        return {
+            "status": "complete",
+            "report": report.to_dict(),
+            "markdown": report.to_markdown(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
+
+@app.get("/health/report/{report_id}", summary="Retrieve a stored health report")
+async def get_health_report(report_id: str):
+    """
+    Retrieve a previously stored health report.
+
+    Returns:
+        - Full health report with warnings and recommendations
+        - Markdown formatted version for display
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+    from backend.graph.schema import HealthReportHistory
+    from sqlalchemy.orm import Session
+
+    try:
+        # Query database for report
+        db: Session = next(get_db())
+        report_row = db.query(HealthReportHistory).filter(
+            HealthReportHistory.report_id == report_id
+        ).first()
+
+        if not report_row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report {report_id} not found"
+            )
+
+        return {
+            "status": "found",
+            "report": report_row.to_dict(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to retrieve report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve report: {str(e)}")
+
+
+@app.post("/health/export", summary="Export health report as markdown or JSON")
+async def export_health_report(report_id: str, format: str = "markdown"):
+    """
+    Export a health report in the specified format.
+
+    Formats:
+    - "markdown": Human-readable markdown with sections
+    - "json": Machine-readable JSON
+
+    Returns:
+        - Exported content as string
+        - Content-Type header set appropriately
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+    from backend.graph.schema import HealthReportHistory
+    from sqlalchemy.orm import Session
+
+    try:
+        if format not in ["markdown", "json"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid format: {format}. Must be 'markdown' or 'json'"
+            )
+
+        # Query database for report
+        db: Session = next(get_db())
+        report_row = db.query(HealthReportHistory).filter(
+            HealthReportHistory.report_id == report_id
+        ).first()
+
+        if not report_row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report {report_id} not found"
+            )
+
+        if format == "json":
+            return {
+                "format": "json",
+                "content": report_row.to_dict(),
+            }
+        else:
+            # Reconstruct HealthReport from stored data
+            from backend.services.graph_health_service import HealthReport, HealthWarning
+            from dataclasses import asdict
+
+            warnings_data = report_row.warnings or []
+            warnings = [HealthWarning(**w) for w in warnings_data]
+
+            report = HealthReport(
+                report_id=report_row.report_id,
+                project_id=report_row.project_id,
+                scope=report_row.scope,
+                chapter_id=report_row.chapter_id,
+                act_number=report_row.act_number,
+                overall_score=report_row.overall_score,
+                warnings=warnings,
+                timestamp=report_row.timestamp.isoformat() if report_row.timestamp else None,
+            )
+
+            markdown_content = report.to_markdown()
+
+            return {
+                "format": "markdown",
+                "content": markdown_content,
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to export report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to export report: {str(e)}")
+
+
+@app.get("/health/trends/{metric}", summary="Get historical trend data for a metric")
+async def get_health_trends(
+    metric: str,
+    project_id: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+):
+    """
+    Get historical trend data for longitudinal analysis.
+
+    Metrics:
+    - "overall_score": Overall health score over time
+    - "pacing_issues": Count of pacing warnings over time
+    - "beat_deviations": Beat structure deviation over time
+    - "flaw_challenge_gaps": Fatal Flaw challenge gap frequency
+    - "timeline_conflicts": Timeline consistency violations over time
+
+    Date format: ISO 8601 (e.g., "2025-01-01T00:00:00")
+
+    Returns:
+        - Time series data with timestamps and values
+        - Trend direction (improving, declining, stable)
+        - Comparison to baseline
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+    from datetime import datetime
+
+    try:
+        service = get_graph_health_service(project_id)
+
+        # Parse dates if provided
+        start_dt = datetime.fromisoformat(start_date) if start_date else None
+        end_dt = datetime.fromisoformat(end_date) if end_date else None
+
+        trend_data = service.get_trend_data(metric, start_dt, end_dt)
+
+        if not trend_data:
+            return {
+                "metric": metric,
+                "project_id": project_id,
+                "data": [],
+                "message": "No historical data available for this metric",
+            }
+
+        return {
+            "metric": metric,
+            "project_id": project_id,
+            "data": trend_data,
+            "count": len(trend_data),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Failed to get trends for {metric}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get trends: {str(e)}")
+
+
+@app.post("/health/theme/override", summary="Manually override LLM theme score")
+async def set_theme_override(request: ThemeOverrideRequest):
+    """
+    Manually override an LLM-generated theme resonance score.
+
+    Strategic Decision 2: Hybrid LLM + Manual Override
+    - LLM auto-scores theme resonance at critical beats
+    - Writers can override scores when LLM misses subtle intent
+    - Future health checks respect manual overrides
+
+    Args:
+        project_id: The project
+        beat_id: The beat where theme resonates (e.g., "beat_7")
+        theme_id: The theme being scored (e.g., "redemption")
+        manual_score: Writer's score (0-10 scale)
+        reason: Explanation for override
+
+    Returns:
+        - Confirmation of override
+        - Previous LLM score for comparison
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+
+    try:
+        service = get_graph_health_service(request.project_id)
+
+        # Validate score range
+        if not 0 <= request.manual_score <= 10:
+            raise HTTPException(
+                status_code=400,
+                detail="manual_score must be between 0 and 10"
+            )
+
+        service.set_theme_override(
+            beat_id=request.beat_id,
+            theme_id=request.theme_id,
+            manual_score=request.manual_score,
+            reason=request.reason,
+        )
+
+        return {
+            "status": "override_set",
+            "project_id": request.project_id,
+            "beat_id": request.beat_id,
+            "theme_id": request.theme_id,
+            "manual_score": request.manual_score,
+            "message": "Theme score override saved. Future health checks will use this value.",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to set theme override: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to set override: {str(e)}")
+
+
+@app.get("/health/theme/overrides", summary="Get all theme overrides for a project")
+async def get_theme_overrides(project_id: str):
+    """
+    Get all manual theme score overrides for a project.
+
+    Returns:
+        - List of all overrides with beat, theme, scores, and reasons
+        - Comparison between LLM and manual scores
+    """
+    from backend.services.graph_health_service import get_graph_health_service
+
+    try:
+        service = get_graph_health_service(project_id)
+        overrides = service.get_all_overrides()
+
+        return {
+            "project_id": project_id,
+            "overrides": overrides,
+            "count": len(overrides),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get theme overrides: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get overrides: {str(e)}")
 
 
 if __name__ == "__main__":

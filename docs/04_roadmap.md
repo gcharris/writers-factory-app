@@ -65,20 +65,247 @@
 ### Implementation Status
 - ✅ All 4 backend services implemented
 - ✅ 16 API endpoints available
+- ✅ Foreman orchestration integration (7 action handlers)
+- ✅ LLM scoring reliability fixes (JSON parsing, prompt improvements)
 - 🔲 Frontend UI (Phase 5)
-- 🔲 Foreman orchestration integration
 
 See: [DIRECTOR_MODE_SPECIFICATION.md](specs/DIRECTOR_MODE_SPECIFICATION.md) for full technical details
 
-## Phase 4: The Immune System (Planned)
-**Goal:** Story Health & Versioning.
-1.  **Health Service:** Automated checks for Dropped Threads, Timeline Errors, and Character Absences.
-2.  **Version Control:** Graph snapshotting ("Time Travel") and Branching ("What If" scenarios).
-3.  **Procedural Memory:** Vectorizing user preferences with **Consolidation Logic** (Merge/Update/Create strategies to prevent bloat).
+## Phase 3C: Settings-Driven Director Mode (✅ Complete)
+**Goal:** Transform hard-coded Explants patterns into universal framework.
+**Priority:** P0 Critical - Enables any writer's style
+**Effort:** 10-13 hours
 
-## Phase 5: Polish & Release
+### Problem
+Current Director Mode has hard-coded rules from Explants project (Mickey Bardot voice):
+- Similes penalized → But some writers love similes
+- Domain saturation = 30% → Too restrictive for expertise-driven characters
+- "despite the" = violation → Common in literary fiction
+- 6-pass always → Some writers want conservative enhancement
+
+### Solution: 3-Tier Settings System
+1. **Settings Service** - SQLite-backed with project → global → default resolution
+2. **Voice Bundle YAML** - Auto-generated `voice_settings.yaml` during Voice Calibration
+3. **Dynamic Services** - Scene Analyzer and Enhancement load settings at runtime
+
+### Tasks
+1. ✅ **Settings Service** - 3-tier resolution, validation
+2. ✅ **Voice Calibration Integration** - Generate `voice_settings.yaml`
+3. ✅ **Scene Analyzer Refactor** - Dynamic weights, patterns, thresholds
+4. ✅ **Scene Enhancement Refactor** - Dynamic enhancement thresholds
+5. ✅ **VoiceBundleContext Update** - Load structured settings
+
+**See**: [PHASE_3C_SETTINGS_IMPLEMENTATION.md](dev_logs/PHASE_3C_SETTINGS_IMPLEMENTATION.md)
+
+## Phase 3D: Graph Health Service (🚧 In Progress)
+**Goal:** Macro-level structural validation at chapter/act/manuscript level.
+**Priority:** P1 High - Completes Director Mode quality loop
+**Effort:** 12-15 hours
+**Depends On:** ✅ Phase 3C (Settings Service - Complete)
+**Status:** 4 of 7 health checks implemented with cloud-native LLM analysis
+
+### Strategic Decisions
+**Full LLM-Powered Analysis** - Maximum accuracy with no resource limitations:
+1. **Timeline Consistency** - Full semantic analysis for character locations, world rules, dropped threads
+2. **Theme Resonance** - Hybrid automated LLM scoring + manual writer override capability
+3. **Check Frequency** - Auto-trigger after every chapter assembly (customizable via Foreman proactiveness)
+4. **Report Storage** - SQLite persistence for historical tracking and longitudinal analysis (365-day retention)
+
+### The Missing Layer
+Scene Analyzer (Phase 3B) validates individual scenes but **cannot detect**:
+- **Pacing Plateaus** → 3 consecutive low-tension chapters
+- **Dropped Threads** → Setup never resolved
+- **Character Absences** → Supporting character vanishes for 10 chapters
+- **Beat Deviation** → Act 2 finishes at wrong percentage
+- **Flaw Challenge Gaps** → Protagonist's Fatal Flaw untested for too long
+- **Timeline Conflicts** → Character in two places simultaneously
+
+### Solution: Asynchronous Health Checks
+**Two-Tier Quality System:**
+1. **Tier 1 (Immediate)** - Scene Analyzer validates individual scenes
+2. **Tier 2 (Async)** - Graph Health Service validates structure across chapters
+
+### Health Check Categories
+**A. Structural Integrity**
+- Pacing Failure Detection (tension plateau analysis)
+- Beat Progress Validation (15-beat structure compliance)
+- ✅ Plot/Timeline Consistency (world rules + character locations) - LLM-powered
+
+**B. Character Arc Health**
+- ✅ Fatal Flaw Challenge Monitoring (dual-mode: explicit + LLM fallback)
+- ✅ Cast Function Verification (LLM character analysis)
+
+**C. Thematic Health**
+- Symbolic Layering (symbol recurrence + meaning evolution)
+- ✅ Theme Resonance Score (hybrid LLM + manual override)
+
+### Implementation Status
+✅ **Settings Configuration** - Added timeline, theme, and reporting settings
+✅ **4 Cloud-Native Health Checks** - Timeline, Theme, Flaw, Cast Function
+✅ **LLM Query Routing** - 9+ provider support with graceful Ollama fallback
+✅ **Configurable Models** - 7 health check models in settings.yaml
+🔲 **3 Remaining Checks** - Pacing, Beat Progress, Symbolic Layering
+🔲 **Knowledge Graph Schema** - SCENE, CHAPTER, BEAT nodes
+🔲 **API Endpoints** - 7 endpoints planned
+
+**See**: [PHASE_3D_GRAPH_HEALTH_IMPLEMENTATION.md](dev_logs/PHASE_3D_GRAPH_HEALTH_IMPLEMENTATION.md)
+
+## Phase 3E: Intelligent Model Orchestration (✅ Complete)
+**Goal:** Transform single-model local system into intelligent multi-model orchestrator.
+**Priority:** P0 Critical - Unlocks cloud AI features
+**Effort:** ~6 hours (2 hours per sub-phase)
+**Status:** ✅ Complete (Phases 1-3 implemented)
+
+### Phase 3E.1: Dual-Model Foreman ✅
+**Intelligent task routing between fast local (coordination) and powerful cloud (strategic reasoning)**
+
+**Implementation:**
+- ✅ 8 task types with automatic classification (coordinator, health_check_review, voice_calibration_guidance, etc.)
+- ✅ Multi-provider cloud support (OpenAI, Anthropic, DeepSeek, Qwen)
+- ✅ Fully configurable model assignments (all in settings.yaml, zero hardcoded)
+- ✅ Graceful fallback to local Ollama models when API keys missing
+
+**Files:** [backend/agents/foreman.py](../backend/agents/foreman.py) (~300 lines added)
+
+### Phase 3E.2: Cloud-Native Health Checks ✅
+**Upgraded 4 placeholder health checks to use cloud AI with configurable assignments**
+
+**Implementation:**
+- ✅ Timeline Consistency - Full LLM semantic analysis (claude-3-5-sonnet)
+- ✅ Theme Resonance - Hybrid LLM + manual override (gpt-4o)
+- ✅ Flaw Challenges - Dual-mode explicit + LLM fallback (deepseek-chat)
+- ✅ Cast Function - LLM character analysis (qwen-plus)
+- ✅ LLM query routing infrastructure (9+ providers)
+- ✅ 7 configurable health check models
+
+**Files:** [backend/services/graph_health_service.py](../backend/services/graph_health_service.py) (~500 lines added)
+
+### Phase 3E.3: Model Orchestrator ✅
+**Automatic model selection with quality tiers - one setting replaces 15 manual assignments**
+
+**Implementation:**
+- ✅ Model capabilities matrix (8 models with quality scores, costs, strengths)
+- ✅ 3 quality tiers: Budget ($0/month), Balanced ($0.50-1/month), Premium ($3-5/month)
+- ✅ API key detection with automatic fallback to local
+- ✅ Budget enforcement and cost estimation
+- ✅ 4 API endpoints: `/orchestrator/capabilities`, `/estimate-cost`, `/recommendations/{task}`, `/current-spend`
+- ✅ Foreman integration with orchestrator toggle
+
+**Files:**
+- [backend/services/model_capabilities.py](../backend/services/model_capabilities.py) (~230 lines)
+- [backend/services/model_orchestrator.py](../backend/services/model_orchestrator.py) (~300 lines)
+
+**Cost Impact:** $0 (Budget tier) to $5/month (Premium tier). Most writers: ~$0.50/month (Balanced).
+
+**See:**
+- [PHASE_3E_COMPLETION_SUMMARY.md](dev_logs/PHASE_3E_COMPLETION_SUMMARY.md) - Phases 1-2
+- [PHASE_3_ORCHESTRATOR_COMPLETION.md](dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md) - Phase 3
+- [CONFIGURABLE_MODEL_ASSIGNMENTS.md](../CONFIGURABLE_MODEL_ASSIGNMENTS.md) - Configuration guide
+
+## Phase 4: Multi-Model Tournament (Planned)
+**Goal:** Consensus detection for critical decisions.
+**Priority:** P2 Optional - 90% value delivered by Phase 3E
+**Effort:** 8-10 hours
+
+### Features (Planned)
+1. **Critical Decision Detection** - Automatically identify high-stakes tasks
+2. **Parallel Querying** - Query 3+ models simultaneously
+3. **Consensus Detection** - High confidence when models agree
+4. **Dispute Flagging** - Flag for human review when models disagree
+
+**Note:** Phase 3E already delivers Budget/Balanced/Premium quality tiers and automatic model selection. Phase 4 adds tournament-style multi-model querying for critical decisions only.
+
+**See:** [PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md](dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md)
+
+## Phase 5: UI/UX Implementation (🚧 In Progress)
+**Goal:** Production-ready user interface with complete feature coverage.
+**Priority:** P0 Critical - Makes backend features accessible
+**Strategy:** 3-Track Parallel Development
+
+### Critical Insight: Settings Panel is a Blocker, Not Polish
+**Problem:** 80% of backend features (40+ hours of development) require cloud API keys to function:
+- Voice Calibration tournaments (3 models minimum)
+- Director Mode scene generation (Claude, GPT-4o, DeepSeek)
+- Model Orchestrator activation (Budget/Balanced/Premium tiers)
+- Graph Health with optimal models (Claude for timeline, GPT-4o for themes)
+
+**Without SettingsAgents.svelte (API key configuration):** Writers cannot access any cloud features.
+
+**ROI:** 6-8 hours of Settings UI work unlocks ~40 hours of backend functionality.
+
+### 3-Track Parallel Development Strategy
+
+#### Track 1: Critical UI (Week 1) - START IMMEDIATELY
+**Goal:** Unblock backend features and enable basic functionality
+
+**Components (18 hours):**
+1. **SettingsAgents.svelte** (3h) - API key configuration (BLOCKER REMOVAL)
+2. **SettingsOrchestrator.svelte** (3h) - Quality tier selection (Budget/Balanced/Premium)
+3. **MainLayout.svelte** (6h) - 4-panel IDE layout (Studio, Graph, Foreman, Chat)
+4. **ForemanChatPanel.svelte** (4h) - Chat interface for Foreman
+5. **StudioPanel.svelte** (2h) - Studio cards and mode selection
+
+**Why Week 1:**
+- Settings Panel only depends on existing `/settings/*` API (stable since Phase 3C)
+- Does NOT depend on Phase 3D/4 completion
+- Unblocks all cloud features immediately
+- Enables testing of Model Orchestrator in production
+
+#### Track 2: Backend Completion (Parallel with Track 1)
+**Goal:** Finish Phase 3D and Phase 4 (optional)
+
+**Work:**
+- Phase 3D: 3 remaining health checks (Pacing, Beat Progress, Symbolic Layering)
+- Phase 3D: Knowledge Graph schema extension (SCENE, CHAPTER, BEAT nodes)
+- Phase 3D: 7 API endpoints
+- Phase 4: Multi-model tournament (optional)
+
+**Independence:** This work does NOT block Track 1 UI development. Runs in parallel.
+
+#### Track 3: Feature UI (Weeks 2-6) - FOLLOWS FOREMAN MODES
+**Goal:** Complete all 87 UI components following Foreman workflow
+
+**Phased Approach:**
+1. **Phase 1 (Week 2):** ARCHITECT Mode UI - Story Bible creation (7 components)
+2. **Phase 2 (Week 3):** VOICE_CALIBRATION Mode UI - Tournament interface (6 components)
+3. **Phase 3 (Week 4):** DIRECTOR Mode UI - Scene creation (16 components)
+4. **Phase 4 (Week 5):** Graph Health UI - Dashboard and reports (4 components)
+5. **Phase 5 (Week 6):** Remaining Settings + Polish (8 Settings sub-components + 6 polish components)
+
+### UI Component Coverage
+**Total Components Required:** 87
+**Currently Planned (original plan):** 18 (21%)
+**Missing (gap analysis):** 69 (79%)
+
+**Breakdown by Category:**
+- **Settings Panel:** 11 sub-components (only Orchestrator was planned)
+- **Story Bible (ARCHITECT):** 7 components (all missing)
+- **Voice Calibration:** 6 components (all missing)
+- **Director Mode:** 16 components (Studio cards exist, but modals missing)
+- **Graph Health:** 4 components (all missing)
+- **NotebookLM Integration:** 3 components (all missing)
+- **Knowledge Graph:** 8 components (basic panel exists, advanced features missing)
+- **Session Management:** 3 components (all missing)
+- **Foreman:** 6 components (basic chat exists, Work Orders + KB missing)
+- **Infrastructure:** 18 components (well covered in original plan)
+
+### Documentation
+- **Complete UI Gap Analysis:** [UI_GAP_ANALYSIS.md](specs/UI_GAP_ANALYSIS.md)
+- **Complete Component Inventory:** [UI_COMPONENT_INVENTORY.md](specs/UI_COMPONENT_INVENTORY.md)
+- **Original Infrastructure Plan:** [UI_IMPLEMENTATION_PLAN.md](specs/UI_IMPLEMENTATION_PLAN.md)
+- **Settings Panel Specification:** [SETTINGS_PANEL_IMPLEMENTATION_PLAN.md](specs/SETTINGS_PANEL_IMPLEMENTATION_PLAN.md)
+- **Settings Configuration:** [SETTINGS_CONFIGURATION.md](specs/SETTINGS_CONFIGURATION.md)
+
+### Effort Estimates
+- **Track 1 (Critical UI):** 18 hours (1 week)
+- **Track 3 (Feature UI):** 267 hours (5 weeks, full coverage)
+- **Total UI Implementation:** 285 hours (~7-8 weeks)
+
+**Current Priority:** Start Track 1 immediately while Track 2 continues in parallel.
+
+## Phase 6: Polish & Release
 1.  **Packaging:** Build `.dmg` / `.exe` installers.
 2.  **Optimizations:** Lazy loading for large graphs.
 3.  **Plugins:** External agent registry.
-4.  **Settings UI:** Configurable scoring weights, thresholds, and agent preferences.
-    - See: [SETTINGS_CONFIGURATION.md](specs/SETTINGS_CONFIGURATION.md)
+4.  **Documentation:** User guides and quick start tutorials.
+5.  **Testing:** End-to-end workflow validation.
