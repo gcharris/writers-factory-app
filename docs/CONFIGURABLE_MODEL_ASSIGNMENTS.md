@@ -448,4 +448,284 @@ health_checks:
 
 ---
 
-*Last Updated: November 24, 2025 - Phase 3E*
+## Phase 3E Implementation Status
+
+**✅ Currently Implemented**:
+
+1. **Task-Specific Model Assignment** ([backend/services/settings_service.py:183-192](backend/services/settings_service.py))
+   - The Foreman dynamically selects models based on task type
+   - Configuration via `foreman.task_models.*` in settings.yaml
+   - Runtime override via API `model` parameter
+
+2. **Health Check Model Assignment** ([backend/services/graph_health_service.py:211-226](backend/services/graph_health_service.py))
+   - Each health check type can use a different model
+   - Configuration via `health_checks.models.*` in settings.yaml
+   - Default fallback model for undefined checks
+
+3. **Multi-Provider Support** ([agents.yaml:1-93](agents.yaml))
+   - OpenAI (GPT-4o, GPT-4o-mini)
+   - Anthropic (Claude 3.7 Sonnet, Claude 3 Opus)
+   - DeepSeek (DeepSeek V3)
+   - Qwen (Qwen Plus, Qwen Turbo)
+   - Mistral AI (Mistral Large)
+   - Zhipu AI (GLM-4)
+   - Google (Gemini 2.0 Flash)
+   - xAI (Grok 2)
+   - Ollama (Mistral 7B, Llama 3.2 3B)
+
+4. **Settings Management**
+   - YAML configuration files (project-level and global)
+   - Environment variable overrides
+   - REST API for dynamic updates
+   - Automatic fallback to local models when API keys missing
+
+---
+
+## Future Enhancements
+
+These features are planned but not yet implemented. They represent the natural evolution of the configurable model system.
+
+### 1. Usage Analytics Dashboard
+
+**Problem**: Writers don't know how much they're actually spending on AI models or which models they use most.
+
+**Solution**: Real-time usage tracking and cost analysis.
+
+**Features**:
+- **Token Usage by Model**: See exactly how many tokens each model consumed
+- **Cost Breakdown**: Daily/weekly/monthly spend per model and per task type
+- **Usage Patterns**: Which tasks run most frequently, peak usage times
+- **Cost Projections**: "At current usage, you'll spend $X this month"
+- **Budget Alerts**: Notifications when approaching spending limits
+
+**UI Mockup**:
+```
+┌─────────────────────────────────────────────┐
+│ Model Usage (Last 30 Days)                 │
+├─────────────────────────────────────────────┤
+│ DeepSeek V3          1.2M tokens    $0.32   │
+│ Mistral 7B (Local)   3.4M tokens    $0.00   │
+│ Claude 3.7 Sonnet    245K tokens    $0.74   │
+│ GPT-4o               89K tokens     $0.22   │
+├─────────────────────────────────────────────┤
+│ Total Spend: $1.28 | Projected: $1.85      │
+└─────────────────────────────────────────────┘
+```
+
+**Implementation Path**:
+1. Add usage logging to model orchestrator
+2. Store token counts and costs in project SQLite database
+3. Create `/analytics/usage` API endpoint
+4. Build Svelte dashboard component
+5. Add CSV export for external analysis
+
+---
+
+### 2. Model Recommendation Engine
+
+**Problem**: Writers don't know which model to use for each task type. They rely on documentation and guesswork.
+
+**Solution**: Intelligent recommendations based on actual usage patterns and quality metrics.
+
+**Features**:
+- **Quality-Based Recommendations**: "For theme_analysis, users who tried GPT-4o rated it 4.8/5"
+- **Cost-Aware Suggestions**: "Switch to DeepSeek for 90% of the quality at 10% of the cost"
+- **Pattern Detection**: "You use Claude for everything - consider DeepSeek for simple tasks to save $2/month"
+- **A/B Test Results**: "Your voice calibration scored higher with DeepSeek than GPT-4o"
+- **Automatic Optimization**: "We noticed you're overspending - switch these 3 tasks to save $4/month"
+
+**UI Mockup**:
+```
+┌─────────────────────────────────────────────┐
+│ 💡 Recommendation                           │
+├─────────────────────────────────────────────┤
+│ Your theme_analysis tasks use GPT-4o        │
+│ ($0.35/week). Try DeepSeek V3 instead:      │
+│                                             │
+│ - 92% similar quality (based on 127 tests)  │
+│ - $0.04/week cost (saves $0.31/week)        │
+│ - 1.3x faster response time                 │
+│                                             │
+│ [Try DeepSeek]  [Compare Models]  [Ignore] │
+└─────────────────────────────────────────────┘
+```
+
+**Implementation Path**:
+1. Collect quality ratings (user thumbs up/down on Foreman responses)
+2. Store model performance metrics (response time, token efficiency)
+3. Build recommendation algorithm (cost vs. quality tradeoffs)
+4. Create `/recommendations` API endpoint
+5. Add recommendation cards to UI
+
+---
+
+### 3. Model A/B Testing Framework
+
+**Problem**: Writers don't know if switching models will improve quality. They're afraid to experiment.
+
+**Solution**: Run A/B tests to compare models on identical tasks.
+
+**Features**:
+- **Blind Comparison**: Generate same task with 2+ models, choose winner without knowing which is which
+- **Quality Scoring**: Automatic scoring (via SceneAnalyzerService) plus manual rating
+- **Statistical Significance**: "After 15 tests, DeepSeek wins 73% of the time (p < 0.05)"
+- **Task-Specific Testing**: Test models specifically for voice_calibration, theme_analysis, etc.
+- **Tournament Mode**: Pit 3+ models against each other, winner takes all
+
+**UI Mockup**:
+```
+┌─────────────────────────────────────────────┐
+│ A/B Test: theme_analysis                    │
+├─────────────────────────────────────────────┤
+│ Prompt: "Analyze the theme of redemption"   │
+│                                             │
+│ ┌─────────────┐  ┌─────────────┐           │
+│ │ Variant A   │  │ Variant B   │           │
+│ │ (Score: 87) │  │ (Score: 91) │           │
+│ │             │  │             │           │
+│ │ [Response]  │  │ [Response]  │           │
+│ │             │  │             │           │
+│ └─────────────┘  └─────────────┘           │
+│                                             │
+│ Which is better?  [A]  [B]  [Tie]          │
+│                                             │
+│ After voting, models revealed:             │
+│ A = GPT-4o | B = DeepSeek V3               │
+└─────────────────────────────────────────────┘
+```
+
+**Implementation Path**:
+1. Create A/B test runner service (accepts prompt, runs N models)
+2. Store test results with quality scores and user preferences
+3. Build statistical analysis (confidence intervals, significance testing)
+4. Create `/ab-test` API endpoints
+5. Build comparison UI component
+
+---
+
+### 4. Model Capability Matrix
+
+**Problem**: Documentation describes models qualitatively ("good at X"), but writers want objective comparisons.
+
+**Solution**: Quantitative capability comparison table.
+
+**Features**:
+- **Benchmark Scores**: Speed, reasoning quality, prose quality, cost per 1M tokens
+- **Task Suitability**: Each model rated 1-5 stars for each task type
+- **Real Usage Data**: "Based on 1,247 Writer's Factory tasks"
+- **Context Window**: Max token limits for each model
+- **Latency**: Average response time per model
+
+**UI Mockup**:
+```
+┌───────────────────────────────────────────────────────────────────┐
+│ Model Capability Matrix                                           │
+├─────────────┬─────────┬──────────┬───────────┬───────┬───────────┤
+│ Model       │ Reason  │ Prose    │ Speed     │ Cost  │ Context   │
+├─────────────┼─────────┼──────────┼───────────┼───────┼───────────┤
+│ GPT-4o      │ ★★★★★   │ ★★★★☆    │ 1.2s      │ $2.50 │ 128K      │
+│ Claude 3.7  │ ★★★★★   │ ★★★★★    │ 1.8s      │ $3.00 │ 200K      │
+│ DeepSeek V3 │ ★★★★★   │ ★★★★☆    │ 1.5s      │ $0.27 │ 64K       │
+│ Mistral 7B  │ ★★★☆☆   │ ★★★☆☆    │ 0.3s      │ $0.00 │ 33K       │
+│ Gemini 2.0  │ ★★★★☆   │ ★★★★☆    │ 0.9s      │ $0.08 │ 1M        │
+└─────────────┴─────────┴──────────┴───────────┴───────┴───────────┘
+
+Task Recommendations:
+- Voice Calibration: Claude 3.7 (prose ★★★★★)
+- Theme Analysis: GPT-4o (reasoning ★★★★★)
+- Quick Drafts: Mistral 7B (speed 0.3s, free)
+```
+
+**Implementation Path**:
+1. Run standardized benchmarks (reasoning, prose, speed tests)
+2. Collect real-world performance data from production usage
+3. Store capability scores in database
+4. Create `/models/capabilities` API endpoint
+5. Build comparison table component
+
+---
+
+### 5. Local Model Setup Wizard
+
+**Problem**: Setting up Ollama and local models is intimidating for non-technical writers.
+
+**Solution**: One-click local model installation and configuration.
+
+**Features**:
+- **Auto-Detect Ollama**: Check if Ollama is installed, offer download link if not
+- **Model Recommendations**: "Your Mac can run Mistral 7B (4.4GB) comfortably"
+- **One-Click Install**: Click "Install Mistral 7B" → downloads and configures automatically
+- **Hardware Guidance**: "Your GPU can handle 7B models but not 13B"
+- **Fallback Config**: Automatically configure local models as fallbacks for cloud models
+
+**UI Mockup**:
+```
+┌─────────────────────────────────────────────┐
+│ Local Model Setup                           │
+├─────────────────────────────────────────────┤
+│ ✅ Ollama detected (v0.1.45)                │
+│                                             │
+│ Recommended Models:                         │
+│ ┌─────────────────────────────────────────┐ │
+│ │ Mistral 7B                              │ │
+│ │ Size: 4.4 GB | Speed: Fast             │ │
+│ │ Best for: Coordination, quick drafts    │ │
+│ │ [Install] [Already Installed ✓]        │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ Llama 3.2 3B                            │ │
+│ │ Size: 2.0 GB | Speed: Very Fast        │ │
+│ │ Best for: Brainstorming, prototypes     │ │
+│ │ [Install]                               │ │
+│ └─────────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+```
+
+**Implementation Path**:
+1. Add Ollama detection to settings service
+2. Create model download/install API endpoint
+3. Build model recommendation algorithm (based on hardware specs)
+4. Create setup wizard UI component
+5. Add progress tracking for model downloads
+
+---
+
+### 6. Model Migration Assistant
+
+**Problem**: Writers want to switch from one model to another but fear breaking their workflow.
+
+**Solution**: Guided migration with before/after comparison.
+
+**Features**:
+- **Impact Preview**: "Switching to DeepSeek will save $3/month but may reduce quality by 5%"
+- **Rollback Safety**: "Try DeepSeek for 1 week, revert if unhappy"
+- **Side-by-Side Testing**: Run old and new models in parallel for comparison
+- **Gradual Migration**: "Switch 25% of tasks to DeepSeek, monitor for 3 days, then 50%, 75%, 100%"
+
+**Implementation Path**:
+1. Build migration planner (analyze current config, suggest alternatives)
+2. Create staged rollout system (percentage-based routing)
+3. Add rollback mechanism (revert to previous settings)
+4. Build migration UI with impact previews
+
+---
+
+## Summary: Current vs. Future
+
+| Feature | Status | Location |
+|---------|--------|----------|
+| **Task-specific models** | ✅ Implemented | `settings_service.py:183-192` |
+| **Health check models** | ✅ Implemented | `graph_health_service.py:211-226` |
+| **Multi-provider support** | ✅ Implemented | `agents.yaml:1-93` |
+| **Settings management** | ✅ Implemented | Full settings system |
+| **Usage analytics** | 📋 Planned | Phase 4+ |
+| **Model recommendations** | 📋 Planned | Phase 4+ |
+| **A/B testing** | 📋 Planned | Phase 4+ |
+| **Capability matrix** | 📋 Planned | Phase 4+ |
+| **Local setup wizard** | 📋 Planned | Phase 4+ |
+| **Migration assistant** | 📋 Planned | Phase 4+ |
+
+---
+
+*Last Updated: November 25, 2025 - Phase 3E*
