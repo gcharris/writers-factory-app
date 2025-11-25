@@ -423,6 +423,204 @@ Returns graph stats, conflicts, and uncommitted events in one call.
 
 ---
 
+## Graph Health Service (Phase 3D)
+
+Comprehensive manuscript health validation with LLM-powered analysis.
+
+### `POST /health/check`
+Run health checks on manuscript structure.
+
+**Request Body:**
+```json
+{
+  "project_id": "my_project",
+  "scope": "manuscript",  // "chapter", "act", or "manuscript"
+  "chapter_id": "1.2",    // Required if scope="chapter"
+  "act_number": 2         // Required if scope="act"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "complete",
+  "report": {
+    "report_id": "uuid",
+    "project_id": "my_project",
+    "scope": "manuscript",
+    "overall_score": 85,
+    "warnings": [
+      {
+        "type": "PACING_PLATEAU",
+        "severity": "warning",
+        "message": "Tension plateau detected...",
+        "recommendation": "Add conflict escalation",
+        "chapters": ["1.3", "1.4", "1.5"],
+        "data": {"tension_scores": [5.0, 5.1, 5.0]}
+      }
+    ],
+    "timestamp": "2025-01-15T..."
+  },
+  "markdown": "# Health Report..."
+}
+```
+
+**Health Checks Run:**
+- Pacing Plateau Detection (LLM-powered intent analysis)
+- Beat Progress Validation (15-beat Save the Cat! structure)
+- Timeline Consistency (semantic conflict detection)
+- Fatal Flaw Challenge Monitoring
+- Cast Function Verification
+- Symbolic Layering (symbol recurrence and evolution)
+- Theme Resonance (hybrid LLM + manual override)
+
+### `GET /health/report/{report_id}`
+Retrieve a previously stored health report.
+
+**Parameters:**
+- `report_id` (path): UUID of the report
+
+**Response:**
+```json
+{
+  "status": "found",
+  "report": {
+    "report_id": "uuid",
+    "project_id": "my_project",
+    "scope": "manuscript",
+    "overall_score": 85,
+    "warnings": [...],
+    "timestamp": "2025-01-15T..."
+  }
+}
+```
+
+### `GET /health/reports`
+List all health reports for a project with pagination.
+
+**Parameters:**
+- `project_id` (query, required): Project ID
+- `limit` (query): Max reports (default: 20)
+- `offset` (query): Pagination offset (default: 0)
+
+**Response:**
+```json
+{
+  "reports": [
+    {
+      "report_id": "uuid",
+      "timestamp": "2025-01-15T...",
+      "scope": "manuscript",
+      "overall_score": 85,
+      "warning_count": 3,
+      "overall_health": "good"
+    }
+  ],
+  "total": 47,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+### `GET /health/trends/{metric}`
+Get historical trend data for a specific health metric.
+
+**Parameters:**
+- `metric` (path): "overall_score", "pacing_issues", "beat_deviations", etc.
+- `project_id` (query, required): Project ID
+- `start_date` (query, optional): ISO 8601 date
+- `end_date` (query, optional): ISO 8601 date
+
+**Response:**
+```json
+{
+  "metric": "overall_score",
+  "project_id": "my_project",
+  "data": [
+    {"timestamp": "2025-01-14T...", "value": 82},
+    {"timestamp": "2025-01-15T...", "value": 85}
+  ],
+  "count": 2
+}
+```
+
+### `POST /health/theme/override`
+Manually override an LLM-generated theme resonance score.
+
+**Request Body:**
+```json
+{
+  "project_id": "my_project",
+  "beat_id": 9,
+  "theme_id": "main_theme",
+  "manual_score": 80,
+  "reason": "LLM missed subtle symbolism in mirror scene"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "override_set",
+  "project_id": "my_project",
+  "beat_id": 9,
+  "theme_id": "main_theme",
+  "manual_score": 80,
+  "message": "Theme score override saved."
+}
+```
+
+### `GET /health/theme/overrides`
+Get all manual theme score overrides for a project.
+
+**Parameters:**
+- `project_id` (query, required): Project ID
+
+**Response:**
+```json
+{
+  "project_id": "my_project",
+  "overrides": [
+    {
+      "beat_id": 9,
+      "theme_id": "main_theme",
+      "llm_score": 65,
+      "manual_score": 80,
+      "reason": "LLM missed subtle symbolism",
+      "timestamp": "2025-01-15T..."
+    }
+  ],
+  "count": 1
+}
+```
+
+### `GET /health/export/{report_id}`
+Export a health report as JSON or markdown.
+
+**Parameters:**
+- `report_id` (path): UUID of the report
+- `format` (query): "json" or "markdown" (default: "json")
+
+**Response (JSON format):**
+```json
+{
+  "format": "json",
+  "filename": "health_report_uuid.json",
+  "content": {...}
+}
+```
+
+**Response (Markdown format):**
+```json
+{
+  "format": "markdown",
+  "filename": "health_report_uuid.md",
+  "content": "# Health Report\n\n## Overview\n..."
+}
+```
+
+---
+
 ## NotebookLM Integration
 
 ### `GET /notebooklm/status`

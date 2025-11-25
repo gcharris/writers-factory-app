@@ -3059,6 +3059,145 @@ async def get_health_trends(
         raise HTTPException(status_code=500, detail=f"Failed to get trends: {str(e)}")
 
 
+@app.get("/health/reports", summary="List all health reports with pagination")
+async def list_health_reports(
+    project_id: str,
+    limit: int = 20,
+    offset: int = 0,
+):
+    """
+    List all health reports for a project with pagination.
+
+    Returns:
+        - List of reports with summary info (id, timestamp, score, warning count)
+        - Total count for pagination
+        - Reports ordered by timestamp (newest first)
+    """
+    from backend.graph.schema import HealthReportHistory
+    from sqlalchemy.orm import Session
+    from sqlalchemy import func
+
+    try:
+        db: Session = next(get_db())
+
+        # Get total count
+        total = db.query(func.count(HealthReportHistory.id)).filter(
+            HealthReportHistory.project_id == project_id
+        ).scalar()
+
+        # Get paginated results
+        reports = db.query(HealthReportHistory).filter(
+            HealthReportHistory.project_id == project_id
+        ).order_by(HealthReportHistory.timestamp.desc()).offset(offset).limit(limit).all()
+
+        reports_list = []
+        for report in reports:
+            warning_count = len(report.warnings) if report.warnings else 0
+            reports_list.append({
+                "report_id": report.report_id,
+                "timestamp": report.timestamp.isoformat() if report.timestamp else None,
+                "scope": report.scope,
+                "chapter_id": report.chapter_id,
+                "act_number": report.act_number,
+                "overall_score": report.overall_score,
+                "warning_count": warning_count,
+                "overall_health": (
+                    "excellent" if report.overall_score >= 90 else
+                    "good" if report.overall_score >= 80 else
+                    "fair" if report.overall_score >= 70 else
+                    "poor"
+                )
+            })
+
+        return {
+            "reports": reports_list,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to list reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list reports: {str(e)}")
+
+
+@app.get("/health/export/{report_id}", summary="Export health report as JSON or markdown")
+async def export_health_report_get(
+    report_id: str,
+    format: str = "json",
+):
+    """
+    Export a health report in the specified format (Phase 3D API).
+
+    Formats:
+    - "json": Full report object as JSON
+    - "markdown": Formatted markdown report ready for reading
+
+    Returns:
+        - Export content in requested format
+        - Filename suggestion for downloads
+    """
+    from backend.graph.schema import HealthReportHistory
+    from sqlalchemy.orm import Session
+
+    try:
+        if format not in ["markdown", "json"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid format: {format}. Must be 'markdown' or 'json'"
+            )
+
+        # Query database for report
+        db: Session = next(get_db())
+        report_row = db.query(HealthReportHistory).filter(
+            HealthReportHistory.report_id == report_id
+        ).first()
+
+        if not report_row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report {report_id} not found"
+            )
+
+        if format == "json":
+            return {
+                "format": "json",
+                "filename": f"health_report_{report_id}.json",
+                "content": report_row.to_dict(),
+            }
+        else:
+            # Reconstruct HealthReport from stored data for markdown generation
+            from backend.services.graph_health_service import HealthReport, HealthWarning
+
+            warnings_data = report_row.warnings or []
+            warnings = [HealthWarning(**w) for w in warnings_data]
+
+            report = HealthReport(
+                report_id=report_row.report_id,
+                project_id=report_row.project_id,
+                scope=report_row.scope,
+                chapter_id=report_row.chapter_id,
+                act_number=report_row.act_number,
+                overall_score=report_row.overall_score,
+                warnings=warnings,
+                timestamp=report_row.timestamp.isoformat() if report_row.timestamp else None,
+            )
+
+            markdown_content = report.to_markdown()
+
+            return {
+                "format": "markdown",
+                "filename": f"health_report_{report_id}.md",
+                "content": markdown_content,
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to export report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to export report: {str(e)}")
+
+
 @app.post("/health/theme/override", summary="Manually override LLM theme score")
 async def set_theme_override(request: ThemeOverrideRequest):
     """
