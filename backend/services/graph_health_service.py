@@ -597,10 +597,8 @@ class GraphHealthService:
 
             warnings = []
 
-            # Pacing analysis (requires multi-chapter context)
+            # A. Structural Integrity checks (multi-chapter context)
             warnings.extend(await self._check_pacing_plateaus(db, chapters))
-
-            # Structural checks
             warnings.extend(await self._check_beat_progress(db, chapters))
 
             # Collect all scenes from all chapters
@@ -610,10 +608,14 @@ class GraphHealthService:
 
             warnings.extend(await self._check_timeline_consistency(db, all_scenes))
 
-            # Character and thematic checks
+            # B. Character Arc Health checks (per chapter)
             for chapter in chapters:
                 warnings.extend(await self._check_flaw_challenges(db, chapter))
                 warnings.extend(await self._check_cast_function(db, chapter))
+
+            # C. Thematic Health checks (act level for symbolic layering)
+            warnings.extend(await self._check_symbolic_layering(db, chapters))
+            for chapter in chapters:
                 warnings.extend(await self._check_theme_resonance(db, chapter))
 
             # Calculate overall score
@@ -680,7 +682,7 @@ class GraphHealthService:
 
             warnings = []
 
-            # All checks at manuscript level
+            # A. Structural Integrity checks (manuscript level)
             warnings.extend(await self._check_pacing_plateaus(db, chapters))
             warnings.extend(await self._check_beat_progress(db, chapters))
 
@@ -691,10 +693,14 @@ class GraphHealthService:
 
             warnings.extend(await self._check_timeline_consistency(db, all_scenes))
 
-            # Character and thematic checks
+            # B. Character Arc Health checks (per chapter)
             for chapter in chapters:
                 warnings.extend(await self._check_flaw_challenges(db, chapter))
                 warnings.extend(await self._check_cast_function(db, chapter))
+
+            # C. Thematic Health checks (manuscript level for symbolic layering)
+            warnings.extend(await self._check_symbolic_layering(db, chapters))
+            for chapter in chapters:
                 warnings.extend(await self._check_theme_resonance(db, chapter))
 
             # Calculate overall score
@@ -734,10 +740,21 @@ class GraphHealthService:
         chapters: List[Chapter]
     ) -> List[HealthWarning]:
         """
-        Check A1: Pacing Plateau Detection.
+        Check A1: Pacing Failure Detection (Phase 3D).
 
-        Detects flat tension across multiple consecutive chapters.
-        Uses sliding window to find plateaus where tension doesn't vary enough.
+        Detects "tension plateaus" - consecutive chapters with low/flat tension
+        that cause reader boredom. Uses LLM to analyze if plateau is intentional
+        (calm before storm) or problematic.
+
+        Algorithm:
+        1. Extract tension scores for last N chapters (configurable, default 10)
+        2. Detect plateaus: 3+ consecutive chapters with <5 point tension variation
+        3. Use LLM to analyze if plateau is intentional or problematic
+        4. Return warnings for problematic plateaus
+
+        Warning Severity:
+        - ERROR if 5+ chapters plateau
+        - WARNING if 3-4 chapters
 
         Args:
             db: Database session
@@ -748,41 +765,220 @@ class GraphHealthService:
         """
         warnings = []
 
+        # Need at least plateau_window chapters to detect a plateau
         if len(chapters) < self.pacing_plateau_window:
-            return warnings  # Not enough chapters to detect plateau
+            return warnings
 
-        tension_scores = [ch.avg_tension for ch in chapters if ch.avg_tension is not None]
+        # Extract tension scores, filtering out None values
+        tension_data = [
+            (ch, ch.avg_tension)
+            for ch in chapters
+            if ch.avg_tension is not None
+        ]
 
-        if len(tension_scores) < self.pacing_plateau_window:
+        if len(tension_data) < self.pacing_plateau_window:
             return warnings  # Not enough tension data
 
-        # Sliding window analysis
-        for i in range(len(tension_scores) - self.pacing_plateau_window + 1):
-            window = tension_scores[i:i + self.pacing_plateau_window]
-            window_chapters = chapters[i:i + self.pacing_plateau_window]
+        logger.info(f"Pacing plateau check: analyzing {len(tension_data)} chapters with {self.pacing_analysis_model}")
 
-            # Check if all values in window are within tolerance
-            if max(window) - min(window) <= self.pacing_plateau_tolerance:
-                avg_tension = sum(window) / len(window)
+        # Sliding window analysis to detect plateaus
+        detected_plateaus = []
+        i = 0
+        while i < len(tension_data) - self.pacing_plateau_window + 1:
+            window_data = tension_data[i:i + self.pacing_plateau_window]
+            window_scores = [d[1] for d in window_data]
+            window_chapters = [d[0] for d in window_data]
+
+            # Check if tension variation is below threshold (flat pacing)
+            min_tension_variation = settings_service.get(
+                "health_checks.pacing.min_tension_variation", self.project_id
+            ) or 5  # Default: 5 points
+
+            variation = max(window_scores) - min(window_scores)
+
+            if variation < min_tension_variation:
+                # Found a potential plateau - extend it as far as possible
+                plateau_end = i + self.pacing_plateau_window
+                while plateau_end < len(tension_data):
+                    extended_scores = [d[1] for d in tension_data[i:plateau_end + 1]]
+                    if max(extended_scores) - min(extended_scores) < min_tension_variation:
+                        plateau_end += 1
+                    else:
+                        break
+
+                plateau_chapters = [d[0] for d in tension_data[i:plateau_end]]
+                plateau_scores = [d[1] for d in tension_data[i:plateau_end]]
+
+                detected_plateaus.append({
+                    "chapters": plateau_chapters,
+                    "scores": plateau_scores,
+                    "start_index": i,
+                    "end_index": plateau_end
+                })
+
+                # Skip past this plateau
+                i = plateau_end
+            else:
+                i += 1
+
+        # Analyze each detected plateau with LLM
+        for plateau in detected_plateaus:
+            chapters_in_plateau = plateau["chapters"]
+            scores = plateau["scores"]
+            chapter_count = len(chapters_in_plateau)
+
+            # Build chapter summaries for LLM analysis
+            chapter_summaries = []
+            for ch in chapters_in_plateau[:5]:  # Limit to 5 for context window
+                scenes = ch.scenes[:2] if hasattr(ch, 'scenes') else []
+                scene_summary = "; ".join([s.summary or "No summary" for s in scenes[:2]])
+                chapter_summaries.append(f"- **{ch.chapter_id}** ({ch.title or 'Untitled'}): {scene_summary[:200]}")
+
+            # LLM prompt for plateau analysis
+            system_prompt = """You are a narrative pacing expert. Analyze tension plateaus in manuscripts.
+
+A "tension plateau" is when consecutive chapters have similar tension levels with little variation.
+Plateaus can be:
+- INTENTIONAL: Calm before storm, character development, necessary exposition
+- PROBLEMATIC: Reader boredom, pacing issues, lack of conflict escalation
+
+Respond in JSON format:
+{
+  "is_intentional": true | false,
+  "risk_level": "low" | "medium" | "high",
+  "reasoning": "Brief explanation",
+  "recommendation": "Specific actionable suggestion"
+}"""
+
+            plateau_desc = f"{chapter_count} consecutive chapters with tension scores: {', '.join(f'{s:.1f}' for s in scores)}"
+
+            user_prompt = f"""Analyze this tension plateau in a manuscript:
+
+**Plateau Description**: {plateau_desc}
+**Average Tension**: {sum(scores) / len(scores):.1f}/10
+**Tension Variation**: {max(scores) - min(scores):.1f} points
+
+**Chapter Summaries**:
+{chr(10).join(chapter_summaries)}
+
+Questions:
+1. Is this plateau intentional (e.g., calm before storm, character development)?
+2. Does it risk reader boredom?
+3. What's missing to create rising tension?"""
+
+            try:
+                response = await self._query_llm(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    model=self.pacing_analysis_model
+                )
+
+                # Parse JSON response
+                try:
+                    result = json.loads(response)
+                    is_intentional = result.get("is_intentional", False)
+                    risk_level = result.get("risk_level", "medium")
+                    recommendation = result.get("recommendation", "Consider escalating tension in upcoming chapters")
+
+                    # Determine severity based on chapter count and LLM analysis
+                    if is_intentional and risk_level == "low":
+                        # Intentional plateau with low risk - just info
+                        severity = "info"
+                    elif chapter_count >= 5:
+                        # Long plateau - error level
+                        severity = "error"
+                    else:
+                        # Short plateau - warning level
+                        severity = "warning"
+
+                    # Only add warning if not intentional or high risk
+                    if not is_intentional or risk_level in ["medium", "high"]:
+                        avg_tension = sum(scores) / len(scores)
+                        warnings.append(HealthWarning(
+                            type="PACING_PLATEAU",
+                            severity=severity,
+                            message=(
+                                f"Tension plateau detected: {chapter_count} consecutive chapters "
+                                f"({chapters_in_plateau[0].chapter_id} through {chapters_in_plateau[-1].chapter_id}) "
+                                f"with similar tension (~{avg_tension:.1f}/10, variation: {max(scores) - min(scores):.1f})"
+                            ),
+                            recommendation=recommendation,
+                            chapters=[ch.chapter_id for ch in chapters_in_plateau],
+                            data={
+                                "tension_scores": scores,
+                                "avg_tension": avg_tension,
+                                "variation": max(scores) - min(scores),
+                                "chapter_count": chapter_count,
+                                "is_intentional": is_intentional,
+                                "risk_level": risk_level,
+                                "llm_reasoning": result.get("reasoning", "")
+                            }
+                        ))
+
+                except json.JSONDecodeError:
+                    # LLM didn't return valid JSON - fall back to simple warning
+                    logger.warning(f"Pacing LLM response not JSON: {response[:100]}")
+                    avg_tension = sum(scores) / len(scores)
+                    warnings.append(HealthWarning(
+                        type="PACING_PLATEAU",
+                        severity="error" if chapter_count >= 5 else "warning",
+                        message=(
+                            f"Flat pacing detected: Chapters "
+                            f"{chapters_in_plateau[0].chapter_id} through "
+                            f"{chapters_in_plateau[-1].chapter_id} have similar tension "
+                            f"({', '.join(f'{t:.1f}' for t in scores[:5])}...)"
+                        ),
+                        recommendation="Next scene should escalate tension significantly",
+                        chapters=[ch.chapter_id for ch in chapters_in_plateau],
+                        data={
+                            "tension_scores": scores,
+                            "avg_tension": avg_tension,
+                            "variation": max(scores) - min(scores),
+                            "chapter_count": chapter_count
+                        }
+                    ))
+
+            except Exception as e:
+                logger.error(f"Pacing plateau LLM analysis failed: {e}")
+                # Fall back to simple warning without LLM analysis
+                avg_tension = sum(scores) / len(scores)
                 warnings.append(HealthWarning(
                     type="PACING_PLATEAU",
-                    severity="warning",
+                    severity="error" if chapter_count >= 5 else "warning",
                     message=(
-                        f"Flat pacing detected: Chapters "
-                        f"{window_chapters[0].chapter_id} through "
-                        f"{window_chapters[-1].chapter_id} have similar tension "
-                        f"({', '.join(f'{t:.1f}' for t in window)})"
+                        f"Flat pacing detected: {chapter_count} chapters with similar tension"
                     ),
-                    recommendation="Next scene should escalate tension significantly",
-                    chapters=[ch.chapter_id for ch in window_chapters],
+                    recommendation="Consider escalating tension in upcoming chapters",
+                    chapters=[ch.chapter_id for ch in chapters_in_plateau],
                     data={
-                        "tension_scores": window,
+                        "tension_scores": scores,
                         "avg_tension": avg_tension,
-                        "variation": max(window) - min(window)
+                        "variation": max(scores) - min(scores),
+                        "chapter_count": chapter_count,
+                        "llm_error": str(e)
                     }
                 ))
 
         return warnings
+
+    # Save the Cat! 15-Beat Structure with target percentages
+    BEAT_TARGETS = {
+        1: {"percent": 1, "name": "Opening Image"},
+        2: {"percent": 5, "name": "Theme Stated"},
+        3: {"percent": 10, "name": "Setup Complete"},
+        4: {"percent": 10, "name": "Catalyst"},
+        5: {"percent": 20, "name": "Debate"},
+        6: {"percent": 20, "name": "Break into Two"},
+        7: {"percent": 22, "name": "B Story"},
+        8: {"percent": 50, "name": "Fun & Games"},
+        9: {"percent": 50, "name": "Midpoint"},
+        10: {"percent": 75, "name": "Bad Guys Close In"},
+        11: {"percent": 75, "name": "All Is Lost"},
+        12: {"percent": 80, "name": "Dark Night of the Soul"},
+        13: {"percent": 80, "name": "Break into Three"},
+        14: {"percent": 99, "name": "Finale"},
+        15: {"percent": 100, "name": "Final Image"}
+    }
 
     async def _check_beat_progress(
         self,
@@ -790,10 +986,17 @@ class GraphHealthService:
         chapters: List[Chapter]
     ) -> List[HealthWarning]:
         """
-        Check A2: Beat Progress Validation.
+        Check A2: Beat Progress Validation (Phase 3D).
 
-        Ensures 15-beat structure compliance. Warns if beats deviate from
-        target manuscript position.
+        Validates manuscript follows 15-beat Save the Cat! structure at correct percentages.
+
+        Algorithm:
+        1. Load Beat_Sheet.md from Story Bible (15 beats with target percentages)
+        2. Calculate current manuscript completion percentage
+        3. Determine which beat should be active at current completion
+        4. Query Knowledge Graph for scenes tagged with beat numbers
+        5. Check if current scenes align with expected beat
+        6. Warn if ahead/behind expected beat progression
 
         Args:
             db: Database session
@@ -804,62 +1007,157 @@ class GraphHealthService:
         """
         warnings = []
 
-        # Calculate total word count
+        # Calculate total word count and completion percentage
         total_word_count = sum(ch.total_word_count for ch in chapters if ch.total_word_count)
 
         if total_word_count == 0:
             return warnings  # No word count data yet
 
-        # Fetch all beats for this project
+        # Get target manuscript length from settings (default: 80,000 words)
+        target_word_count = settings_service.get(
+            "project.target_word_count", self.project_id
+        ) or 80000
+
+        # Calculate manuscript completion percentage
+        manuscript_completion = min(100, (total_word_count / target_word_count) * 100)
+
+        # Get tolerance from settings
+        beat_tolerance = settings_service.get(
+            "health_checks.beat_progress.tolerance", self.project_id
+        ) or 10  # Default: 10% deviation allowed
+
+        logger.info(f"Beat progress check: {total_word_count} words ({manuscript_completion:.1f}% complete) with {self.beat_progress_model}")
+
+        # Determine expected beat at current completion
+        expected_beat_number = 1
+        expected_beat_name = "Opening Image"
+        for beat_num in sorted(self.BEAT_TARGETS.keys()):
+            beat_info = self.BEAT_TARGETS[beat_num]
+            if manuscript_completion >= beat_info["percent"]:
+                expected_beat_number = beat_num
+                expected_beat_name = beat_info["name"]
+
+        # Fetch beats from database to check actual progress
         beats = db.query(Beat).filter(
-            Beat.project_id == self.project_id,
-            Beat.status == 'complete'
-        ).all()
+            Beat.project_id == self.project_id
+        ).order_by(Beat.number).all()
 
-        for beat in beats:
-            if beat.actual_percentage is None:
-                continue
+        # If no beats defined, create them from BEAT_TARGETS
+        if not beats:
+            logger.info("No beats found in database, using default 15-beat structure")
+            # Check scenes for beat assignments
+            all_scenes = []
+            for ch in chapters:
+                all_scenes.extend(ch.scenes if hasattr(ch, 'scenes') else [])
 
-            deviation = abs(beat.actual_percentage - beat.target_percentage)
+            # Find current beat from scene assignments
+            current_beat_number = 1
+            for scene in all_scenes:
+                if hasattr(scene, 'beat_number') and scene.beat_number:
+                    current_beat_number = max(current_beat_number, scene.beat_number)
 
-            if deviation > self.beat_deviation_error:
-                warnings.append(HealthWarning(
-                    type="BEAT_DEVIATION",
-                    severity="error",
-                    message=(
-                        f"Beat '{beat.name}' is significantly off target: "
-                        f"expected {beat.target_percentage}%, "
-                        f"actual {beat.actual_percentage:.1f}% "
-                        f"(deviation: {deviation:.1f}%)"
-                    ),
-                    recommendation="Consider restructuring to align with beat sheet",
-                    data={
-                        "beat_name": beat.name,
-                        "beat_number": beat.number,
-                        "target_percentage": beat.target_percentage,
-                        "actual_percentage": beat.actual_percentage,
-                        "deviation": deviation
-                    }
-                ))
-            elif deviation > self.beat_deviation_warning:
-                warnings.append(HealthWarning(
-                    type="BEAT_DEVIATION",
-                    severity="warning",
-                    message=(
-                        f"Beat '{beat.name}' is off target: "
-                        f"expected {beat.target_percentage}%, "
-                        f"actual {beat.actual_percentage:.1f}% "
-                        f"(deviation: {deviation:.1f}%)"
-                    ),
-                    recommendation="Monitor beat placement in upcoming chapters",
-                    data={
-                        "beat_name": beat.name,
-                        "beat_number": beat.number,
-                        "target_percentage": beat.target_percentage,
-                        "actual_percentage": beat.actual_percentage,
-                        "deviation": deviation
-                    }
-                ))
+            # Compare expected vs actual beat
+            beat_deviation = expected_beat_number - current_beat_number
+
+            if abs(beat_deviation) > 0:
+                expected_percent = self.BEAT_TARGETS.get(expected_beat_number, {}).get("percent", 0)
+                current_percent = self.BEAT_TARGETS.get(current_beat_number, {}).get("percent", 0)
+                deviation_points = abs(expected_percent - current_percent)
+
+                if beat_deviation > 0 and deviation_points > beat_tolerance:
+                    # Behind schedule
+                    severity = "error" if deviation_points > 20 else "warning"
+                    current_beat_name = self.BEAT_TARGETS.get(current_beat_number, {}).get("name", "Unknown")
+                    warnings.append(HealthWarning(
+                        type="BEAT_PROGRESS_BEHIND",
+                        severity=severity,
+                        message=(
+                            f"Manuscript is {manuscript_completion:.0f}% complete but still in "
+                            f"Beat {current_beat_number} ({current_beat_name} at {current_percent}%). "
+                            f"Expected to be at Beat {expected_beat_number} ({expected_beat_name} at {expected_percent}%). "
+                            f"You're {deviation_points:.0f} points behind."
+                        ),
+                        recommendation="Consider accelerating plot progression to reach expected beats",
+                        data={
+                            "manuscript_completion": manuscript_completion,
+                            "expected_beat": expected_beat_number,
+                            "expected_beat_name": expected_beat_name,
+                            "current_beat": current_beat_number,
+                            "current_beat_name": current_beat_name,
+                            "deviation_points": deviation_points,
+                            "behind_ahead": "behind"
+                        }
+                    ))
+                elif beat_deviation < 0 and deviation_points > beat_tolerance:
+                    # Ahead of schedule
+                    severity = "warning"  # Being ahead is less critical
+                    current_beat_name = self.BEAT_TARGETS.get(current_beat_number, {}).get("name", "Unknown")
+                    warnings.append(HealthWarning(
+                        type="BEAT_PROGRESS_AHEAD",
+                        severity=severity,
+                        message=(
+                            f"Manuscript is {manuscript_completion:.0f}% complete and already at "
+                            f"Beat {current_beat_number} ({current_beat_name} at {current_percent}%). "
+                            f"Expected to be at Beat {expected_beat_number} ({expected_beat_name} at {expected_percent}%). "
+                            f"Pacing may be too fast by {deviation_points:.0f} points."
+                        ),
+                        recommendation="Consider expanding character development or subplot scenes",
+                        data={
+                            "manuscript_completion": manuscript_completion,
+                            "expected_beat": expected_beat_number,
+                            "expected_beat_name": expected_beat_name,
+                            "current_beat": current_beat_number,
+                            "current_beat_name": current_beat_name,
+                            "deviation_points": deviation_points,
+                            "behind_ahead": "ahead"
+                        }
+                    ))
+        else:
+            # Use database beats
+            for beat in beats:
+                if beat.actual_percentage is None:
+                    continue
+
+                deviation = abs(beat.actual_percentage - beat.target_percentage)
+
+                if deviation > self.beat_deviation_error:
+                    warnings.append(HealthWarning(
+                        type="BEAT_DEVIATION",
+                        severity="error",
+                        message=(
+                            f"Beat '{beat.name}' is significantly off target: "
+                            f"expected {beat.target_percentage}%, "
+                            f"actual {beat.actual_percentage:.1f}% "
+                            f"(deviation: {deviation:.1f}%)"
+                        ),
+                        recommendation="Consider restructuring to align with beat sheet",
+                        data={
+                            "beat_name": beat.name,
+                            "beat_number": beat.number,
+                            "target_percentage": beat.target_percentage,
+                            "actual_percentage": beat.actual_percentage,
+                            "deviation": deviation
+                        }
+                    ))
+                elif deviation > self.beat_deviation_warning:
+                    warnings.append(HealthWarning(
+                        type="BEAT_DEVIATION",
+                        severity="warning",
+                        message=(
+                            f"Beat '{beat.name}' is off target: "
+                            f"expected {beat.target_percentage}%, "
+                            f"actual {beat.actual_percentage:.1f}% "
+                            f"(deviation: {deviation:.1f}%)"
+                        ),
+                        recommendation="Monitor beat placement in upcoming chapters",
+                        data={
+                            "beat_name": beat.name,
+                            "beat_number": beat.number,
+                            "target_percentage": beat.target_percentage,
+                            "actual_percentage": beat.actual_percentage,
+                            "deviation": deviation
+                        }
+                    ))
 
         return warnings
 
@@ -1246,25 +1544,238 @@ Does this character have a clear narrative purpose? Are they underutilized?"""
     async def _check_symbolic_layering(
         self,
         db: Session,
-        chapter: Chapter
+        chapters: List[Chapter]
     ) -> List[HealthWarning]:
         """
-        Check C1: Symbolic Layering.
+        Check C1: Symbolic Layering (Phase 3D).
 
-        Tracks symbol recurrence and meaning evolution.
+        Ensures symbols recur throughout manuscript with evolving meanings
+        (not one-off decorations).
+
+        Algorithm:
+        1. Extract symbols from Theme.md in Story Bible
+        2. Query Knowledge Graph for symbol mentions across scenes
+        3. Use LLM to analyze:
+           - Symbol recurrence frequency
+           - Whether meaning evolves or stays static
+           - Whether symbols appear at thematically important moments
+        4. Warn if symbols are absent for too long or lack evolution
 
         Args:
             db: Database session
-            chapter: Chapter to check
+            chapters: List of chapters to analyze
 
         Returns:
             List of health warnings for weak or static symbols
         """
         warnings = []
 
-        # TODO: Implement symbolic layering check
-        # This requires SYMBOL nodes to be populated in the knowledge graph
-        # For now, return empty list as placeholder
+        if not chapters:
+            return warnings
+
+        # Get minimum recurrences from settings
+        min_recurrences = settings_service.get(
+            "health_checks.symbolic.min_recurrences", self.project_id
+        ) or 3  # Default: 3 appearances
+
+        logger.info(f"Symbolic layering check: analyzing {len(chapters)} chapters with {self.symbolic_layering_model}")
+
+        # Collect all scenes and track symbol occurrences by chapter
+        all_scenes = []
+        chapter_map = {}  # scene_id -> chapter_id mapping
+        for ch in chapters:
+            scenes = ch.scenes if hasattr(ch, 'scenes') else []
+            all_scenes.extend(scenes)
+            for scene in scenes:
+                chapter_map[scene.scene_id] = ch.chapter_id
+
+        if not all_scenes:
+            return warnings
+
+        # Build context for LLM to analyze symbols
+        scene_summaries_by_chapter = {}
+        for ch in chapters[:20]:  # Limit to first 20 chapters for context
+            chapter_scenes = ch.scenes if hasattr(ch, 'scenes') else []
+            summaries = []
+            for scene in chapter_scenes[:3]:  # Limit to 3 scenes per chapter
+                if scene.summary:
+                    summaries.append(scene.summary[:300])
+            if summaries:
+                scene_summaries_by_chapter[ch.chapter_id] = summaries
+
+        # LLM system prompt for symbolic analysis
+        system_prompt = """You are a literary symbol analyst. Analyze symbolic layering in manuscripts.
+
+Good symbolic layering means:
+- Symbols recur throughout the manuscript (minimum 3 appearances)
+- Symbol meaning evolves and deepens over time
+- Symbols appear at thematically critical beats (Midpoint, All Is Lost, Finale)
+
+Analyze the provided scene summaries and identify:
+1. Key symbols (objects, images, motifs that carry symbolic weight)
+2. How often each symbol appears
+3. Whether the symbol's meaning evolves or stays static
+4. Whether symbols appear at critical structural beats
+
+Respond in JSON format:
+{
+  "symbols_detected": [
+    {
+      "symbol": "name of symbol",
+      "occurrences": ["chapter_id1", "chapter_id2", ...],
+      "recurrence_count": number,
+      "recurrence_adequate": true | false,
+      "meaning_evolves": true | false,
+      "appears_at_critical_beats": true | false,
+      "analysis": "Brief analysis of how this symbol is used",
+      "recommendation": "Specific suggestion if improvement needed"
+    }
+  ],
+  "overall_symbolic_health": "excellent" | "good" | "fair" | "poor",
+  "general_recommendations": ["list of general suggestions"]
+}"""
+
+        # Build chapter summaries for analysis
+        chapter_content = []
+        for ch_id, summaries in scene_summaries_by_chapter.items():
+            chapter_content.append(f"**{ch_id}**:\n" + "\n".join(f"  - {s}" for s in summaries))
+
+        user_prompt = f"""Analyze symbolic layering in this manuscript:
+
+**Manuscript Structure**: {len(chapters)} chapters analyzed
+
+**Chapter Summaries**:
+{chr(10).join(chapter_content)}
+
+Identify key symbols, their recurrence patterns, and whether their meanings evolve throughout the manuscript.
+
+Critical beats to check for symbol appearance:
+- Opening Image (1%)
+- Midpoint (50%)
+- All Is Lost (75%)
+- Final Image (100%)"""
+
+        try:
+            response = await self._query_llm(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                model=self.symbolic_layering_model
+            )
+
+            # Parse JSON response
+            try:
+                result = json.loads(response)
+                symbols = result.get("symbols_detected", [])
+                overall_health = result.get("overall_symbolic_health", "fair")
+
+                for symbol_data in symbols:
+                    symbol_name = symbol_data.get("symbol", "Unknown")
+                    recurrence_count = symbol_data.get("recurrence_count", 0)
+                    recurrence_adequate = symbol_data.get("recurrence_adequate", True)
+                    meaning_evolves = symbol_data.get("meaning_evolves", True)
+                    appears_at_critical = symbol_data.get("appears_at_critical_beats", True)
+                    occurrences = symbol_data.get("occurrences", [])
+                    recommendation = symbol_data.get("recommendation", "")
+                    analysis = symbol_data.get("analysis", "")
+
+                    # Check for inadequate recurrence
+                    if not recurrence_adequate:
+                        # Find where symbol last appeared
+                        last_chapter = occurrences[-1] if occurrences else "early chapters"
+                        warnings.append(HealthWarning(
+                            type="SYMBOL_INSUFFICIENT_RECURRENCE",
+                            severity="warning",
+                            message=(
+                                f"Symbol '{symbol_name}' appears only {recurrence_count} times "
+                                f"(minimum {min_recurrences} recommended). "
+                                f"Last seen in {last_chapter}."
+                            ),
+                            recommendation=recommendation or f"Consider reinforcing '{symbol_name}' in later chapters",
+                            chapters=occurrences,
+                            data={
+                                "symbol": symbol_name,
+                                "recurrence_count": recurrence_count,
+                                "min_required": min_recurrences,
+                                "occurrences": occurrences,
+                                "analysis": analysis
+                            }
+                        ))
+
+                    # Check for static meaning (no evolution)
+                    if recurrence_count >= min_recurrences and not meaning_evolves:
+                        warnings.append(HealthWarning(
+                            type="SYMBOL_STATIC_MEANING",
+                            severity="info",
+                            message=(
+                                f"Symbol '{symbol_name}' recurs {recurrence_count} times "
+                                f"but its meaning appears static. "
+                                f"Consider deepening its significance through the arc."
+                            ),
+                            recommendation=recommendation or f"Let '{symbol_name}' gain new layers of meaning at key beats",
+                            chapters=occurrences,
+                            data={
+                                "symbol": symbol_name,
+                                "recurrence_count": recurrence_count,
+                                "meaning_evolves": False,
+                                "analysis": analysis
+                            }
+                        ))
+
+                    # Check for missing critical beats
+                    if recurrence_count >= min_recurrences and not appears_at_critical:
+                        warnings.append(HealthWarning(
+                            type="SYMBOL_MISSING_CRITICAL_BEATS",
+                            severity="info",
+                            message=(
+                                f"Symbol '{symbol_name}' doesn't appear at critical structural beats "
+                                f"(Opening Image, Midpoint, All Is Lost, or Finale). "
+                                f"Consider a callback at these moments."
+                            ),
+                            recommendation=recommendation or f"Add '{symbol_name}' callback at Midpoint or Finale",
+                            chapters=occurrences,
+                            data={
+                                "symbol": symbol_name,
+                                "appears_at_critical_beats": False,
+                                "occurrences": occurrences,
+                                "analysis": analysis
+                            }
+                        ))
+
+                # Add general warning if overall health is poor
+                if overall_health == "poor":
+                    general_recs = result.get("general_recommendations", [])
+                    warnings.append(HealthWarning(
+                        type="SYMBOLIC_LAYERING_WEAK",
+                        severity="warning",
+                        message=(
+                            f"Overall symbolic layering is weak. "
+                            f"The manuscript may lack thematic depth from recurring symbols."
+                        ),
+                        recommendation="; ".join(general_recs[:3]) if general_recs else "Identify 2-3 core symbols and weave them throughout the manuscript",
+                        data={
+                            "overall_health": overall_health,
+                            "symbols_analyzed": len(symbols),
+                            "general_recommendations": general_recs
+                        }
+                    ))
+
+            except json.JSONDecodeError:
+                logger.warning(f"Symbolic layering LLM response not JSON: {response[:200]}")
+                # Fall back to simple analysis based on response
+                if "no symbols" in response.lower() or "lack" in response.lower():
+                    warnings.append(HealthWarning(
+                        type="SYMBOLIC_LAYERING_UNCLEAR",
+                        severity="info",
+                        message="Unable to detect clear symbolic patterns in the manuscript",
+                        recommendation="Consider establishing key symbols early and recurring them at critical beats",
+                        data={
+                            "llm_response_summary": response[:500]
+                        }
+                    ))
+
+        except Exception as e:
+            logger.error(f"Symbolic layering check failed: {e}")
+            # Return graceful fallback - no warning added to avoid false positives
 
         return warnings
 
