@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ChatSidebar from './ChatSidebar.svelte';
+  import ForemanChatPanel from './ForemanChatPanel.svelte';
+  import StudioPanel from './StudioPanel.svelte';
 
   // Panel visibility state
   let showStudioPanel = true;
@@ -295,10 +297,7 @@
             <button class="panel-close" on:click={() => togglePanel('studio')}>×</button>
           </div>
           <div class="panel-content">
-            <div class="placeholder">
-              <p>Studio Panel</p>
-              <p class="placeholder-hint">Mode cards and quick actions will appear here</p>
-            </div>
+            <StudioPanel />
           </div>
         </div>
         <div
@@ -350,12 +349,8 @@
       <!-- Chat Panel -->
       {#if showChatPanel}
         <div class="panel chat-panel" style="width: {chatPanelWidth}%;">
-          <div class="panel-header">
-            <h3>Chat</h3>
-            <button class="panel-close" on:click={() => togglePanel('chat')}>×</button>
-          </div>
           <div class="panel-content">
-            <ChatSidebar />
+            <ForemanChatPanel />
           </div>
         </div>
       {/if}
