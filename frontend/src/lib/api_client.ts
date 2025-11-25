@@ -474,6 +474,367 @@ export class WritersFactoryAPI {
     }> {
         return this._request('/orchestrator/current-spend');
     }
+
+    // ==========================================
+    // Story Bible System (ARCHITECT Mode)
+    // ==========================================
+
+    /**
+     * Get Story Bible validation status.
+     */
+    async getStoryBibleStatus(): Promise<{
+        phase2_complete: boolean;
+        completion_score: number;
+        checks: Array<{
+            name: string;
+            passed: boolean;
+            status: string;
+        }>;
+        protagonist: {
+            name: string;
+            fatal_flaw: string;
+            the_lie: string;
+            true_character: string;
+            characterization: string;
+            arc_start: string;
+            arc_midpoint: string;
+            arc_resolution: string;
+        } | null;
+        beat_sheet: {
+            title: string | null;
+            completion: number;
+            current_beat: number | null;
+            midpoint_type: string | null;
+        };
+        can_proceed_to_execution: boolean;
+        blocking_issues: string[];
+    }> {
+        return this._request('/story-bible/status');
+    }
+
+    /**
+     * Create Story Bible scaffolding.
+     * @param projectTitle The project/novel title
+     * @param protagonistName The protagonist's name
+     * @param preFilled Optional pre-filled data for templates
+     */
+    async scaffoldStoryBible(
+        projectTitle: string,
+        protagonistName: string,
+        preFilled?: Record<string, any>
+    ): Promise<{
+        created_files: string[];
+        project_title: string;
+        protagonist_name: string;
+    }> {
+        return this._request('/story-bible/scaffold', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_title: projectTitle,
+                protagonist_name: protagonistName,
+                pre_filled: preFilled
+            }),
+        });
+    }
+
+    /**
+     * Get parsed protagonist data.
+     */
+    async getProtagonistData(): Promise<{
+        name: string;
+        fatal_flaw: string;
+        the_lie: string;
+        true_character: string;
+        characterization: string;
+        arc_start: string;
+        arc_midpoint: string;
+        arc_resolution: string;
+        relationships: Array<{ character: string; function: string }>;
+        contradiction_score: number;
+        is_valid: boolean;
+    }> {
+        return this._request('/story-bible/protagonist');
+    }
+
+    /**
+     * Get parsed beat sheet data.
+     */
+    async getBeatSheetData(): Promise<{
+        title: string;
+        beats: Array<{
+            number: number;
+            name: string;
+            percentage: string;
+            description: string;
+            scene_link: string;
+            is_complete: boolean;
+        }>;
+        current_beat: number;
+        midpoint_type: string;
+        theme_stated: string;
+        is_valid: boolean;
+        completion_percentage: number;
+    }> {
+        return this._request('/story-bible/beat-sheet');
+    }
+
+    /**
+     * Ensure Story Bible directory structure exists.
+     */
+    async ensureStoryBibleStructure(): Promise<{
+        directories: Record<string, string>;
+        created: string[];
+    }> {
+        return this._request('/story-bible/ensure-structure', { method: 'POST' });
+    }
+
+    /**
+     * Check if ready for Phase 3 (Execution).
+     */
+    async canExecute(): Promise<{
+        ready: boolean;
+        blocking_issues: string[];
+        completion_percentage: number;
+    }> {
+        return this._request('/story-bible/can-execute');
+    }
+
+    /**
+     * Run AI-powered Story Bible generation from NotebookLM.
+     * @param projectTitle The project/novel title
+     * @param protagonistName The protagonist's name
+     * @param notebookId Optional NotebookLM notebook ID
+     */
+    async runSmartScaffold(
+        projectTitle: string,
+        protagonistName: string,
+        notebookId?: string
+    ): Promise<{
+        status: string;
+        created_files: string[];
+        enrichment_used: boolean;
+        project_title: string;
+        protagonist_name: string;
+    }> {
+        return this._request('/story-bible/smart-scaffold', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_title: projectTitle,
+                protagonist_name: protagonistName,
+                notebook_id: notebookId
+            }),
+        });
+    }
+
+    // ==========================================
+    // NotebookLM Integration
+    // ==========================================
+
+    /**
+     * Get NotebookLM connection status.
+     */
+    async getNotebookLMStatus(): Promise<{
+        connected: boolean;
+        message: string;
+    }> {
+        return this._request('/notebooklm/status');
+    }
+
+    /**
+     * Get list of configured NotebookLM notebooks.
+     */
+    async getNotebookLMList(): Promise<{
+        notebooks: Array<{
+            id: string;
+            name: string;
+            role: string | null;
+        }>;
+    }> {
+        return this._request('/notebooklm/notebooks');
+    }
+
+    /**
+     * Query a NotebookLM notebook.
+     * @param notebookId The notebook ID
+     * @param query The query text
+     */
+    async queryNotebook(notebookId: string, query: string): Promise<{
+        answer: string;
+        sources: string[];
+    }> {
+        return this._request('/notebooklm/query', {
+            method: 'POST',
+            body: JSON.stringify({ notebook_id: notebookId, query }),
+        });
+    }
+
+    // ==========================================
+    // Voice Calibration (VOICE_CALIBRATION Mode)
+    // ==========================================
+
+    /**
+     * Get available agents for voice tournament.
+     */
+    async getVoiceCalibrationAgents(): Promise<{
+        agents: Array<{
+            id: string;
+            name: string;
+            provider: string;
+            model: string;
+            role: string;
+            enabled: boolean;
+            has_valid_key: boolean;
+            use_cases: string[];
+        }>;
+    }> {
+        return this._request('/voice-calibration/agents');
+    }
+
+    /**
+     * Start a voice calibration tournament.
+     * @param projectId Project identifier
+     * @param testPrompt The test passage prompt
+     * @param testContext Context about the scene
+     * @param agentIds List of agent IDs to include
+     * @param variantsPerAgent Number of variants per agent (default 5)
+     * @param voiceDescription Optional writer's voice description
+     */
+    async startVoiceTournament(
+        projectId: string,
+        testPrompt: string,
+        testContext: string,
+        agentIds: string[],
+        variantsPerAgent: number = 5,
+        voiceDescription?: string
+    ): Promise<{
+        tournament_id: string;
+        project_id: string;
+        status: string;
+        selected_agents: string[];
+    }> {
+        return this._request('/voice-calibration/tournament/start', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                test_prompt: testPrompt,
+                test_context: testContext,
+                agent_ids: agentIds,
+                variants_per_agent: variantsPerAgent,
+                voice_description: voiceDescription
+            }),
+        });
+    }
+
+    /**
+     * Get tournament status.
+     * @param tournamentId The tournament ID
+     */
+    async getTournamentStatus(tournamentId: string): Promise<{
+        tournament_id: string;
+        status: string;
+        selected_agents: string[];
+        variant_count: number;
+        created_at: string;
+        completed_at: string | null;
+    }> {
+        return this._request(`/voice-calibration/tournament/${tournamentId}/status`);
+    }
+
+    /**
+     * Get tournament variants.
+     * @param tournamentId The tournament ID
+     * @param agentId Optional filter by agent
+     */
+    async getTournamentVariants(tournamentId: string, agentId?: string): Promise<{
+        variants: Array<{
+            agent_id: string;
+            agent_name: string;
+            variant_number: number;
+            strategy: string;
+            content: string;
+            word_count: number;
+            generated_at: string;
+        }>;
+    }> {
+        const params = agentId ? `?agent_id=${agentId}` : '';
+        return this._request(`/voice-calibration/tournament/${tournamentId}/variants${params}`);
+    }
+
+    /**
+     * Select winning variant and create voice calibration document.
+     * @param tournamentId The tournament ID
+     * @param winnerAgentId The winning agent's ID
+     * @param winnerVariantIndex Index of winning variant
+     * @param voiceConfig Voice configuration choices
+     */
+    async selectVoiceWinner(
+        tournamentId: string,
+        winnerAgentId: string,
+        winnerVariantIndex: number,
+        voiceConfig: {
+            pov: string;
+            tense: string;
+            voice_type: string;
+            metaphor_domains: string[];
+            anti_patterns: string[];
+            phase_evolution: Record<string, string>;
+        }
+    ): Promise<{
+        message: string;
+        voice_calibration: {
+            project_id: string;
+            pov: string;
+            tense: string;
+            voice_type: string;
+            winning_agent: string;
+        };
+    }> {
+        return this._request(`/voice-calibration/tournament/${tournamentId}/select`, {
+            method: 'POST',
+            body: JSON.stringify({
+                winner_agent_id: winnerAgentId,
+                winner_variant_index: winnerVariantIndex,
+                voice_config: voiceConfig
+            }),
+        });
+    }
+
+    /**
+     * Generate Voice Reference Bundle files.
+     * @param projectId Project identifier
+     */
+    async generateVoiceBundle(projectId: string): Promise<{
+        files: {
+            gold_standard: string;
+            anti_patterns: string;
+            phase_evolution?: string;
+        };
+        message: string;
+    }> {
+        return this._request(`/voice-calibration/generate-bundle/${projectId}`, {
+            method: 'POST',
+        });
+    }
+
+    /**
+     * Get existing voice calibration for project.
+     * @param projectId Project identifier
+     */
+    async getVoiceCalibration(projectId: string): Promise<{
+        calibration: {
+            project_id: string;
+            pov: string;
+            tense: string;
+            voice_type: string;
+            metaphor_domains: string[];
+            anti_patterns: string[];
+            phase_evolution: Record<string, string>;
+            winning_agent: string;
+            reference_sample: string;
+        } | null;
+    }> {
+        return this._request(`/voice-calibration/${projectId}`);
+    }
 }
 
 // Export a singleton instance for easy use across the Svelte app
