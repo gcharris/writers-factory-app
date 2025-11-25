@@ -148,7 +148,7 @@ class CreateTournamentRequest(BaseModel):
     tournament_type: str  # "structure_variant" or "scene_variant"
     project_id: str
     agents: List[TournamentAgentConfig]
-    strategies: Optional[List[str]] = None  # ["action", "character", "dialogue", "atmospheric", "balanced"]
+    strategies: Optional[List[str]] = None  # ["action", "character", "dialogue", "brainstorming", "balanced"]
     source_material: str
     source_context: str = ""
     voice_bundle_path: Optional[str] = None

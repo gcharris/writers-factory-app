@@ -1292,6 +1292,209 @@ export class WritersFactoryAPI {
             }),
         });
     }
+
+    // ==========================================
+    // Graph Health Service (Phase 3D)
+    // ==========================================
+
+    /**
+     * Run a comprehensive health check on manuscript structure.
+     * @param projectId Project identifier
+     * @param scope Check scope: 'chapter', 'act', or 'manuscript'
+     * @param chapterId Chapter ID (required for chapter scope)
+     * @param actNumber Act number (required for act scope)
+     */
+    async runHealthCheck(
+        projectId: string,
+        scope: 'chapter' | 'act' | 'manuscript',
+        chapterId?: string,
+        actNumber?: number
+    ): Promise<{
+        status: string;
+        report: HealthReport;
+        markdown: string;
+    }> {
+        return this._request('/health/check', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                scope: scope,
+                chapter_id: chapterId,
+                act_number: actNumber
+            }),
+        });
+    }
+
+    /**
+     * Retrieve a stored health report by ID.
+     * @param reportId Report identifier
+     */
+    async getHealthReport(reportId: string): Promise<{
+        status: string;
+        report: HealthReport;
+    }> {
+        return this._request(`/health/report/${reportId}`);
+    }
+
+    /**
+     * List all health reports with pagination.
+     * @param projectId Project identifier
+     * @param limit Max results (default 20)
+     * @param offset Skip results (default 0)
+     * @param scope Optional filter by scope
+     */
+    async listHealthReports(
+        projectId: string,
+        limit: number = 20,
+        offset: number = 0,
+        scope?: 'chapter' | 'act' | 'manuscript'
+    ): Promise<{
+        reports: HealthReportSummary[];
+        total: number;
+        limit: number;
+        offset: number;
+    }> {
+        const params = new URLSearchParams({
+            project_id: projectId,
+            limit: limit.toString(),
+            offset: offset.toString()
+        });
+        if (scope) params.append('scope', scope);
+        return this._request(`/health/reports?${params.toString()}`);
+    }
+
+    /**
+     * Get historical trend data for a health metric.
+     * @param metric Metric name: 'overall_health', 'pacing_plateaus', 'beat_deviations', 'flaw_challenges', 'theme_resonance'
+     * @param projectId Project identifier
+     * @param startDate Optional start date (ISO format)
+     * @param endDate Optional end date (ISO format)
+     */
+    async getHealthTrends(
+        metric: string,
+        projectId: string,
+        startDate?: string,
+        endDate?: string
+    ): Promise<{
+        metric: string;
+        data: TrendDataPoint[];
+        start_date: string | null;
+        end_date: string | null;
+    }> {
+        const params = new URLSearchParams({ project_id: projectId });
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        return this._request(`/health/trends/${metric}?${params.toString()}`);
+    }
+
+    /**
+     * Export a health report as JSON or markdown.
+     * @param reportId Report identifier
+     * @param format Export format: 'json' or 'markdown'
+     */
+    async exportHealthReport(
+        reportId: string,
+        format: 'json' | 'markdown' = 'json'
+    ): Promise<{
+        format: string;
+        content: any;
+    }> {
+        return this._request(`/health/export/${reportId}?format=${format}`);
+    }
+
+    /**
+     * Set a manual theme resonance score override.
+     * @param projectId Project identifier
+     * @param beatId Beat identifier
+     * @param themeId Theme identifier
+     * @param manualScore Manual score (0-10)
+     * @param reason Writer's explanation
+     */
+    async setThemeOverride(
+        projectId: string,
+        beatId: string,
+        themeId: string,
+        manualScore: number,
+        reason: string
+    ): Promise<{
+        success: boolean;
+        beat_id: string;
+        theme_id: string;
+        manual_score: number;
+    }> {
+        return this._request('/health/theme/override', {
+            method: 'POST',
+            body: JSON.stringify({
+                project_id: projectId,
+                beat_id: beatId,
+                theme_id: themeId,
+                manual_score: manualScore,
+                reason: reason
+            }),
+        });
+    }
+
+    /**
+     * Get all manual theme score overrides for a project.
+     * @param projectId Project identifier
+     */
+    async getThemeOverrides(projectId: string): Promise<{
+        overrides: ThemeOverride[];
+    }> {
+        return this._request(`/health/theme/overrides?project_id=${projectId}`);
+    }
+}
+
+// --- Health Report Interfaces ---
+export interface HealthWarning {
+    type: string;
+    severity: 'error' | 'warning' | 'info';
+    message: string;
+    recommendation?: string;
+    scenes?: string[];
+    chapters?: string[];
+    characters?: string[];
+    data?: Record<string, any>;
+}
+
+export interface HealthReport {
+    report_id: string;
+    project_id: string;
+    scope: 'chapter' | 'act' | 'manuscript';
+    chapter_id?: string;
+    act_number?: number;
+    overall_score: number;
+    warnings: HealthWarning[];
+    timestamp: string;
+}
+
+export interface HealthReportSummary {
+    report_id: string;
+    project_id: string;
+    scope: string;
+    chapter_id?: string;
+    act_number?: number;
+    overall_score: number;
+    warning_count: number;
+    error_count: number;
+    timestamp: string;
+}
+
+export interface TrendDataPoint {
+    chapter_id?: string;
+    act_number?: number;
+    score?: number;
+    timestamp: string;
+    [key: string]: any;
+}
+
+export interface ThemeOverride {
+    beat_id: string;
+    theme_id: string;
+    manual_score: number | null;
+    llm_score: number | null;
+    reason: string;
+    timestamp: string | null;
 }
 
 // Export a singleton instance for easy use across the Svelte app

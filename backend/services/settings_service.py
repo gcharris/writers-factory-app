@@ -163,7 +163,7 @@ class DefaultSettings:
     # --- Tournament Settings ---
     tournament: Dict[str, Any] = field(default_factory=lambda: {
         "variants_per_agent": 5,
-        "strategies": ["ACTION", "CHARACTER", "DIALOGUE", "ATMOSPHERIC", "BALANCED"],
+        "strategies": ["ACTION", "CHARACTER", "DIALOGUE", "BRAINSTORMING", "BALANCED"],
         "auto_score_variants": True,
         "show_losing_variants": True,
         "top_n_display": 5,

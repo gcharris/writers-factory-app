@@ -303,7 +303,7 @@ class TestSceneVariantGeneration:
             assert WritingStrategy.ACTION in strategies_used
             assert WritingStrategy.CHARACTER in strategies_used
             assert WritingStrategy.DIALOGUE in strategies_used
-            assert WritingStrategy.ATMOSPHERIC in strategies_used
+            assert WritingStrategy.BRAINSTORMING in strategies_used
             assert WritingStrategy.BALANCED in strategies_used
 
     @pytest.mark.asyncio

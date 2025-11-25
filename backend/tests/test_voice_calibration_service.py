@@ -352,7 +352,7 @@ class TestTournamentExecution:
         assert "ACTION_EMPHASIS" in strategies
         assert "CHARACTER_DEPTH" in strategies
         assert "DIALOGUE_FOCUS" in strategies
-        assert "ATMOSPHERIC" in strategies
+        assert "BRAINSTORMING" in strategies
         assert "BALANCED" in strategies
 
 

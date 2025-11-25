@@ -28,9 +28,9 @@ TENCENT_API_KEY=your_tencent_key_here
 # Mistral AI
 MISTRAL_API_KEY=your_mistral_key_here
 
-# --- Legacy / Disabled ---
-# Google Gemini (CLI Auth is separate, this is for direct API if needed)
-# GEMINI_API_KEY=your_gemini_key_here
+# --- Google ---
+# Google Gemini
+GEMINI_API_KEY=your_gemini_key_here
 
 # --- Local ---
 # Ollama (Usually no key needed, but good for compatibility)

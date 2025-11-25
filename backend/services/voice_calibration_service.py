@@ -138,7 +138,7 @@ class VoiceCalibrationService:
         ("ACTION_EMPHASIS", "Fast pacing, physical detail, external conflict, dialogue in motion"),
         ("CHARACTER_DEPTH", "Slower pacing, internal landscape, psychology foregrounded"),
         ("DIALOGUE_FOCUS", "Conversation-centered, conflict through words, subtext"),
-        ("ATMOSPHERIC", "Setting as character, sensory immersion, mood emphasized"),
+        ("BRAINSTORMING", "Idea exploration, multiple perspectives, experimental approaches"),
         ("BALANCED", "Mix of elements, standard structure, reliable execution"),
     ]
 

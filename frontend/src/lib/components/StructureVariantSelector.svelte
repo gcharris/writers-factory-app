@@ -53,11 +53,11 @@
       label: 'Dialogue-Driven',
       description: 'Conversation-centered, conflict through words, subtext'
     },
-    ATMOSPHERIC: {
-      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>`,
+    BRAINSTORMING: {
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 3.5 2.5 6.5 6 7.5V20h4v-2.5c3.5-1 6-4 6-7.5a8 8 0 0 0-8-8z"></path><line x1="12" y1="16" x2="12" y2="12"></line></svg>`,
       color: '#3fb950',
-      label: 'Atmospheric',
-      description: 'Setting as character, sensory immersion, mood emphasis'
+      label: 'Brainstorming',
+      description: 'Idea exploration, multiple perspectives, experimental'
     },
     BALANCED: {
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`,
