@@ -133,6 +133,55 @@ class SessionMessageRequest(BaseModel):
     content: str
     scene_id: str = None
 
+
+# --- Phase 4 Tournament Models ---
+
+class TournamentAgentConfig(BaseModel):
+    """Configuration for a tournament agent."""
+    agent_id: str
+    provider: str
+    model: str
+    quality_tier: str = "balanced"
+    enabled: bool = True
+
+
+class CreateTournamentRequest(BaseModel):
+    """Request to create a new tournament."""
+    tournament_type: str  # "structure_variant" or "scene_variant"
+    project_id: str
+    agents: List[TournamentAgentConfig]
+    strategies: Optional[List[str]] = None  # ["action", "character", "dialogue", "atmospheric", "balanced"]
+    source_material: str
+    source_context: str = ""
+    voice_bundle_path: Optional[str] = None
+    max_variants_per_agent: int = 5
+    parallel_execution: bool = True
+    auto_score: bool = True
+
+
+class RunTournamentRoundRequest(BaseModel):
+    """Request to run a tournament round."""
+    tournament_id: str
+    round_number: int = 1
+
+
+class SelectWinnerRequest(BaseModel):
+    """Request to select tournament winner."""
+    tournament_id: str
+    winner_variant_id: str
+
+
+class CreateHybridRequest(BaseModel):
+    """Request to create hybrid scene from variants."""
+    tournament_id: str
+    selected_variant_ids: List[str]
+    merge_strategy: str = "paragraph"  # "paragraph" | "section" | "sentence"
+    preserve_voice_from: Optional[str] = None
+    target_word_count: Optional[int] = None
+    maintain_pacing: bool = True
+    smooth_transitions: bool = True
+
+
 # --- API Endpoints ---
 
 @app.get("/agents", summary="List available agents")
@@ -3278,6 +3327,465 @@ async def get_theme_overrides(project_id: str):
     except Exception as e:
         logging.error(f"Failed to get theme overrides: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get overrides: {str(e)}")
+
+
+# =============================================================================
+# Phase 4: Multi-Model Tournament Endpoints
+# =============================================================================
+
+@app.post("/tournament/structure/create", summary="Create structure variant tournament")
+async def create_structure_tournament(request: CreateTournamentRequest):
+    """
+    Create a new structure variant tournament (STEP 2 automation).
+
+    Generates 15 parallel variants (3 models × 5 strategies) for structural
+    approaches to a scene or chapter.
+
+    Returns:
+        - Tournament ID for tracking
+        - Configuration summary
+    """
+    from backend.services.tournament_service import get_tournament_service
+    from backend.models.tournament import (
+        TournamentConfig,
+        TournamentType,
+        AgentConfig,
+        VariantStrategy,
+    )
+
+    try:
+        service = get_tournament_service()
+
+        # Build agent configs
+        agents = [
+            AgentConfig(
+                agent_id=a.agent_id,
+                provider=a.provider,
+                model=a.model,
+                quality_tier=a.quality_tier,
+                enabled=a.enabled,
+            )
+            for a in request.agents
+        ]
+
+        # Parse strategies
+        strategies = None
+        if request.strategies:
+            strategies = [VariantStrategy(s) for s in request.strategies]
+
+        config = TournamentConfig(
+            tournament_type=TournamentType.STRUCTURE_VARIANT,
+            project_id=request.project_id,
+            agents=agents,
+            strategies=strategies or list(VariantStrategy),
+            source_material=request.source_material,
+            source_context=request.source_context,
+            voice_bundle_path=request.voice_bundle_path,
+            max_variants_per_agent=request.max_variants_per_agent,
+            parallel_execution=request.parallel_execution,
+            auto_score=request.auto_score,
+        )
+
+        tournament = service.create_tournament(config)
+
+        return {
+            "status": "created",
+            "tournament_id": tournament.id,
+            "tournament_type": tournament.tournament_type.value,
+            "config": config.to_dict(),
+            "expected_variants": len(agents) * len(config.strategies),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to create structure tournament: {e}")
+        raise HTTPException(status_code=500, detail=f"Tournament creation failed: {str(e)}")
+
+
+@app.post("/tournament/scene/create", summary="Create scene variant tournament")
+async def create_scene_tournament(request: CreateTournamentRequest):
+    """
+    Create a new scene variant tournament (STEP 3 automation).
+
+    Generates 15-25 parallel scene variants across multiple models and
+    strategies for comparison and selection.
+
+    Returns:
+        - Tournament ID for tracking
+        - Configuration summary
+    """
+    from backend.services.tournament_service import get_tournament_service
+    from backend.models.tournament import (
+        TournamentConfig,
+        TournamentType,
+        AgentConfig,
+        VariantStrategy,
+    )
+
+    try:
+        service = get_tournament_service()
+
+        # Build agent configs
+        agents = [
+            AgentConfig(
+                agent_id=a.agent_id,
+                provider=a.provider,
+                model=a.model,
+                quality_tier=a.quality_tier,
+                enabled=a.enabled,
+            )
+            for a in request.agents
+        ]
+
+        # Parse strategies
+        strategies = None
+        if request.strategies:
+            strategies = [VariantStrategy(s) for s in request.strategies]
+
+        config = TournamentConfig(
+            tournament_type=TournamentType.SCENE_VARIANT,
+            project_id=request.project_id,
+            agents=agents,
+            strategies=strategies or list(VariantStrategy),
+            source_material=request.source_material,
+            source_context=request.source_context,
+            voice_bundle_path=request.voice_bundle_path,
+            max_variants_per_agent=request.max_variants_per_agent,
+            parallel_execution=request.parallel_execution,
+            auto_score=request.auto_score,
+        )
+
+        tournament = service.create_tournament(config)
+
+        return {
+            "status": "created",
+            "tournament_id": tournament.id,
+            "tournament_type": tournament.tournament_type.value,
+            "config": config.to_dict(),
+            "expected_variants": len(agents) * len(config.strategies),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to create scene tournament: {e}")
+        raise HTTPException(status_code=500, detail=f"Tournament creation failed: {str(e)}")
+
+
+@app.post("/tournament/{tournament_id}/run", summary="Run tournament round")
+async def run_tournament_round(tournament_id: str, request: RunTournamentRoundRequest):
+    """
+    Run a tournament round - generate and score all variants.
+
+    Executes parallel variant generation across all configured agents
+    and strategies, then scores each variant.
+
+    Returns:
+        - Round results with all variants
+        - Scores and rankings
+        - Consensus analysis
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+
+        round_result = await service.run_round(
+            tournament_id=tournament_id,
+            round_number=request.round_number,
+        )
+
+        # Get full results
+        results = service.get_tournament_results(tournament_id)
+
+        return {
+            "status": "round_complete",
+            "tournament_id": tournament_id,
+            "round_number": round_result.round_number,
+            "variant_count": len(round_result.variants),
+            "consensus_score": round_result.consensus_score,
+            **results,
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Tournament round failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Tournament round failed: {str(e)}")
+
+
+@app.get("/tournament/{tournament_id}/results", summary="Get tournament results")
+async def get_tournament_results(tournament_id: str):
+    """
+    Get complete tournament results including rankings and consensus.
+
+    Returns:
+        - Tournament details
+        - All variants with scores
+        - Ranked results by score
+        - Consensus report
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+        results = service.get_tournament_results(tournament_id)
+
+        if "error" in results:
+            raise HTTPException(status_code=404, detail=results["error"])
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to get tournament results: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get results: {str(e)}")
+
+
+@app.get("/tournament/{tournament_id}/variants", summary="Get tournament variants")
+async def get_tournament_variants(
+    tournament_id: str,
+    agent_id: Optional[str] = None,
+    strategy: Optional[str] = None,
+):
+    """
+    Get variants from a tournament with optional filters.
+
+    Args:
+        tournament_id: Tournament ID
+        agent_id: Filter by agent (optional)
+        strategy: Filter by strategy (optional)
+
+    Returns:
+        - List of variants matching filters
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+        tournament = service.get_tournament(tournament_id)
+
+        if not tournament:
+            raise HTTPException(status_code=404, detail=f"Tournament {tournament_id} not found")
+
+        variants = tournament.all_variants
+
+        # Apply filters
+        if agent_id:
+            variants = [v for v in variants if v.agent_id == agent_id]
+        if strategy:
+            variants = [v for v in variants if v.strategy.value == strategy]
+
+        return {
+            "tournament_id": tournament_id,
+            "variant_count": len(variants),
+            "variants": [v.to_dict() for v in variants],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to get variants: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get variants: {str(e)}")
+
+
+@app.get("/tournament/{tournament_id}/consensus", summary="Get consensus analysis")
+async def get_tournament_consensus(tournament_id: str):
+    """
+    Get consensus analysis for tournament variants.
+
+    Analyzes where variants agree (high confidence) and diverge
+    (areas needing human review).
+
+    Returns:
+        - Overall consensus score
+        - High-agreement areas
+        - Divergent areas needing review
+        - Per-variant alignment scores
+        - Recommendation
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+        tournament = service.get_tournament(tournament_id)
+
+        if not tournament:
+            raise HTTPException(status_code=404, detail=f"Tournament {tournament_id} not found")
+
+        consensus = service.detect_consensus(tournament.all_variants)
+
+        return {
+            "tournament_id": tournament_id,
+            "consensus": consensus.to_dict(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to get consensus: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get consensus: {str(e)}")
+
+
+@app.post("/tournament/{tournament_id}/select-winner", summary="Select tournament winner")
+async def select_tournament_winner(tournament_id: str, request: SelectWinnerRequest):
+    """
+    Select the winning variant for a tournament.
+
+    Marks the tournament as complete with the selected winner.
+
+    Returns:
+        - Updated tournament status
+        - Winner details
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+
+        tournament = service.select_winner(
+            tournament_id=tournament_id,
+            winner_variant_id=request.winner_variant_id,
+        )
+
+        winner = tournament.get_variant_by_id(request.winner_variant_id)
+
+        return {
+            "status": "winner_selected",
+            "tournament_id": tournament_id,
+            "winner_variant_id": request.winner_variant_id,
+            "winner_score": winner.scores.total_score if winner and winner.scores else None,
+            "winner_grade": winner.scores.grade if winner and winner.scores else None,
+            "tournament_status": tournament.status.value,
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Failed to select winner: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to select winner: {str(e)}")
+
+
+@app.post("/tournament/{tournament_id}/hybrid", summary="Create hybrid from variants")
+async def create_tournament_hybrid(tournament_id: str, request: CreateHybridRequest):
+    """
+    Create a hybrid scene by merging selected variants.
+
+    Uses intelligent paragraph-level merging to combine the best
+    elements from multiple variants.
+
+    Returns:
+        - Hybrid scene content
+        - Source variants used
+    """
+    from backend.services.tournament_service import get_tournament_service
+    from backend.models.tournament import HybridSceneConfig
+
+    try:
+        service = get_tournament_service()
+
+        config = HybridSceneConfig(
+            tournament_id=tournament_id,
+            selected_variant_ids=request.selected_variant_ids,
+            merge_strategy=request.merge_strategy,
+            preserve_voice_from=request.preserve_voice_from,
+            target_word_count=request.target_word_count,
+            maintain_pacing=request.maintain_pacing,
+            smooth_transitions=request.smooth_transitions,
+        )
+
+        hybrid_content = await service.create_hybrid(config)
+
+        return {
+            "status": "hybrid_created",
+            "tournament_id": tournament_id,
+            "hybrid_content": hybrid_content,
+            "word_count": len(hybrid_content.split()),
+            "source_variants": request.selected_variant_ids,
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Hybrid creation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Hybrid creation failed: {str(e)}")
+
+
+@app.get("/tournaments", summary="List tournaments")
+async def list_tournaments(
+    project_id: Optional[str] = None,
+    status: Optional[str] = None,
+):
+    """
+    List all tournaments with optional filters.
+
+    Args:
+        project_id: Filter by project (optional)
+        status: Filter by status (optional): pending, running, scoring, awaiting_selection, complete, failed
+
+    Returns:
+        - List of tournaments matching filters
+    """
+    from backend.services.tournament_service import get_tournament_service
+    from backend.models.tournament import TournamentStatus
+
+    try:
+        service = get_tournament_service()
+
+        status_filter = None
+        if status:
+            try:
+                status_filter = TournamentStatus(status)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid status: {status}. Valid values: {[s.value for s in TournamentStatus]}"
+                )
+
+        tournaments = service.list_tournaments(
+            project_id=project_id,
+            status=status_filter,
+        )
+
+        return {
+            "tournaments": [t.to_dict() for t in tournaments],
+            "count": len(tournaments),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to list tournaments: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list tournaments: {str(e)}")
+
+
+@app.get("/tournament/{tournament_id}", summary="Get tournament details")
+async def get_tournament(tournament_id: str):
+    """
+    Get detailed information about a specific tournament.
+
+    Returns:
+        - Tournament configuration
+        - Current status
+        - All rounds and variants
+        - Cost tracking
+    """
+    from backend.services.tournament_service import get_tournament_service
+
+    try:
+        service = get_tournament_service()
+        tournament = service.get_tournament(tournament_id)
+
+        if not tournament:
+            raise HTTPException(status_code=404, detail=f"Tournament {tournament_id} not found")
+
+        return {
+            "tournament": tournament.to_dict(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to get tournament: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get tournament: {str(e)}")
 
 
 if __name__ == "__main__":
