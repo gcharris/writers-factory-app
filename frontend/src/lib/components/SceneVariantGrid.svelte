@@ -35,7 +35,7 @@
     { id: 'ACTION_EMPHASIS', name: 'Action', icon: 'bolt', color: '#f85149' },
     { id: 'CHARACTER_DEPTH', name: 'Character', icon: 'user', color: '#a371f7' },
     { id: 'DIALOGUE_FOCUS', name: 'Dialogue', icon: 'chat', color: '#58a6ff' },
-    { id: 'ATMOSPHERIC', name: 'Atmospheric', icon: 'cloud', color: '#3fb950' },
+    { id: 'BRAINSTORMING', name: 'Brainstorming', icon: 'lightbulb', color: '#3fb950' },
     { id: 'BALANCED', name: 'Balanced', icon: 'scale', color: '#d29922' }
   ];
 

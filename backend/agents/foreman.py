@@ -318,7 +318,7 @@ Voice is everything in fiction. Before we write scenes, we must FIND the voice. 
   - ACTION_EMPHASIS: Fast pacing, physical detail, momentum
   - CHARACTER_DEPTH: Interior landscape, psychological truth
   - DIALOGUE_FOCUS: Voice through conversation
-  - ATMOSPHERIC: Setting as character, sensory immersion
+  - BRAINSTORMING: Idea exploration, multiple perspectives
   - BALANCED: Harmonious blend of all elements
 - Total: 15-25 variants to review
 

@@ -50,7 +50,7 @@ class VariantStrategy(Enum):
     ACTION = "action"          # Fast pacing, physical detail, external conflict
     CHARACTER = "character"    # Slower pacing, internal landscape, psychology
     DIALOGUE = "dialogue"      # Conversation-centered, conflict through words
-    ATMOSPHERIC = "atmospheric"  # Setting as character, sensory immersion
+    BRAINSTORMING = "brainstorming"  # Idea exploration, divergent thinking
     BALANCED = "balanced"      # Mix of elements, standard structure
 
     @property
@@ -60,7 +60,7 @@ class VariantStrategy(Enum):
             "action": "Fast pacing, physical detail, external conflict, dialogue in motion",
             "character": "Slower pacing, internal landscape, psychology foregrounded",
             "dialogue": "Conversation-centered, conflict through words, subtext",
-            "atmospheric": "Setting as character, sensory immersion, mood emphasized",
+            "brainstorming": "Idea exploration, multiple perspectives, experimental approaches",
             "balanced": "Mix of elements, standard structure, reliable execution",
         }
         return descriptions.get(self.value, "")

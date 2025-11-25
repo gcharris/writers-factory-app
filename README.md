@@ -115,7 +115,7 @@ Build your novel's foundation:
 ### 2. VOICE_CALIBRATION Mode: Voice Discovery
 Find your narrative voice through AI tournaments:
 - **Multi-Agent Competition** - 5+ models compete on test passage
-- **5 Strategy Variants** - ACTION, CHARACTER, DIALOGUE, ATMOSPHERIC, BALANCED
+- **5 Strategy Variants** - ACTION, CHARACTER, DIALOGUE, BRAINSTORMING, BALANCED
 - **Voice Reference Bundle** - Gold Standard + Anti-Patterns + Phase Evolution
 - **Automatic Integration** - Voice travels with every Director Mode call
 

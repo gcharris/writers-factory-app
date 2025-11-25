@@ -38,7 +38,7 @@
     { id: 'ACTION_EMPHASIS', name: 'Action', desc: 'Fast pacing, physical detail, external conflict' },
     { id: 'CHARACTER_DEPTH', name: 'Character', desc: 'Slower pacing, internal landscape, psychology' },
     { id: 'DIALOGUE_FOCUS', name: 'Dialogue', desc: 'Conversation-centered, subtext, conflict through words' },
-    { id: 'ATMOSPHERIC', name: 'Atmospheric', desc: 'Setting as character, sensory immersion, mood' },
+    { id: 'BRAINSTORMING', name: 'Brainstorming', desc: 'Idea exploration, multiple perspectives, experimental' },
     { id: 'BALANCED', name: 'Balanced', desc: 'Mix of elements, standard structure' }
   ];
 

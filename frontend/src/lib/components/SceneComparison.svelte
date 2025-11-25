@@ -53,7 +53,7 @@
       'ACTION_EMPHASIS': 'Action',
       'CHARACTER_DEPTH': 'Character',
       'DIALOGUE_FOCUS': 'Dialogue',
-      'ATMOSPHERIC': 'Atmospheric',
+      'BRAINSTORMING': 'Brainstorming',
       'BALANCED': 'Balanced'
     };
     return names[strategy] || strategy;

@@ -45,7 +45,7 @@ class WritingStrategy(str, Enum):
     ACTION = "action"           # More beats, faster pacing, kinetic
     CHARACTER = "character"     # Fewer beats, deeper psychology
     DIALOGUE = "dialogue"       # Conversation-centered scenes
-    ATMOSPHERIC = "atmospheric" # Sensory details, mood, setting
+    BRAINSTORMING = "brainstorming"  # Idea exploration, divergent thinking
     BALANCED = "balanced"       # Mix of action/character/dialogue
 
 
@@ -562,13 +562,13 @@ Emphasize conversation and verbal conflict. Scene built around exchanges.
 - Action serves dialogue, not vice versa
 - Internal narration comments on the conversation""",
 
-            WritingStrategy.ATMOSPHERIC: """
-Emphasize sensory details, mood, and setting. World-first approach.
-- Open with sensory immersion in the space
-- Environment reflects and affects character state
-- Metaphors drawn from immediate surroundings
-- Pacing follows environmental rhythm
-- Character perception filtered through place""",
+            WritingStrategy.BRAINSTORMING: """
+Emphasize idea exploration and divergent thinking. Multiple-perspectives approach.
+- Explore unexpected angles and "what if" scenarios
+- Generate multiple possibilities before committing
+- Consider alternative interpretations of scenes
+- Let creative tangents inform the narrative
+- Embrace experimental approaches to familiar beats""",
 
             WritingStrategy.BALANCED: """
 Balance action, character, and dialogue. Classic scene structure.

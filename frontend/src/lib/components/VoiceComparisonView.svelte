@@ -23,7 +23,7 @@
     'ACTION_EMPHASIS': '#f85149',
     'CHARACTER_DEPTH': '#a371f7',
     'DIALOGUE_FOCUS': '#58a6ff',
-    'ATMOSPHERIC': '#3fb950',
+    'BRAINSTORMING': '#3fb950',
     'BALANCED': '#d29922'
   };
 
