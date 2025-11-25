@@ -13,8 +13,14 @@
 -->
 <script>
   import { createEventDispatcher } from 'svelte';
-  import SettingsAgents from './SettingsAgents.svelte';
-  import SettingsOrchestrator from './SettingsOrchestrator.svelte';
+  import SettingsAgents from './Settings/SettingsAgents.svelte';
+  import SettingsOrchestrator from './Settings/SettingsOrchestrator.svelte';
+  import SettingsScoring from './Settings/SettingsScoring.svelte';
+  import SettingsVoice from './Settings/SettingsVoice.svelte';
+  import SettingsEnhancement from './Settings/SettingsEnhancement.svelte';
+  import SettingsForeman from './Settings/SettingsForeman.svelte';
+  import SettingsHealth from './Settings/SettingsHealth.svelte';
+  import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
 
   export let activeTab = 'agents';
 
@@ -118,41 +124,17 @@
     {:else if activeTab === 'orchestrator'}
       <SettingsOrchestrator />
     {:else if activeTab === 'scoring'}
-      <div class="coming-soon">
-        <h3>Scoring Settings</h3>
-        <p>Configure rubric weights for scene scoring.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsScoring />
     {:else if activeTab === 'voice'}
-      <div class="coming-soon">
-        <h3>Voice Settings</h3>
-        <p>Configure voice authentication strictness.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsVoice />
     {:else if activeTab === 'enhancement'}
-      <div class="coming-soon">
-        <h3>Enhancement Settings</h3>
-        <p>Configure enhancement thresholds and passes.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsEnhancement />
     {:else if activeTab === 'foreman'}
-      <div class="coming-soon">
-        <h3>Foreman Behavior</h3>
-        <p>Configure Foreman proactiveness and verbosity.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsForeman />
     {:else if activeTab === 'health'}
-      <div class="coming-soon">
-        <h3>Health Check Settings</h3>
-        <p>Configure health check thresholds and triggers.</p>
-        <span class="badge">Coming in Phase 5.2</span>
-      </div>
+      <SettingsHealth />
     {:else if activeTab === 'advanced'}
-      <div class="coming-soon">
-        <h3>Advanced Settings</h3>
-        <p>Configure RAG, context limits, and file watching.</p>
-        <span class="badge">Coming in Phase 5.3</span>
-      </div>
+      <SettingsAdvanced />
     {/if}
   </div>
 </div>
@@ -256,32 +238,4 @@
     overflow-y: auto;
   }
 
-  .coming-soon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 300px;
-    text-align: center;
-  }
-
-  .coming-soon h3 {
-    margin: 0 0 var(--space-2, 8px) 0;
-    font-size: var(--text-xl, 18px);
-    color: var(--text-primary, #e6edf3);
-  }
-
-  .coming-soon p {
-    margin: 0 0 var(--space-4, 16px) 0;
-    color: var(--text-secondary, #8b949e);
-  }
-
-  .coming-soon .badge {
-    padding: var(--space-2, 8px) var(--space-4, 16px);
-    background: var(--bg-tertiary, #242d38);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: var(--radius-full, 9999px);
-    font-size: var(--text-xs, 11px);
-    color: var(--text-muted, #6e7681);
-  }
 </style>
