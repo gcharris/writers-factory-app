@@ -3,6 +3,7 @@
   import ChatSidebar from './ChatSidebar.svelte';
   import ForemanChatPanel from './ForemanChatPanel.svelte';
   import StudioPanel from './StudioPanel.svelte';
+  import Editor from './Editor.svelte';
 
   // Panel visibility state
   let showStudioPanel = true;
@@ -255,16 +256,16 @@
       <button
         class="panel-toggle {showForemanPanel ? 'active' : ''}"
         on:click={() => togglePanel('foreman')}
-        title="Toggle Foreman Panel"
+        title="Toggle Writing Panel"
       >
-        Foreman
+        Writing
       </button>
       <button
         class="panel-toggle {showChatPanel ? 'active' : ''}"
         on:click={() => togglePanel('chat')}
-        title="Toggle Chat Panel"
+        title="Toggle Foreman Panel"
       >
-        Chat
+        Foreman
       </button>
     </div>
 
@@ -326,18 +327,15 @@
         ></div>
       {/if}
 
-      <!-- Foreman Panel -->
+      <!-- Writing/Editor Panel -->
       {#if showForemanPanel}
         <div class="panel foreman-panel" style="width: {foremanPanelWidth}%;">
           <div class="panel-header">
-            <h3>Foreman</h3>
+            <h3>Writing</h3>
             <button class="panel-close" on:click={() => togglePanel('foreman')}>×</button>
           </div>
           <div class="panel-content">
-            <div class="placeholder">
-              <p>Foreman Panel</p>
-              <p class="placeholder-hint">Work orders and guidance will appear here</p>
-            </div>
+            <Editor />
           </div>
         </div>
         <div
