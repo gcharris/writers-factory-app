@@ -68,11 +68,20 @@ class LLMService:
         )
 
         # --- European Tier ---
-        
+
         # Mistral AI
         self.mistral_client = AsyncOpenAI(
             api_key=get_key("MISTRAL_API_KEY"),
             base_url="https://api.mistral.ai/v1"
+        )
+
+        # --- Russian Tier ---
+
+        # Yandex YandexGPT (Russian-native)
+        # Uses IAM token or API key authentication
+        self.yandex_client = AsyncOpenAI(
+            api_key=get_key("YANDEX_API_KEY"),
+            base_url="https://llm.api.cloud.yandex.net/foundationModels/v1"
         )
 
     async def generate_response(self, provider: str, model: str, system_role: str, prompt: str) -> str:
@@ -114,6 +123,9 @@ class LLMService:
             elif provider == "mistral":
                 return await self._call_openai_compatible(self.mistral_client, model, system_role, prompt)
 
+            elif provider == "yandex":
+                return await self._call_yandex(model, system_role, prompt)
+
             else:
                 return f"Error: Unknown provider '{provider}'"
 
@@ -130,5 +142,30 @@ class LLMService:
                 {"role": "system", "content": system_role},
                 {"role": "user", "content": prompt}
             ]
+        )
+        return response.choices[0].message.content
+
+    async def _call_yandex(self, model: str, system_role: str, prompt: str) -> str:
+        """
+        Helper for Yandex YandexGPT API.
+
+        Yandex uses a slightly different format but is mostly OpenAI-compatible.
+        Model names: yandexgpt-lite, yandexgpt (pro), yandexgpt-32k
+
+        Note: The full model URI format is:
+        gpt://<folder_id>/yandexgpt-lite/latest
+
+        For simplicity, we accept short names and the service routes appropriately.
+        """
+        # Yandex accepts OpenAI-compatible format through their completion endpoint
+        response = await self.yandex_client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_role},
+                {"role": "user", "content": prompt}
+            ],
+            # Yandex-specific parameters
+            max_tokens=4096,
+            temperature=0.7
         )
         return response.choices[0].message.content

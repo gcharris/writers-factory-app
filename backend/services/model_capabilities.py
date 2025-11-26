@@ -526,17 +526,18 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
     ),
 
     # ============================================================
-    # RUSSIAN TIER (Russian-Native Models)
+    # RUSSIAN TIER (Russian-Native Models via Yandex AI Studio)
     # ============================================================
     ModelCapabilities(
-        model_id="yandexgpt",
+        model_id="yandexgpt-5.1-pro",
         provider="yandex",
-        display_name="YandexGPT Pro",
+        display_name="YandexGPT 5.1 Pro",
         strengths=[
             TaskStrength.CREATIVE_WRITING,
             TaskStrength.DIALOGUE_GENERATION,
             TaskStrength.ATMOSPHERIC_PROSE,
-            TaskStrength.CHARACTER_PSYCHOLOGY
+            TaskStrength.CHARACTER_PSYCHOLOGY,
+            TaskStrength.NARRATIVE_CONTINUITY
         ],
         quality_score=9,
         speed="medium",
@@ -554,9 +555,9 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
     ),
 
     ModelCapabilities(
-        model_id="yandexgpt-lite",
+        model_id="yandexgpt-5-lite",
         provider="yandex",
-        display_name="YandexGPT Lite",
+        display_name="YandexGPT 5 Lite",
         strengths=[
             TaskStrength.COORDINATION,
             TaskStrength.DIALOGUE_GENERATION,

@@ -28,6 +28,10 @@ TENCENT_API_KEY=your_tencent_key_here
 # Mistral AI
 MISTRAL_API_KEY=your_mistral_key_here
 
+# --- Russia ---
+# Yandex YandexGPT (Best for Russian fiction)
+YANDEX_API_KEY=your_yandex_key_here
+
 # --- Google ---
 # Google Gemini
 GEMINI_API_KEY=your_gemini_key_here

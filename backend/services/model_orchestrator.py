@@ -371,11 +371,11 @@ class ModelOrchestrator:
                 "analysis": "gpt-4o"
             }
         elif language_code == "ru":
-            # Russian - YandexGPT is best for native cultural fluency, Qwen 3 for open alternative
+            # Russian - YandexGPT 5.1 Pro is best for native cultural fluency, Qwen 3 for open alternative
             recommendations = {
                 "strategic": "qwen-max",  # Qwen 3 excellent for Russian analysis
-                "creative": "yandexgpt",  # Best Russian prose quality
-                "dialogue": "yandexgpt",  # Native Russian dialogue
+                "creative": "yandexgpt-5.1-pro",  # Best Russian prose quality
+                "dialogue": "yandexgpt-5.1-pro",  # Native Russian dialogue
                 "analysis": "gpt-4o"      # Strong general analysis
             }
         elif language_code == "zh":

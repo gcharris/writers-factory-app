@@ -118,24 +118,24 @@ agents:
     use_cases: ["tournament", "analysis", "research"]
     enabled: true
 
-  # --- Russian-Native Models ---
+  # --- Russian-Native Models (via Yandex AI Studio) ---
 
-  - id: "yandexgpt-pro"
-    name: "YandexGPT Pro"
+  - id: "yandexgpt-5.1-pro"
+    name: "YandexGPT 5.1 Pro"
     provider: "yandex"
     api_key_env: "YANDEX_API_KEY"
-    model: "yandexgpt"
-    role: "The Russian Master. Native Russian cultural fluency, idioms, and literary style."
+    model: "yandexgpt-5.1-pro"
+    role: "The Russian Master. Native Russian cultural fluency, idioms, and literary style. Best for Russian prose."
     use_cases: ["tournament", "russian_fiction", "russian_dialogue", "slavic_literature"]
     enabled: true
     languages: ["ru", "en"]
     quality_tier: "premium"
 
-  - id: "yandexgpt-lite"
-    name: "YandexGPT Lite"
+  - id: "yandexgpt-5-lite"
+    name: "YandexGPT 5 Lite"
     provider: "yandex"
     api_key_env: "YANDEX_API_KEY"
-    model: "yandexgpt-lite"
+    model: "yandexgpt-5-lite"
     role: "The Russian Scout. Fast Russian drafting and dialogue at lower cost."
     use_cases: ["quick_drafts", "russian_dialogue", "russian_iteration"]
     enabled: true

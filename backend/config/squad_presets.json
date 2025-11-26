@@ -182,10 +182,10 @@
           "notes": "Mistral is the best for French fiction - it's a French company!"
         },
         "russian": {
-          "primary_model": "yandexgpt",
+          "primary_model": "yandexgpt-5.1-pro",
           "backup_model": "qwen-max",
           "tertiary_model": "gpt-4o",
-          "notes": "YandexGPT is the best for Russian cultural fluency. Qwen 3 (qwen-max) also excellent for Russian."
+          "notes": "YandexGPT 5.1 Pro is the best for Russian cultural fluency. Qwen 3 (qwen-max) also excellent for Russian."
         },
         "chinese": {
           "primary_model": "deepseek-chat",
@@ -275,12 +275,55 @@
         "weekly_usd": 5.00,
         "monthly_usd": 20.00
       }
+    },
+    "russian_writers": {
+      "id": "russian_writers",
+      "name": "Russian Writers Squad",
+      "description": "Optimized for Russian-language fiction with native cultural fluency",
+      "icon": "🇷🇺",
+      "tier": "premium",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": false,
+        "min_ram_gb": 4,
+        "api_keys": ["YANDEX_API_KEY"]
+      },
+      "optional_api_keys": ["QWEN_API_KEY", "DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY"],
+      "notes": "Designed for writers creating Russian-language fiction. YandexGPT 5.1 Pro provides native Russian cultural fluency, idioms, and literary style. Qwen Max serves as excellent backup with strong Russian capabilities.",
+      "default_models": {
+        "foreman_strategic": "yandexgpt-5.1-pro",
+        "foreman_coordinator": "yandexgpt-5-lite",
+        "tournament": [
+          "yandexgpt-5.1-pro",
+          "qwen-max",
+          "deepseek-chat",
+          "claude-3-7-sonnet-20250219"
+        ],
+        "health_checks": {
+          "default": "yandexgpt-5-lite",
+          "timeline_consistency": "yandexgpt-5.1-pro",
+          "theme_resonance": "yandexgpt-5.1-pro",
+          "flaw_challenges": "qwen-max",
+          "cast_function": "yandexgpt-5.1-pro",
+          "pacing_analysis": "yandexgpt-5-lite",
+          "beat_progress": "yandexgpt-5-lite",
+          "symbolic_layering": "yandexgpt-5.1-pro"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "qwen-max"
+      },
+      "cost_estimate": {
+        "weekly_usd": 3.00,
+        "monthly_usd": 12.00
+      }
     }
   },
   "model_tiers": {
     "free": ["mistral:7b", "llama3.2:3b"],
-    "budget": ["deepseek-chat", "qwen-plus", "qwen-turbo", "qwen-turbo-latest", "glm-4", "gemini-2.0-flash-exp", "moonshot-v1-128k", "hunyuan-lite", "gpt-4o-mini", "gpt-3.5-turbo", "yandexgpt-lite"],
-    "premium": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "gpt-4o", "grok-2-latest", "mistral-large-latest", "qwen-max", "yandexgpt"],
+    "budget": ["deepseek-chat", "qwen-plus", "qwen-turbo", "qwen-turbo-latest", "glm-4", "gemini-2.0-flash-exp", "moonshot-v1-128k", "hunyuan-lite", "gpt-4o-mini", "gpt-3.5-turbo", "yandexgpt-5-lite"],
+    "premium": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "gpt-4o", "grok-2-latest", "mistral-large-latest", "qwen-max", "yandexgpt-5.1-pro"],
     "opus": ["claude-3-opus-20240229"]
   },
   "model_metadata": {
@@ -446,19 +489,19 @@
       "content_filter": "permissive",
       "languages": ["en", "zh", "ru", "fr", "de", "es"]
     },
-    "yandexgpt": {
-      "name": "YandexGPT Pro",
+    "yandexgpt-5.1-pro": {
+      "name": "YandexGPT 5.1 Pro",
       "provider": "yandex",
-      "description": "Best for Russian fiction - native cultural fluency and idioms",
+      "description": "Best for Russian fiction - native cultural fluency, idioms, literary style",
       "cost_per_1m_input": 1.20,
       "cost_per_1m_output": 2.40,
       "content_filter": "moderate",
       "languages": ["ru", "en"]
     },
-    "yandexgpt-lite": {
-      "name": "YandexGPT Lite",
+    "yandexgpt-5-lite": {
+      "name": "YandexGPT 5 Lite",
       "provider": "yandex",
-      "description": "Fast Russian drafting at lower cost",
+      "description": "Fast Russian drafting and iteration at lower cost",
       "cost_per_1m_input": 0.20,
       "cost_per_1m_output": 0.40,
       "content_filter": "moderate",
