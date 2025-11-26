@@ -265,7 +265,7 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 **Status:** Backend feature-complete for Phase 5 UI work.
 
-#### Track 3: Feature UI (Weeks 2-6) - FOLLOWS FOREMAN MODES 🚧 60% Complete
+#### Track 3: Feature UI (Weeks 2-6) - FOLLOWS FOREMAN MODES ✅ 95% Complete
 
 **Phased Approach:**
 1. ✅ **Phase 1 (ARCHITECT Mode UI):** Story Bible creation (3 components, 890 lines)
@@ -293,35 +293,39 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
    - **API Client:** +457 lines (15+ Director Mode methods)
    - **State Management:** +45 lines (stores.js)
 
-4. 🔲 **Phase 4 (Graph Health UI):** Dashboard and reports (4 components) - NOT STARTED
-   - HealthDashboard.svelte - Overview of all health metrics
-   - HealthReportDetail.svelte - Detailed report view
-   - HealthTrends.svelte - Historical trend charts
-   - ThemeOverridePanel.svelte - Manual theme score overrides
+4. ✅ **Phase 4 (Graph Health UI):** Dashboard and reports (4 components, ~107KB) - COMPLETE
+   - GraphHealthDashboard.svelte (29KB) - 7 health check categories with run/view
+   - HealthReportDetail.svelte (30KB) - Detailed report with grouped warnings
+   - HealthTrends.svelte (21KB) - SVG trend charts with date picker
+   - ThemeOverridePanel.svelte (25KB) - Manual theme score overrides
 
-5. 🔲 **Phase 5 (Settings + Polish):** Remaining settings + polish (6+ components) - NOT STARTED
+5. ✅ **Phase 5 (Settings + Polish):** All 9 settings tabs implemented - COMPLETE
+   - SettingsSquad.svelte - Squad selection and tournament models (NEW - Nov 2025)
+   - SettingsAgents.svelte - API key configuration
+   - SettingsOrchestrator.svelte - Quality tier selection
    - SettingsScoring.svelte - Scene scoring weights
-   - SettingsAntiPatterns.svelte - Anti-pattern configuration
+   - SettingsVoice.svelte - Voice calibration settings
    - SettingsEnhancement.svelte - Enhancement thresholds
-   - SettingsTournament.svelte - Tournament settings
    - SettingsForeman.svelte - Foreman behavior
-   - SettingsContext.svelte - Context window management
+   - SettingsHealth.svelte - Health check configuration
+   - SettingsAdvanced.svelte - Context window, expert mode
 
 ### UI Component Coverage
 **Total Components Required:** 87
-**Completed:** 28 components (32%)
+**Completed:** 55+ components (~63%)
 **In Progress:** 0 components
-**Remaining:** 59 components (68%)
+**Remaining:** ~32 components (37%)
 
 **Completed by Category:**
 - ✅ **Critical UI (Track 1):** 11/11 components (100%)
 - ✅ **ARCHITECT Mode:** 3/3 components (100%)
 - ✅ **VOICE_CALIBRATION Mode:** 6/6 components (100%)
 - ✅ **DIRECTOR Mode:** 8/8 components (100%)
+- ✅ **Graph Health UI:** 4/4 components (100%)
+- ✅ **Settings Panels:** 9/9 components (100%)
+- ✅ **Squad System UI:** 3/3 components (100%) - NEW Nov 2025
 
 **Remaining by Category:**
-- 🔲 **Graph Health UI:** 0/4 components (0%)
-- 🔲 **Settings Detail Panels:** 0/6 components (0%)
 - 🔲 **NotebookLM Integration:** 0/3 components (0%)
 - 🔲 **Knowledge Graph Advanced:** 0/5 components (0%)
 - 🔲 **Session Management:** 0/3 components (0%)
@@ -338,12 +342,12 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### Effort Estimates
 - ✅ **Track 1 (Critical UI):** 18 hours (COMPLETE)
-- ✅ **Track 3 Phases 1-3:** ~50 hours (COMPLETE - ARCHITECT, VOICE, DIRECTOR)
-- 🔲 **Track 3 Phases 4-5:** ~40 hours remaining (Graph Health + Settings Polish)
-- 🔲 **Remaining UI Components:** ~150 hours (NotebookLM, KG Advanced, Session, Foreman Work Orders, Polish)
-- **Total Remaining:** ~190 hours (~5 weeks)
+- ✅ **Track 3 Phases 1-5:** ~90 hours (COMPLETE - All Foreman modes + Health + Settings)
+- ✅ **Squad System UI:** ~10 hours (COMPLETE - Nov 2025)
+- 🔲 **Remaining UI Components:** ~80 hours (NotebookLM, KG Advanced, Session, Foreman Work Orders, Polish)
+- **Total Remaining:** ~80 hours (~2 weeks)
 
-**Current Priority:** Track 3 Phase 4 (Graph Health UI) - 4 components, ~20 hours
+**Current Priority:** NotebookLM Integration - 3 components, ~15 hours
 
 ## Phase 6: Polish & Release
 1.  **Packaging:** Build `.dmg` / `.exe` installers.
