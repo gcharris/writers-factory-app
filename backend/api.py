@@ -2618,6 +2618,42 @@ async def get_settings_category(category: str, project_id: Optional[str] = None)
         raise HTTPException(status_code=500, detail=f"Failed to get category: {str(e)}")
 
 
+@app.put("/settings/category/{category}", summary="Update all settings in a category")
+async def update_settings_category(category: str, request: Request, project_id: Optional[str] = None):
+    """
+    Update multiple settings in a category at once.
+
+    Categories: scoring, anti_patterns, enhancement, tournament, foreman, context, health_checks, orchestrator, tournament_consensus
+
+    Examples:
+        PUT /settings/category/context
+        {
+            "max_conversation_history": 30,
+            "kb_context_limit": 1500,
+            "voice_bundle_injection": "summary"
+        }
+    """
+    try:
+        body = await request.json()
+        updated = {}
+
+        for key, value in body.items():
+            # Construct the full setting key with category prefix
+            full_key = f"{category}.{key}"
+            settings_service.set(full_key, value, project_id)
+            updated[key] = value
+
+        return {
+            "category": category,
+            "updated": updated,
+            "project_id": project_id,
+            "status": "success"
+        }
+    except Exception as e:
+        logging.error(f"Failed to update category {category}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update category: {str(e)}")
+
+
 @app.get("/settings/project/{project_id}/overrides", summary="Get all project overrides")
 async def get_project_overrides(project_id: str):
     """
