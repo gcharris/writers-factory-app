@@ -1,19 +1,20 @@
 <!--
-  ForemanPanel.svelte - Foreman Chat + Live Knowledge Graph (Split View)
+  ForemanPanel.svelte - The Foreman Chat Interface
 
-  Matches the mockup with:
-  - Top 60%: Chat interface with work order display
-  - Bottom 40%: Live Knowledge Graph with force-directed layout
-  - Draggable splitter between sections
+  Clean chat interface with:
+  - Full-height chat with work order display
+  - Three header buttons: Studio, Graph, Settings (open modals)
+  - Enhanced input with @mention and attachments
 -->
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, createEventDispatcher } from 'svelte';
   import { apiClient } from '$lib/api_client';
   import {
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
-    foremanWorkOrder, foremanChatHistory
+    foremanWorkOrder, foremanChatHistory, activeModal
   } from '$lib/stores';
-  import LiveGraph from './LiveGraph.svelte';
+
+  const dispatch = createEventDispatcher();
 
   let messages = [];
   let input = "";
@@ -24,10 +25,8 @@
   let protagonistName = "";
   let kbStats = null;
 
-  // Splitter state
-  let chatHeight = 60; // percentage
-  let isDragging = false;
-  let containerRef;
+  // Enhanced input state
+  let showMentionMenu = false;
 
   // Sync messages with Foreman chat history
   $: {
@@ -172,28 +171,6 @@
     }
   }
 
-  // Splitter drag handlers
-  function startDrag(e) {
-    isDragging = true;
-    document.addEventListener('mousemove', onDrag);
-    document.addEventListener('mouseup', stopDrag);
-    e.preventDefault();
-  }
-
-  function onDrag(e) {
-    if (!isDragging || !containerRef) return;
-    const rect = containerRef.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const percentage = (y / rect.height) * 100;
-    chatHeight = Math.max(30, Math.min(80, percentage));
-  }
-
-  function stopDrag() {
-    isDragging = false;
-    document.removeEventListener('mousemove', onDrag);
-    document.removeEventListener('mouseup', stopDrag);
-  }
-
   // Template status icons
   function getStatusIcon(status) {
     switch (status) {
@@ -202,14 +179,86 @@
       default: return '○';
     }
   }
+
+  // ============================================
+  // Header Button Functions
+  // ============================================
+  function openNotebook() {
+    activeModal.set('notebooklm');
+  }
+
+  function openStudio() {
+    activeModal.set('studio-tools');
+  }
+
+  function openGraph() {
+    activeModal.set('graph-viewer');
+  }
+
+  function openSettings() {
+    activeModal.set('settings');
+  }
+
+  // ============================================
+  // Message Action Functions
+  // ============================================
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      // TODO: Show toast notification "Copied to clipboard"
+      console.log('Copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }
+
+  function insertToEditor(text) {
+    // Dispatch event to parent to insert text at cursor position in Monaco editor
+    dispatch('insert-to-editor', { text });
+  }
+
+  async function regenerateMessage(msgIndex) {
+    // Find the user message before this assistant message and re-submit
+    if (msgIndex > 0) {
+      const userMsg = messages[msgIndex - 1];
+      if (userMsg && userMsg.role === 'user') {
+        // Remove the AI response and re-submit
+        messages = messages.slice(0, msgIndex);
+        foremanChatHistory.set(messages);
+
+        // Re-send the user message
+        input = userMsg.text;
+        messages = messages.slice(0, msgIndex - 1); // Also remove the user message since sendMessage will add it
+        await sendMessage();
+      }
+    }
+  }
+
+  // ============================================
+  // Enhanced Input Functions
+  // ============================================
+  async function handleAttachment() {
+    // Use Tauri dialog to select files
+    // TODO: Implement file attachment
+    console.log('Attachment feature coming soon');
+  }
+
+  function handleVoiceInput() {
+    // TODO: Implement voice input with Web Speech API
+    console.log('Voice input feature coming soon');
+  }
+
+  function toggleMentionMenu() {
+    showMentionMenu = !showMentionMenu;
+  }
 </script>
 
-<div class="foreman-panel" bind:this={containerRef}>
-  <!-- Chat Section (Top) -->
-  <div class="chat-section" style="height: {chatHeight}%">
+<div class="foreman-panel">
+  <!-- Chat Section (Full Height) -->
+  <div class="chat-section">
     <!-- The Foreman Header -->
     <div class="foreman-header">
-      <div class="header-title">
+      <div class="header-left">
         <span class="foreman-avatar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
@@ -217,11 +266,57 @@
             <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
           </svg>
         </span>
-        <span>The Foreman</span>
+        <span class="header-title">The Foreman</span>
+        <div class="header-status">
+          <span class="status-dot {status === 'Online' ? 'online' : status === 'Ready' ? 'ready' : 'offline'}"></span>
+          <span class="status-text">{status}</span>
+        </div>
       </div>
-      <div class="header-status">
-        <span class="status-dot {status === 'Online' ? 'online' : status === 'Ready' ? 'ready' : 'offline'}"></span>
-        <span class="status-text">{status}</span>
+
+      <div class="header-right">
+        <!-- Notebook Button -->
+        <button class="header-btn notebook" on:click={openNotebook} title="NotebookLM Research">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span class="btn-label">Notebook</span>
+        </button>
+
+        <!-- Studio Button -->
+        <button class="header-btn" on:click={openStudio} title="Studio Tools">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="btn-label">Studio</span>
+        </button>
+
+        <!-- Graph Button -->
+        <button class="header-btn" on:click={openGraph} title="Knowledge Graph">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <circle cx="4" cy="6" r="2"></circle>
+            <circle cx="20" cy="6" r="2"></circle>
+            <circle cx="4" cy="18" r="2"></circle>
+            <circle cx="20" cy="18" r="2"></circle>
+            <line x1="6" y1="6" x2="9.5" y2="10"></line>
+            <line x1="18" y1="6" x2="14.5" y2="10"></line>
+            <line x1="6" y1="18" x2="9.5" y2="14"></line>
+            <line x1="18" y1="18" x2="14.5" y2="14"></line>
+          </svg>
+          <span class="btn-label">Graph</span>
+        </button>
+
+        <!-- Settings Button -->
+        <button class="header-btn settings" on:click={openSettings} title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -293,7 +388,7 @@
     {:else}
       <!-- Chat Messages -->
       <div class="chat-messages">
-        {#each messages as msg}
+        {#each messages as msg, i}
           <div class="message {msg.role}">
             {#if msg.role === 'user'}
               <div class="message-avatar user">
@@ -311,7 +406,47 @@
                 </svg>
               </div>
             {/if}
-            <div class="message-bubble">{msg.text}</div>
+            <div class="message-content">
+              <div class="message-bubble">{msg.text}</div>
+
+              {#if msg.role === 'assistant'}
+                <div class="message-actions">
+                  <button
+                    class="action-btn"
+                    on:click={() => copyToClipboard(msg.text)}
+                    title="Copy to clipboard"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    on:click={() => insertToEditor(msg.text)}
+                    title="Insert to editor"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    on:click={() => regenerateMessage(i)}
+                    title="Regenerate response"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                  </button>
+                </div>
+              {/if}
+            </div>
           </div>
         {/each}
         {#if isLoading}
@@ -332,8 +467,31 @@
         {/if}
       </div>
 
-      <!-- Chat Input -->
-      <div class="chat-input">
+      <!-- Enhanced Chat Input -->
+      <div class="chat-input-enhanced">
+        <div class="input-toolbar">
+          <button
+            class="toolbar-btn"
+            on:click={toggleMentionMenu}
+            title="@mention files or context"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
+            </svg>
+          </button>
+
+          <button
+            class="toolbar-btn"
+            on:click={handleAttachment}
+            title="Attach files"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            </svg>
+          </button>
+        </div>
+
         <textarea
           bind:value={input}
           on:keydown={handleKeydown}
@@ -341,43 +499,33 @@
           disabled={isLoading}
           rows="1"
         ></textarea>
-        <button class="send-btn" on:click={sendMessage} disabled={isLoading || !input.trim()}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
+
+        <div class="input-actions">
+          <button
+            class="toolbar-btn"
+            on:click={handleVoiceInput}
+            title="Voice input"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+            </svg>
+          </button>
+
+          <button
+            class="send-btn"
+            on:click={sendMessage}
+            disabled={isLoading || !input.trim()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
       </div>
     {/if}
-  </div>
-
-  <!-- Splitter -->
-  <div
-    class="splitter"
-    on:mousedown={startDrag}
-    class:dragging={isDragging}
-  >
-    <div class="splitter-handle"></div>
-  </div>
-
-  <!-- Live Graph Section (Bottom) -->
-  <div class="graph-section" style="height: {100 - chatHeight}%">
-    <div class="graph-header">
-      <span class="graph-title">Live Graph</span>
-      <span class="graph-actions">
-        <button class="graph-action" title="Expand">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <polyline points="9 21 3 21 3 15"></polyline>
-            <line x1="21" y1="3" x2="14" y2="10"></line>
-            <line x1="3" y1="21" x2="10" y2="14"></line>
-          </svg>
-        </button>
-      </span>
-    </div>
-    <div class="graph-container">
-      <LiveGraph />
-    </div>
   </div>
 </div>
 
@@ -396,6 +544,7 @@
   .chat-section {
     display: flex;
     flex-direction: column;
+    flex: 1;
     overflow: hidden;
   }
 
@@ -408,10 +557,19 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .header-title {
+  .header-left {
     display: flex;
     align-items: center;
     gap: var(--space-2);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .header-title {
     font-size: var(--text-sm);
     font-weight: var(--font-semibold);
     color: var(--text-primary);
@@ -447,6 +605,42 @@
   .status-text {
     font-size: var(--text-xs);
     color: var(--text-muted);
+  }
+
+  /* Header Buttons */
+  .header-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .header-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  .header-btn.settings {
+    padding: var(--space-1);
+  }
+
+  .btn-label {
+    display: none;
+  }
+
+  @media (min-width: 1400px) {
+    .btn-label {
+      display: inline;
+    }
   }
 
   /* Project Info */
@@ -695,16 +889,85 @@
     40% { opacity: 1; transform: scale(1); }
   }
 
-  /* Chat Input */
-  .chat-input {
+  /* Message Content & Actions */
+  .message-content {
     display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    max-width: 85%;
+  }
+
+  .message.user .message-content {
+    align-items: flex-end;
+  }
+
+  .message-actions {
+    display: flex;
+    gap: var(--space-1);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  .message:hover .message-actions {
+    opacity: 1;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .action-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+  }
+
+  /* Enhanced Chat Input */
+  .chat-input-enhanced {
+    display: flex;
+    align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     background: var(--bg-tertiary);
     border-top: 1px solid var(--border);
   }
 
-  .chat-input textarea {
+  .input-toolbar,
+  .input-actions {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .toolbar-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+  }
+
+  .chat-input-enhanced textarea {
     flex: 1;
     padding: var(--space-2);
     background: var(--bg-primary);
@@ -718,12 +981,12 @@
     max-height: 100px;
   }
 
-  .chat-input textarea:focus {
+  .chat-input-enhanced textarea:focus {
     outline: none;
     border-color: var(--accent-cyan);
   }
 
-  .chat-input textarea::placeholder {
+  .chat-input-enhanced textarea::placeholder {
     color: var(--text-muted);
   }
 
@@ -752,89 +1015,4 @@
     cursor: not-allowed;
   }
 
-  /* ============================================
-   * SPLITTER
-   * ============================================ */
-  .splitter {
-    height: 6px;
-    background: var(--bg-tertiary);
-    cursor: row-resize;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background var(--transition-fast);
-  }
-
-  .splitter:hover,
-  .splitter.dragging {
-    background: var(--bg-elevated);
-  }
-
-  .splitter-handle {
-    width: 40px;
-    height: 3px;
-    background: var(--border);
-    border-radius: var(--radius-full);
-  }
-
-  .splitter:hover .splitter-handle,
-  .splitter.dragging .splitter-handle {
-    background: var(--accent-cyan);
-  }
-
-  /* ============================================
-   * GRAPH SECTION
-   * ============================================ */
-  .graph-section {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .graph-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-tertiary);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .graph-title {
-    font-size: var(--text-xs);
-    font-weight: var(--font-semibold);
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
-  }
-
-  .graph-actions {
-    display: flex;
-    gap: var(--space-1);
-  }
-
-  .graph-action {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .graph-action:hover {
-    background: var(--bg-elevated);
-    color: var(--text-secondary);
-  }
-
-  .graph-container {
-    flex: 1;
-    background: var(--bg-primary);
-    overflow: hidden;
-  }
 </style>

@@ -1,24 +1,23 @@
 <!--
-  MainLayout.svelte - 4-Panel IDE Layout (Cyber-Noir Theme)
+  MainLayout.svelte - 3-Panel IDE Layout (Cyber-Noir Theme)
 
   Layout matching the mockup:
   ┌─────────────────────────────────────────────────────────────────────────┐
   │ TOOLBAR                                                                  │
-  ├────────────┬─────────────────────────┬──────────────────┬───────────────┤
-  │            │                         │                  │               │
-  │  BINDER    │       CANVAS            │   THE FOREMAN    │   STUDIO      │
-  │  (240px)   │    (flex, min 500px)    │     (320px)      │   (280px)     │
-  │            │                         │                  │               │
-  │  File      │   Monaco Editor         │  ┌────────────┐  │  Tool Cards   │
-  │  Tree      │   + Breadcrumbs         │  │   CHAT     │  │  (2x2 grid)   │
-  │            │                         │  ├────────────┤  │               │
-  │            │                         │  │ LIVE GRAPH │  │               │
-  │            │                         │  └────────────┘  │               │
-  ├────────────┴─────────────────────────┴──────────────────┴───────────────┤
+  ├────────────┬─────────────────────────────────┬──────────────────────────┤
+  │            │                                 │                          │
+  │  BINDER    │           CANVAS                │      THE FOREMAN         │
+  │  (240px)   │      (flex, min 500px)          │        (400px)           │
+  │            │                                 │                          │
+  │  File      │   Monaco Editor                 │  [Studio ▼] [⚙️]         │
+  │  Tree      │   + Breadcrumbs                 │  Chat Interface (70%)    │
+  │            │                                 │  Live Graph (30%)        │
+  │            │                                 │                          │
+  ├────────────┴─────────────────────────────────┴──────────────────────────┤
   │ STATUS BAR                                                               │
   └─────────────────────────────────────────────────────────────────────────┘
 
-  Each panel can be collapsed/expanded.
+  Binder and Foreman panels can be collapsed/expanded.
 -->
 <script>
   import { onMount } from 'svelte';
@@ -39,7 +38,6 @@
   // Panel collapse state
   let binderCollapsed = false;
   let foremanCollapsed = false;
-  let studioCollapsed = false;
 
   // Settings modal
   let showSettings = false;
@@ -78,10 +76,6 @@
 
   function toggleForeman() {
     foremanCollapsed = !foremanCollapsed;
-  }
-
-  function toggleStudio() {
-    studioCollapsed = !studioCollapsed;
   }
 
   function openSettings() {
@@ -229,36 +223,6 @@
       {#if !foremanCollapsed}
         <div class="panel-content">
           <slot name="foreman" />
-        </div>
-      {/if}
-    </aside>
-
-    <!-- STUDIO Panel (Right) -->
-    <aside class="panel panel-studio {studioCollapsed ? 'collapsed' : ''}">
-      <div class="panel-header">
-        <button class="panel-toggle" on:click={toggleStudio} title={studioCollapsed ? 'Expand' : 'Collapse'}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            {#if studioCollapsed}
-              <polyline points="15 18 9 12 15 6"></polyline>
-            {:else}
-              <polyline points="9 18 15 12 9 6"></polyline>
-            {/if}
-          </svg>
-        </button>
-        {#if !studioCollapsed}
-          <span class="panel-title">STUDIO</span>
-          <span class="panel-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-              <polyline points="2 17 12 22 22 17"></polyline>
-              <polyline points="2 12 12 17 22 12"></polyline>
-            </svg>
-          </span>
-        {/if}
-      </div>
-      {#if !studioCollapsed}
-        <div class="panel-content">
-          <slot name="studio" />
         </div>
       {/if}
     </aside>
@@ -524,12 +488,11 @@
   }
 
   /* ============================================
-   * FOREMAN PANEL
+   * FOREMAN PANEL (Right - Primary AI Interface)
    * ============================================ */
   .panel-foreman {
     width: var(--panel-foreman-width);
     border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
   }
 
   .panel-foreman .panel-header {
@@ -567,21 +530,5 @@
   .panel-action-btn:hover {
     background: var(--bg-elevated);
     color: var(--text-secondary);
-  }
-
-  /* ============================================
-   * STUDIO PANEL (Right)
-   * ============================================ */
-  .panel-studio {
-    width: var(--panel-studio-width);
-  }
-
-  .panel-studio .panel-header {
-    background: linear-gradient(135deg, var(--bg-tertiary) 0%, #2a3441 100%);
-  }
-
-  .panel-studio .panel-title {
-    color: var(--text-primary);
-    font-weight: var(--font-bold);
   }
 </style>

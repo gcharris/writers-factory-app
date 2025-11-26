@@ -248,9 +248,9 @@
     {/each}
   </div>
 
-  <!-- Antigrennity / Settings footer -->
+  <!-- Writers Factory / Settings footer -->
   <div class="studio-footer">
-    <span class="footer-label">Antigravity</span>
+    <span class="footer-label">Writers Factory</span>
     <span class="footer-sep">·</span>
     <button class="footer-link" on:click={() => dispatch('open-settings')}>Settings</button>
   </div>

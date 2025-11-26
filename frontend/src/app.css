@@ -185,10 +185,9 @@
    * LAYOUT DIMENSIONS
    * ============================================ */
 
-  /* Panel widths (4-panel IDE layout) */
+  /* Panel widths (3-panel IDE layout) */
   --panel-binder-width: 240px;
-  --panel-foreman-width: 320px;
-  --panel-studio-width: 280px;
+  --panel-foreman-width: 400px;  /* Expanded from 320px - Foreman is now primary right panel */
   --panel-canvas-min: 500px;
 
   /* Component heights */
