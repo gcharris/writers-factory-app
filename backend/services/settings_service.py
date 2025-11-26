@@ -281,6 +281,14 @@ class DefaultSettings:
         "show_all_responses": True,
     })
 
+    # --- Squad System (Phase 3F) ---
+    squad: Dict[str, Any] = field(default_factory=lambda: {
+        "active_squad": "hybrid",  # "local" | "hybrid" | "pro"
+        "setup_complete": False,
+        "course_mode": False,  # Not yet implemented (Phase 3G)
+        "custom_tournament_models": [],  # User overrides for tournament models
+    })
+
     def get_flat_dict(self) -> Dict[str, Any]:
         """
         Convert nested settings to flat key-value pairs.
@@ -291,7 +299,7 @@ class DefaultSettings:
         """
         result = {}
 
-        for category in ["scoring", "anti_patterns", "enhancement", "tournament", "foreman", "context", "health_checks", "orchestrator", "tournament_consensus"]:
+        for category in ["scoring", "anti_patterns", "enhancement", "tournament", "foreman", "context", "health_checks", "orchestrator", "tournament_consensus", "squad"]:
             category_data = getattr(self, category)
             self._flatten(category_data, category, result)
 

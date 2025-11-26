@@ -6,7 +6,7 @@ import yaml
 import json
 from typing import List, Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -4119,12 +4119,11 @@ async def get_active_squad(project_id: Optional[str] = None):
         squad_service = get_squad_service()
         active = squad_service.get_active_squad(project_id)
         setup_complete = settings_service.get("squad.setup_complete", project_id) or False
-        course_mode = settings_service.get("squad.course_mode", project_id) or False
 
         return {
             "squad": active,
             "setup_complete": setup_complete,
-            "course_mode": course_mode
+            "course_mode": False  # Not yet implemented (Phase 3G)
         }
     except Exception as e:
         logging.error(f"Failed to get active squad: {e}")
