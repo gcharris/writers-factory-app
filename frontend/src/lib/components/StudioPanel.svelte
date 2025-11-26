@@ -1,14 +1,14 @@
 <!--
-  StudioPanel.svelte - Mode-aware action cards
+  StudioPanel.svelte - Tool Card Grid (Cyber-Noir Theme)
 
-  Shows different action cards based on the current Foreman mode:
-  - ARCHITECT: Create Story Bible, Define Beats, Build Protagonist
-  - VOICE_CALIBRATION: Launch Tournament, Review Variants, Generate Bundle
-  - DIRECTOR: Create Scaffold, Generate Scene, Enhance Scene
-  - EDITOR: Final polish tools
+  Matching the mockup with:
+  - 2x2 card grid layout
+  - Icons with status indicators
+  - Run buttons
+  - Mode-aware cards (Voice Tournament, Scaffold Generator, Health Check, Metabolism)
 -->
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import {
     foremanMode,
     foremanActive,
@@ -20,383 +20,376 @@
 
   const dispatch = createEventDispatcher();
 
-  // Card click handlers
-  function openStoryBibleWizard() {
-    $showStoryBibleWizard = true;
-    $activeModal = 'story-bible';
-    dispatch('open-modal', { modal: 'story-bible' });
+  // Health status
+  let healthStatus = { conflicts: 0, warnings: 0 };
+  let metabolismStatus = { uncommitted: 0, digesting: false };
+
+  // Fetch status on mount
+  onMount(async () => {
+    await fetchHealthStatus();
+    await fetchMetabolismStatus();
+  });
+
+  async function fetchHealthStatus() {
+    try {
+      const res = await fetch('http://localhost:8000/health/status');
+      if (res.ok) {
+        const data = await res.json();
+        healthStatus = {
+          conflicts: data.conflicts?.length || 0,
+          warnings: data.warnings?.length || 0
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to fetch health status:', e);
+    }
   }
 
-  function openBeatSheetEditor() {
-    $activeModal = 'template-editor';
-    dispatch('open-modal', { modal: 'template-editor', data: { templateId: 'beat_sheet' } });
+  async function fetchMetabolismStatus() {
+    try {
+      const res = await fetch('http://localhost:8000/health/status');
+      if (res.ok) {
+        const data = await res.json();
+        metabolismStatus = {
+          uncommitted: data.uncommitted_count || 0,
+          digesting: false
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to fetch metabolism status:', e);
+    }
   }
 
-  function openProtagonistEditor() {
-    $activeModal = 'template-editor';
-    dispatch('open-modal', { modal: 'template-editor', data: { templateId: 'protagonist' } });
-  }
-
-  function openNotebookRegistration() {
-    $showNotebookRegistration = true;
-    $activeModal = 'notebook-registration';
-    dispatch('open-modal', { modal: 'notebook-registration' });
-  }
-
+  // Card actions
   function openVoiceTournament() {
     dispatch('open-modal', { modal: 'voice-tournament' });
-  }
-
-  function openVariantGrid() {
-    dispatch('open-modal', { modal: 'variant-grid' });
   }
 
   function openScaffoldGenerator() {
     dispatch('open-modal', { modal: 'scaffold-generator' });
   }
 
-  function openSceneGenerator() {
-    dispatch('open-modal', { modal: 'scene-generator' });
-  }
-
-  function openEnhancementPanel() {
-    dispatch('open-modal', { modal: 'enhancement-panel' });
-  }
-
-  function openHealthDashboard() {
+  function runHealthCheck() {
     dispatch('open-modal', { modal: 'health-dashboard' });
   }
 
-  // Determine card status based on Story Bible completion
-  $: storyBibleComplete = $storyBibleStatus?.can_proceed_to_execution ?? false;
-  $: beatSheetStatus = $storyBibleStatus?.beat_sheet?.completion >= 100 ? 'ready' :
-                       $storyBibleStatus?.beat_sheet?.completion > 0 ? 'partial' : 'locked';
-  $: protagonistStatus = $storyBibleStatus?.protagonist?.fatal_flaw ? 'ready' : 'locked';
+  async function runMetabolism() {
+    if (metabolismStatus.digesting) return;
 
-  // Card definitions by mode - now using reactive functions
-  $: modeCards = {
-    ARCHITECT: [
-      {
-        id: 'create-story-bible',
-        title: 'Create Story Bible',
-        description: 'Define your novel\'s foundation: mindset, audience, premise, theme',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-        </svg>`,
-        action: openStoryBibleWizard,
-        status: 'ready'
-      },
-      {
-        id: 'define-beats',
-        title: 'Define Beat Sheet',
-        description: '15-beat Save the Cat! structure with percentage targets',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="8" y1="6" x2="21" y2="6"></line>
-          <line x1="8" y1="12" x2="21" y2="12"></line>
-          <line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line>
-          <line x1="3" y1="12" x2="3.01" y2="12"></line>
-          <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>`,
-        action: openBeatSheetEditor,
-        status: storyBibleComplete ? 'ready' : 'locked'
-      },
-      {
-        id: 'build-protagonist',
-        title: 'Build Protagonist',
-        description: 'Fatal Flaw, The Lie, character arc progression',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>`,
-        action: openProtagonistEditor,
-        status: storyBibleComplete ? 'ready' : 'locked'
-      },
-      {
-        id: 'register-notebooks',
-        title: 'Register NotebookLM',
-        description: 'Connect World, Voice, and Craft notebooks',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>`,
-        action: openNotebookRegistration,
-        status: 'optional'
+    metabolismStatus.digesting = true;
+    try {
+      const res = await fetch('http://localhost:8000/graph/consolidate', {
+        method: 'POST'
+      });
+      if (res.ok) {
+        await fetchMetabolismStatus();
       }
-    ],
-    VOICE_CALIBRATION: [
-      {
-        id: 'launch-tournament',
-        title: 'Launch Voice Tournament',
-        description: 'Run multi-model competition to discover your voice',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-        </svg>`,
-        action: openVoiceTournament,
-        status: 'ready'
-      },
-      {
-        id: 'review-variants',
-        title: 'Review Variants',
-        description: 'Compare 15-25 voice variants in grid view',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>`,
-        action: openVariantGrid,
-        status: 'locked'
-      },
-      {
-        id: 'generate-bundle',
-        title: 'Generate Voice Bundle',
-        description: 'Create Gold Standard, Anti-Patterns, Phase Evolution',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-        </svg>`,
-        action: () => dispatch('open-modal', { modal: 'voice-bundle' }),
-        status: 'locked'
-      }
-    ],
-    DIRECTOR: [
-      {
-        id: 'create-scaffold',
-        title: 'Create Scaffold',
-        description: 'Generate strategic context for your next scene',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
-        </svg>`,
-        action: openScaffoldGenerator,
-        status: 'ready'
-      },
-      {
-        id: 'generate-scene',
-        title: 'Generate Scene',
-        description: 'Run tournament with 15 variants (3 models x 5 strategies)',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="23 7 16 12 23 17 23 7"></polygon>
-          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-        </svg>`,
-        action: openSceneGenerator,
-        status: 'ready'
-      },
-      {
-        id: 'enhance-scene',
-        title: 'Enhance Scene',
-        description: 'Action Prompt (85+) or 6-Pass Enhancement (70-84)',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 20h9"></path>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-        </svg>`,
-        action: openEnhancementPanel,
-        status: 'locked'
-      },
-      {
-        id: 'view-health',
-        title: 'View Health',
-        description: 'Check manuscript structure and pacing',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-        </svg>`,
-        action: openHealthDashboard,
-        status: 'ready'
-      }
-    ],
-    EDITOR: [
-      {
-        id: 'final-review',
-        title: 'Final Review',
-        description: 'Full manuscript analysis and polish',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>`,
-        action: () => dispatch('open-modal', { modal: 'final-review' }),
-        status: 'ready'
-      }
-    ]
+    } catch (e) {
+      console.error('Metabolism failed:', e);
+    } finally {
+      metabolismStatus.digesting = false;
+    }
+  }
+
+  // Card definitions matching the mockup
+  const cards = [
+    {
+      id: 'voice-tournament',
+      title: 'Voice Tournament',
+      icon: 'mic',
+      status: 'Ready',
+      statusType: 'ready',
+      action: openVoiceTournament,
+      hasRunButton: true
+    },
+    {
+      id: 'scaffold-generator',
+      title: 'Scaffold Generator',
+      icon: 'compass',
+      status: 'Active',
+      statusType: 'active',
+      action: openScaffoldGenerator,
+      hasRunButton: true
+    },
+    {
+      id: 'health-check',
+      title: 'Health Check',
+      icon: 'activity',
+      statusType: 'warning',
+      action: runHealthCheck,
+      hasRunButton: true,
+      dynamic: true
+    },
+    {
+      id: 'metabolism',
+      title: 'Metabolism',
+      icon: 'zap',
+      statusType: 'info',
+      action: runMetabolism,
+      hasStopButton: true,
+      dynamic: true
+    }
+  ];
+
+  // Icon SVGs
+  const icons = {
+    mic: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <line x1="12" y1="19" x2="12" y2="23"></line>
+      <line x1="8" y1="23" x2="16" y2="23"></line>
+    </svg>`,
+    compass: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+    </svg>`,
+    activity: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+    </svg>`,
+    zap: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+    </svg>`
   };
 
-  // Get cards for current mode
-  $: currentCards = $foremanMode ? modeCards[$foremanMode] || [] : [];
+  // Get dynamic status for cards
+  function getCardStatus(card) {
+    if (card.id === 'health-check') {
+      if (healthStatus.conflicts > 0) {
+        return `${healthStatus.conflicts} Conflicts`;
+      }
+      return 'All Clear';
+    }
+    if (card.id === 'metabolism') {
+      if (metabolismStatus.digesting) {
+        return 'Digesting...';
+      }
+      if (metabolismStatus.uncommitted > 0) {
+        return `${metabolismStatus.uncommitted} Pending`;
+      }
+      return 'Idle';
+    }
+    return card.status;
+  }
 
-  // Status colors and labels
-  const statusConfig = {
-    ready: { color: 'var(--success, #3fb950)', label: 'Ready' },
-    locked: { color: 'var(--text-muted, #6e7681)', label: 'Locked' },
-    active: { color: 'var(--accent-cyan, #58a6ff)', label: 'In Progress' },
-    optional: { color: 'var(--warning, #d29922)', label: 'Optional' }
+  function getStatusType(card) {
+    if (card.id === 'health-check') {
+      return healthStatus.conflicts > 0 ? 'warning' : 'success';
+    }
+    if (card.id === 'metabolism') {
+      if (metabolismStatus.digesting) return 'active';
+      if (metabolismStatus.uncommitted > 0) return 'info';
+      return 'muted';
+    }
+    return card.statusType;
+  }
+
+  // Status colors
+  const statusColors = {
+    ready: 'var(--text-secondary)',
+    active: 'var(--accent-cyan)',
+    warning: 'var(--warning)',
+    success: 'var(--success)',
+    info: 'var(--accent-gold)',
+    muted: 'var(--text-muted)'
   };
 </script>
 
 <div class="studio-panel">
-  {#if !$foremanActive}
-    <div class="welcome-state">
-      <div class="welcome-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
+  <div class="card-grid">
+    {#each cards as card}
+      <div class="studio-card" on:click={card.action}>
+        <!-- Card Icon -->
+        <div class="card-icon" style="color: {statusColors[getStatusType(card)]}">
+          {@html icons[card.icon]}
+        </div>
+
+        <!-- Card Content -->
+        <div class="card-content">
+          <div class="card-title">{card.title}</div>
+          <div class="card-status" style="color: {statusColors[getStatusType(card)]}">
+            {getCardStatus(card)}
+          </div>
+        </div>
+
+        <!-- Card Action -->
+        <div class="card-action">
+          {#if card.hasRunButton}
+            <button
+              class="action-btn run"
+              on:click|stopPropagation={card.action}
+              disabled={card.id === 'metabolism' && metabolismStatus.digesting}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run
+            </button>
+          {:else if card.hasStopButton && metabolismStatus.digesting}
+            <button class="action-btn stop" on:click|stopPropagation={() => {}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12"></rect>
+              </svg>
+              Stop
+            </button>
+          {:else if card.hasStopButton}
+            <button
+              class="action-btn run"
+              on:click|stopPropagation={card.action}
+              disabled={metabolismStatus.uncommitted === 0}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run
+            </button>
+          {/if}
+        </div>
       </div>
-      <h3>Welcome to Writers Factory</h3>
-      <p>Start a new project with the Foreman to begin your writing journey.</p>
-      <p class="hint">Use the Foreman panel to create a new project.</p>
-    </div>
-  {:else if currentCards.length === 0}
-    <div class="empty-state">
-      <p>No actions available in this mode.</p>
-    </div>
-  {:else}
-    <div class="card-grid">
-      {#each currentCards as card}
-        <button
-          class="action-card {card.status}"
-          on:click={card.action}
-          disabled={card.status === 'locked'}
-        >
-          <div class="card-icon" style="color: {statusConfig[card.status].color}">
-            {@html card.icon}
-          </div>
-          <div class="card-content">
-            <h4 class="card-title">{card.title}</h4>
-            <p class="card-description">{card.description}</p>
-          </div>
-          <div class="card-status">
-            <span class="status-dot" style="background: {statusConfig[card.status].color}"></span>
-            <span class="status-label">{statusConfig[card.status].label}</span>
-          </div>
-        </button>
-      {/each}
-    </div>
-  {/if}
+    {/each}
+  </div>
+
+  <!-- Antigrennity / Settings footer -->
+  <div class="studio-footer">
+    <span class="footer-label">Antigravity</span>
+    <span class="footer-sep">·</span>
+    <button class="footer-link" on:click={() => dispatch('open-settings')}>Settings</button>
+  </div>
 </div>
 
 <style>
   .studio-panel {
-    padding: var(--space-4, 16px);
-    height: 100%;
-  }
-
-  .welcome-state,
-  .empty-state {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
     height: 100%;
-    padding: var(--space-4, 16px);
-  }
-
-  .welcome-icon {
-    margin-bottom: var(--space-4, 16px);
-    color: var(--accent-gold, #d4a574);
-  }
-
-  .welcome-state h3 {
-    margin: 0 0 var(--space-2, 8px) 0;
-    font-size: var(--text-lg, 16px);
-    font-weight: var(--font-semibold, 600);
-    color: var(--text-primary, #e6edf3);
-  }
-
-  .welcome-state p {
-    margin: 0;
-    font-size: var(--text-sm, 12px);
-    color: var(--text-secondary, #8b949e);
-    line-height: var(--leading-relaxed, 1.7);
-  }
-
-  .welcome-state .hint {
-    margin-top: var(--space-4, 16px);
-    padding: var(--space-3, 12px);
-    background: var(--bg-tertiary, #242d38);
-    border-radius: var(--radius-md, 6px);
-    font-size: var(--text-xs, 11px);
-    color: var(--text-muted, #6e7681);
+    padding: var(--space-3);
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, #1e2530 100%);
   }
 
   .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+    flex: 1;
+  }
+
+  .studio-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3, 12px);
-  }
-
-  .action-card {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3, 12px);
-    padding: var(--space-3, 12px);
-    background: var(--bg-tertiary, #242d38);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: var(--radius-md, 6px);
-    text-align: left;
+    padding: var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: all var(--transition-fast, 100ms ease);
+    transition: all var(--transition-fast);
   }
 
-  .action-card:hover:not(:disabled) {
-    background: var(--bg-elevated, #2d3640);
-    border-color: var(--accent-cyan, #58a6ff);
-  }
-
-  .action-card:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .studio-card:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
 
   .card-icon {
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--bg-elevated, #2d3640);
-    border-radius: var(--radius-md, 6px);
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-2);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
   }
 
   .card-content {
     flex: 1;
-    min-width: 0;
+    margin-bottom: var(--space-2);
   }
 
   .card-title {
-    margin: 0 0 var(--space-1, 4px) 0;
-    font-size: var(--text-sm, 12px);
-    font-weight: var(--font-semibold, 600);
-    color: var(--text-primary, #e6edf3);
-  }
-
-  .card-description {
-    margin: 0;
-    font-size: var(--text-xs, 11px);
-    color: var(--text-secondary, #8b949e);
-    line-height: var(--leading-normal, 1.5);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 2px;
   }
 
   .card-status {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+  }
+
+  .card-action {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .action-btn {
     display: flex;
     align-items: center;
-    gap: var(--space-1, 4px);
-    flex-shrink: 0;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
   }
 
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+  .action-btn.run {
+    background: var(--success);
+    color: var(--bg-primary);
   }
 
-  .status-label {
-    font-size: 9px;
-    font-weight: var(--font-medium, 500);
-    color: var(--text-muted, #6e7681);
-    text-transform: uppercase;
+  .action-btn.run:hover:not(:disabled) {
+    background: var(--success-hover);
+  }
+
+  .action-btn.stop {
+    background: var(--error);
+    color: white;
+  }
+
+  .action-btn.stop:hover {
+    background: var(--error-hover);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Footer */
+  .studio-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .footer-label {
+    font-style: italic;
+  }
+
+  .footer-sep {
+    opacity: 0.5;
+  }
+
+  .footer-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .footer-link:hover {
+    color: var(--accent-cyan);
   }
 </style>

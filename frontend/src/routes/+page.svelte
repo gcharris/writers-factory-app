@@ -1,78 +1,134 @@
 <!--
   Writers Factory - Main Application Page
 
-  Phase 5 Track 1: Critical UI Implementation
-  - 4-panel IDE layout with Cyber-Noir theme
-  - Settings Panel for API keys and orchestrator
-  - Mode-aware Studio Panel with action cards
-  - Foreman Chat integration
+  4-Panel IDE Layout (Cyber-Noir Theme):
+  ┌────────────┬─────────────────────────┬──────────────────┬───────────────┐
+  │  BINDER    │       CANVAS            │   THE FOREMAN    │   STUDIO      │
+  │  (240px)   │    (flex, min 500px)    │     (320px)      │   (280px)     │
+  │            │                         │                  │               │
+  │  FileTree  │   Monaco Editor         │  Chat + Graph    │  Tool Cards   │
+  └────────────┴─────────────────────────┴──────────────────┴───────────────┘
 -->
 <script>
   import MainLayout from '$lib/components/MainLayout.svelte';
   import StudioPanel from '$lib/components/StudioPanel.svelte';
   import FileTree from '$lib/components/FileTree.svelte';
   import Editor from '$lib/components/Editor.svelte';
-  import ChatSidebar from '$lib/components/ChatSidebar.svelte';
-  import AgentPanel from '$lib/components/AgentPanel.svelte';
+  import ForemanPanel from '$lib/components/ForemanPanel.svelte';
+  import { activeFile } from '$lib/stores';
+
+  // Breadcrumb from active file
+  $: breadcrumb = $activeFile
+    ? $activeFile.split('/').slice(-3).join(' / ')
+    : 'No file selected';
 </script>
 
 <MainLayout>
-  <!-- Studio Panel: Mode-aware action cards -->
+  <!-- BINDER Panel: File Tree organized by category -->
+  <svelte:fragment slot="binder">
+    <FileTree />
+  </svelte:fragment>
+
+  <!-- CANVAS Panel: Editor with file breadcrumb -->
+  <svelte:fragment slot="canvas">
+    <div class="canvas-container">
+      <!-- Breadcrumb bar -->
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-path">{breadcrumb}</span>
+        <div class="breadcrumb-actions">
+          <button class="breadcrumb-btn" title="Split view">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="12" y1="3" x2="12" y2="21"></line>
+            </svg>
+          </button>
+          <button class="breadcrumb-btn" title="More options">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="19" cy="12" r="1"></circle>
+              <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor area -->
+      <div class="editor-container">
+        <Editor />
+      </div>
+    </div>
+  </svelte:fragment>
+
+  <!-- THE FOREMAN Panel: Chat + Live Graph split view -->
+  <svelte:fragment slot="foreman">
+    <ForemanPanel />
+  </svelte:fragment>
+
+  <!-- STUDIO Panel: Tool card grid -->
   <svelte:fragment slot="studio">
     <StudioPanel />
-  </svelte:fragment>
-
-  <!-- Canvas Panel: File Tree + Editor -->
-  <svelte:fragment slot="canvas">
-    <div class="canvas-layout">
-      <aside class="file-browser">
-        <FileTree />
-      </aside>
-      <main class="editor-area">
-        <Editor />
-      </main>
-    </div>
-  </svelte:fragment>
-
-  <!-- Graph Panel: Agent Panel (placeholder for Knowledge Graph) -->
-  <svelte:fragment slot="graph">
-    <div class="graph-placeholder">
-      <AgentPanel />
-    </div>
-  </svelte:fragment>
-
-  <!-- Foreman Panel: Chat Interface -->
-  <svelte:fragment slot="foreman">
-    <ChatSidebar />
   </svelte:fragment>
 </MainLayout>
 
 <style>
-  /* Canvas Layout: File Browser + Editor */
-  .canvas-layout {
+  /* Canvas Container */
+  .canvas-container {
     display: flex;
+    flex-direction: column;
     height: 100%;
     background: var(--bg-primary, #0f1419);
   }
 
-  .file-browser {
-    width: 200px;
-    flex-shrink: 0;
+  /* Breadcrumb Bar */
+  .breadcrumb-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    padding: 0 var(--space-3, 12px);
     background: var(--bg-secondary, #1a2027);
-    border-right: 1px solid var(--border, #2d3a47);
-    overflow-y: auto;
+    border-bottom: 1px solid var(--border, #2d3a47);
   }
 
-  .editor-area {
+  .breadcrumb-path {
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #8b949e);
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-actions {
+    display: flex;
+    gap: var(--space-1, 4px);
+  }
+
+  .breadcrumb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #8b949e);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .breadcrumb-btn:hover {
+    background: var(--bg-tertiary, #252d38);
+    color: var(--text-secondary, #c9d1d9);
+  }
+
+  /* Editor Container */
+  .editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
-  }
-
-  /* Graph Panel Placeholder */
-  .graph-placeholder {
-    height: 100%;
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
   }
 </style>
