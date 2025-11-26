@@ -9,6 +9,9 @@
 ## Table of Contents
 
 - [System](#system)
+- [Settings & Configuration](#settings--configuration)
+  - [API Key Management](#api-key-management)
+  - [Settings Management](#settings-management)
 - [The Foreman](#the-foreman)
 - [File Management](#file-management)
 - [Knowledge Graph](#knowledge-graph)
@@ -42,6 +45,165 @@ Health check for the Manager agent.
 **Response:**
 ```json
 {"status": "online"}
+```
+
+---
+
+## Settings & Configuration
+
+### API Key Management
+
+#### `POST /api-keys/test`
+Validate an API key by making a real API call to the provider.
+
+**Supported Providers:**
+- `google` / `gemini` - Google Gemini API
+- `deepseek` - DeepSeek API
+- `openai` - OpenAI API
+- `anthropic` - Anthropic Claude API
+- `qwen` - Alibaba Qwen API
+- `xai` / `grok` - xAI Grok API
+- `mistral` - Mistral API
+
+**Request Body:**
+```json
+{
+  "provider": "google",
+  "api_key": "AIza..."
+}
+```
+
+**Success Response:**
+```json
+{
+  "valid": true,
+  "provider": "google"
+}
+```
+
+**Error Response:**
+```json
+{
+  "valid": false,
+  "error": "API returned 401: Unauthorized"
+}
+```
+
+**Example Usage:**
+```bash
+# Test Google Gemini API key
+curl -X POST http://localhost:8000/api-keys/test \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "gemini", "api_key": "AIza..."}'
+
+# Test DeepSeek API key
+curl -X POST http://localhost:8000/api-keys/test \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "deepseek", "api_key": "sk-..."}'
+```
+
+**Notes:**
+- Returns 200 status even for invalid keys (check `valid` field)
+- Makes minimal API calls (e.g., listing models)
+- Provider aliases: `gemini` → `google`, `grok` → `xai`
+- Empty or whitespace-only keys return `"error": "API key is empty"`
+
+**Test Coverage:** See [test_api_key_validation.py](../backend/tests/test_api_key_validation.py) - 20/20 tests passing
+
+---
+
+### Settings Management
+
+#### `GET /settings`
+Get all settings (global and project-specific).
+
+**Query Parameters:**
+- `project_id` (optional): Filter settings for a specific project
+
+**Response:**
+```json
+{
+  "global": {
+    "foreman.coordinator_model": "mistral:7b",
+    "scoring.voice_authenticity_weight": 30
+  },
+  "project_123": {
+    "squad.active_squad": "hybrid"
+  }
+}
+```
+
+#### `GET /settings/category/{category}`
+Get settings for a specific category.
+
+**Categories:**
+- `foreman` - Foreman coordinator settings
+- `scoring` - Scene scoring weights
+- `voice` - Voice calibration settings
+- `enhancement` - Enhancement thresholds
+- `health_checks` - Health check model assignments
+- `tournament` - Tournament configuration
+- `squad` - Squad System settings
+
+**Query Parameters:**
+- `project_id` (optional): Get project-specific settings
+
+**Response:**
+```json
+{
+  "foreman.coordinator_model": "mistral:7b",
+  "foreman.proactiveness": "high",
+  "foreman.challenge_intensity": "medium"
+}
+```
+
+#### `PUT /settings/category/{category}`
+Update settings for a specific category.
+
+**Request Body:**
+```json
+{
+  "coordinator_model": "mistral:7b",
+  "proactiveness": "high"
+}
+```
+
+**Query Parameters:**
+- `project_id` (optional): Save settings for a specific project
+
+**Response:**
+```json
+{
+  "success": true,
+  "updated_settings": {
+    "foreman.coordinator_model": "mistral:7b",
+    "foreman.proactiveness": "high"
+  }
+}
+```
+
+**Notes:**
+- Keys are automatically prefixed with category name
+- Request body key `"coordinator_model"` becomes `"foreman.coordinator_model"` when category is `foreman`
+- Settings cascade: project → global → default
+
+**Example Usage:**
+```bash
+# Update scoring weights globally
+curl -X PUT http://localhost:8000/settings/category/scoring \
+  -H "Content-Type: application/json" \
+  -d '{
+    "voice_authenticity_weight": 35,
+    "character_consistency_weight": 25
+  }'
+
+# Update squad for a specific project
+curl -X PUT "http://localhost:8000/settings/category/squad?project_id=my_novel" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "active_squad": "pro",
+    "setup_complete": true
+  }'
 ```
 
 ---
