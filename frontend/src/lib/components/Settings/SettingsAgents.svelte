@@ -177,14 +177,30 @@
     testResults[providerId] = null;
 
     try {
-      const response = await fetch(`${BASE_URL}/agents`);
+      const key = apiKeys[providerId];
+
+      if (!key || key.trim() === '') {
+        testResults[providerId] = false;
+        testingKeys[providerId] = false;
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api-keys/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: providerId,
+          api_key: key
+        })
+      });
 
       if (response.ok) {
-        const agents = await response.json();
-        const isAvailable = agents.some((a: any) =>
-          a.provider === providerId && a.status === 'available'
-        );
-        testResults[providerId] = isAvailable;
+        const result = await response.json();
+        testResults[providerId] = result.valid;
+
+        if (!result.valid && result.error) {
+          console.error(`${providerId} API key test failed:`, result.error);
+        }
       } else {
         testResults[providerId] = false;
       }

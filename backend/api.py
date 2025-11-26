@@ -2710,6 +2710,154 @@ async def get_defaults():
 
 
 # =============================================================================
+# API Key Validation (Phase 3G)
+# =============================================================================
+
+class ApiKeyTestRequest(BaseModel):
+    provider: str
+    api_key: str
+
+@app.post("/api-keys/test", summary="Test an API key")
+async def test_api_key(request: ApiKeyTestRequest):
+    """
+    Test if an API key is valid by making a minimal API call.
+
+    Supports: deepseek, openai, anthropic, google (gemini), qwen, xai (grok), mistral
+    """
+    try:
+        provider = request.provider.lower()
+        api_key = request.api_key
+
+        if not api_key or api_key.strip() == '':
+            return {
+                "valid": False,
+                "error": "API key is empty"
+            }
+
+        # Test each provider with a minimal API call
+        if provider == 'google' or provider == 'gemini':
+            # Google Gemini API test
+            import requests
+            url = "https://generativelanguage.googleapis.com/v1beta/models"
+            headers = {"x-goog-api-key": api_key}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "google"}
+            else:
+                return {
+                    "valid": False,
+                    "error": f"API returned {response.status_code}: {response.text[:200]}"
+                }
+
+        elif provider == 'deepseek':
+            import requests
+            url = "https://api.deepseek.com/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "deepseek"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'openai':
+            import requests
+            url = "https://api.openai.com/v1/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "openai"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'anthropic':
+            import requests
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+            # Minimal test request
+            data = {
+                "model": "claude-3-haiku-20240307",
+                "max_tokens": 1,
+                "messages": [{"role": "user", "content": "Hi"}]
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "anthropic"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'qwen':
+            import requests
+            url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            # Minimal test request
+            data = {
+                "model": "qwen-plus",
+                "input": {"messages": [{"role": "user", "content": "Hi"}]},
+                "parameters": {"max_tokens": 1}
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "qwen"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'xai' or provider == 'grok':
+            import requests
+            url = "https://api.x.ai/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            # Minimal test request
+            data = {
+                "model": "grok-beta",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "xai"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'mistral':
+            import requests
+            url = "https://api.mistral.ai/v1/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "mistral"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+        else:
+            return {
+                "valid": False,
+                "error": f"Unknown provider: {provider}"
+            }
+
+    except Exception as e:
+        logging.error(f"Failed to test API key for {request.provider}: {e}")
+        return {
+            "valid": False,
+            "error": str(e)
+        }
+
+
+# =============================================================================
 # Model Orchestrator API (Phase 3E)
 # =============================================================================
 
