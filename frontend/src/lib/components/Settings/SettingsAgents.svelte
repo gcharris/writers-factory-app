@@ -1,76 +1,131 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  // API key state
-  let apiKeys = {
-    openai: '',
-    anthropic: '',
-    deepseek: '',
-    qwen: ''
-  };
+  const BASE_URL = 'http://localhost:8000';
 
-  let savedKeys = {
-    openai: false,
-    anthropic: false,
-    deepseek: false,
-    qwen: false
-  };
+  // Provider configuration - easily extensible
+  const providers = [
+    {
+      id: 'deepseek',
+      name: 'DeepSeek V3',
+      tier: 'recommended',
+      tierLabel: 'RECOMMENDED',
+      description: 'Best value - $0.27/$1.10 per 1M tokens. Excellent quality.',
+      placeholder: 'sk-...',
+      docsUrl: 'https://platform.deepseek.com/api_keys',
+      docsLabel: 'DeepSeek Platform',
+      envVar: 'DEEPSEEK_API_KEY'
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI (GPT-4o)',
+      tier: 'premium',
+      tierLabel: 'PREMIUM',
+      description: 'High quality - $2.50/$10 per 1M tokens. Best for creative tasks.',
+      placeholder: 'sk-...',
+      docsUrl: 'https://platform.openai.com/api-keys',
+      docsLabel: 'OpenAI Platform',
+      envVar: 'OPENAI_API_KEY'
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic (Claude)',
+      tier: 'premium',
+      tierLabel: 'PREMIUM',
+      description: 'High quality - $3/$15 per 1M tokens. Best for narrative analysis.',
+      placeholder: 'sk-ant-...',
+      docsUrl: 'https://console.anthropic.com/settings/keys',
+      docsLabel: 'Anthropic Console',
+      envVar: 'ANTHROPIC_API_KEY'
+    },
+    {
+      id: 'google',
+      name: 'Google Gemini',
+      tier: 'balanced',
+      tierLabel: 'BALANCED',
+      description: 'Good value - $0.075/$0.30 per 1M tokens. Fast and capable.',
+      placeholder: 'AIza...',
+      docsUrl: 'https://aistudio.google.com/apikey',
+      docsLabel: 'Google AI Studio',
+      envVar: 'GOOGLE_API_KEY'
+    },
+    {
+      id: 'qwen',
+      name: 'Alibaba Qwen',
+      tier: 'budget',
+      tierLabel: 'BUDGET',
+      description: 'Low cost - $0.40/$1.20 per 1M tokens. Good for coordination.',
+      placeholder: 'sk-...',
+      docsUrl: 'https://dashscope.console.aliyun.com/apiKey',
+      docsLabel: 'Qwen DashScope',
+      envVar: 'QWEN_API_KEY'
+    },
+    {
+      id: 'xai',
+      name: 'xAI (Grok)',
+      tier: 'premium',
+      tierLabel: 'PREMIUM',
+      description: 'Premium tier - Real-time knowledge. Great for research.',
+      placeholder: 'xai-...',
+      docsUrl: 'https://console.x.ai',
+      docsLabel: 'xAI Console',
+      envVar: 'XAI_API_KEY'
+    },
+    {
+      id: 'mistral',
+      name: 'Mistral API',
+      tier: 'balanced',
+      tierLabel: 'BALANCED',
+      description: 'European provider - Good quality at reasonable cost.',
+      placeholder: '...',
+      docsUrl: 'https://console.mistral.ai/api-keys',
+      docsLabel: 'Mistral Console',
+      envVar: 'MISTRAL_API_KEY'
+    }
+  ];
 
-  let testingKeys = {
-    openai: false,
-    anthropic: false,
-    deepseek: false,
-    qwen: false
-  };
+  type ProviderId = 'deepseek' | 'openai' | 'anthropic' | 'google' | 'qwen' | 'xai' | 'mistral';
 
-  let testResults = {
-    openai: null as boolean | null,
-    anthropic: null as boolean | null,
-    deepseek: null as boolean | null,
-    qwen: null as boolean | null
+  // State for all providers
+  let apiKeys: Record<ProviderId, string> = {
+    deepseek: '', openai: '', anthropic: '', google: '', qwen: '', xai: '', mistral: ''
   };
-
-  let showKeys = {
-    openai: false,
-    anthropic: false,
-    deepseek: false,
-    qwen: false
+  let savedKeys: Record<ProviderId, boolean> = {
+    deepseek: false, openai: false, anthropic: false, google: false, qwen: false, xai: false, mistral: false
+  };
+  let testingKeys: Record<ProviderId, boolean> = {
+    deepseek: false, openai: false, anthropic: false, google: false, qwen: false, xai: false, mistral: false
+  };
+  let testResults: Record<ProviderId, boolean | null> = {
+    deepseek: null, openai: null, anthropic: null, google: null, qwen: null, xai: null, mistral: null
+  };
+  let showKeys: Record<ProviderId, boolean> = {
+    deepseek: false, openai: false, anthropic: false, google: false, qwen: false, xai: false, mistral: false
   };
 
   let saveMessage = '';
   let isSaving = false;
+  let showAllProviders = false;
 
-  const BASE_URL = "http://localhost:8000";
+  // Count configured keys
+  $: configuredCount = Object.values(savedKeys).filter(Boolean).length;
 
   onMount(async () => {
     await loadApiKeys();
   });
 
-  /**
-   * Load existing API keys from settings
-   */
   async function loadApiKeys() {
     try {
       const response = await fetch(`${BASE_URL}/settings/category/agents`);
       if (response.ok) {
         const data = await response.json();
 
-        // Check which keys are saved (masked as '***')
-        if (data.openai_api_key) {
-          savedKeys.openai = true;
-          apiKeys.openai = data.openai_api_key === '***' ? '' : data.openai_api_key;
-        }
-        if (data.anthropic_api_key) {
-          savedKeys.anthropic = true;
-          apiKeys.anthropic = data.anthropic_api_key === '***' ? '' : data.anthropic_api_key;
-        }
-        if (data.deepseek_api_key) {
-          savedKeys.deepseek = true;
-          apiKeys.deepseek = data.deepseek_api_key === '***' ? '' : data.deepseek_api_key;
-        }
-        if (data.qwen_api_key) {
-          savedKeys.qwen = true;
-          apiKeys.qwen = data.qwen_api_key === '***' ? '' : data.qwen_api_key;
+        for (const provider of providers) {
+          const keyName = `${provider.id}_api_key`;
+          if (data[keyName]) {
+            savedKeys[provider.id as ProviderId] = true;
+            apiKeys[provider.id as ProviderId] = data[keyName] === '***' ? '' : data[keyName];
+          }
         }
       }
     } catch (error) {
@@ -78,21 +133,19 @@
     }
   }
 
-  /**
-   * Save API keys to settings
-   */
   async function saveApiKeys() {
     isSaving = true;
     saveMessage = '';
 
     try {
-      const keysToSave = {} as any;
+      const keysToSave: Record<string, string> = {};
 
-      // Only save non-empty keys
-      if (apiKeys.openai) keysToSave.openai_api_key = apiKeys.openai;
-      if (apiKeys.anthropic) keysToSave.anthropic_api_key = apiKeys.anthropic;
-      if (apiKeys.deepseek) keysToSave.deepseek_api_key = apiKeys.deepseek;
-      if (apiKeys.qwen) keysToSave.qwen_api_key = apiKeys.qwen;
+      for (const provider of providers) {
+        const key = apiKeys[provider.id as ProviderId];
+        if (key) {
+          keysToSave[`${provider.id}_api_key`] = key;
+        }
+      }
 
       const response = await fetch(`${BASE_URL}/settings/category/agents`, {
         method: 'PUT',
@@ -101,326 +154,239 @@
       });
 
       if (response.ok) {
-        saveMessage = '✅ API keys saved successfully';
+        saveMessage = 'API keys saved successfully';
 
-        // Update saved status
-        savedKeys.openai = !!apiKeys.openai;
-        savedKeys.anthropic = !!apiKeys.anthropic;
-        savedKeys.deepseek = !!apiKeys.deepseek;
-        savedKeys.qwen = !!apiKeys.qwen;
+        for (const provider of providers) {
+          savedKeys[provider.id as ProviderId] = !!apiKeys[provider.id as ProviderId];
+        }
 
-        // Clear message after 3 seconds
         setTimeout(() => { saveMessage = ''; }, 3000);
       } else {
-        saveMessage = '❌ Failed to save API keys';
+        saveMessage = 'Failed to save API keys';
       }
     } catch (error) {
       console.error('Failed to save API keys:', error);
-      saveMessage = '❌ Error saving API keys';
+      saveMessage = 'Error saving API keys';
     } finally {
       isSaving = false;
     }
   }
 
-  /**
-   * Test API key connection
-   */
-  async function testApiKey(provider: 'openai' | 'anthropic' | 'deepseek' | 'qwen') {
-    testingKeys[provider] = true;
-    testResults[provider] = null;
+  async function testApiKey(providerId: ProviderId) {
+    testingKeys[providerId] = true;
+    testResults[providerId] = null;
 
     try {
-      // Simple test: try to get agent status
       const response = await fetch(`${BASE_URL}/agents`);
 
       if (response.ok) {
         const agents = await response.json();
-        // Check if this provider's agent is available
         const isAvailable = agents.some((a: any) =>
-          a.provider === provider && a.status === 'available'
+          a.provider === providerId && a.status === 'available'
         );
-        testResults[provider] = isAvailable;
+        testResults[providerId] = isAvailable;
       } else {
-        testResults[provider] = false;
+        testResults[providerId] = false;
       }
     } catch (error) {
-      console.error(`Failed to test ${provider} API key:`, error);
-      testResults[provider] = false;
+      console.error(`Failed to test ${providerId} API key:`, error);
+      testResults[providerId] = false;
     } finally {
-      testingKeys[provider] = false;
+      testingKeys[providerId] = false;
     }
   }
 
-  /**
-   * Delete API key
-   */
-  async function deleteApiKey(provider: 'openai' | 'anthropic' | 'deepseek' | 'qwen') {
-    if (!confirm(`Delete ${provider} API key?`)) return;
+  async function deleteApiKey(providerId: ProviderId) {
+    if (!confirm(`Delete ${providerId} API key?`)) return;
 
-    apiKeys[provider] = '';
-    savedKeys[provider] = false;
-    testResults[provider] = null;
+    apiKeys[providerId] = '';
+    savedKeys[providerId] = false;
+    testResults[providerId] = null;
 
     await saveApiKeys();
   }
 
-  function toggleShowKey(provider: 'openai' | 'anthropic' | 'deepseek' | 'qwen') {
-    showKeys[provider] = !showKeys[provider];
+  function toggleShowKey(providerId: ProviderId) {
+    showKeys[providerId] = !showKeys[providerId];
   }
+
+  function getTierClass(tier: string): string {
+    switch (tier) {
+      case 'recommended': return 'tier-recommended';
+      case 'premium': return 'tier-premium';
+      case 'balanced': return 'tier-balanced';
+      case 'budget': return 'tier-budget';
+      default: return '';
+    }
+  }
+
+  // Show primary providers by default, others in "More Providers" section
+  $: primaryProviders = providers.slice(0, 4);
+  $: additionalProviders = providers.slice(4);
 </script>
 
 <div class="settings-agents">
   <div class="header">
-    <h2>API Keys & Agent Configuration</h2>
+    <h2>API Keys & Providers</h2>
     <p class="description">
-      Configure cloud AI provider API keys to unlock Voice Calibration, Director Mode, and Model Orchestrator features.
+      Configure AI provider API keys. <strong>DeepSeek is recommended</strong> as the default - excellent quality at low cost.
     </p>
+    <div class="status-bar">
+      <span class="status-label">Configured:</span>
+      <span class="status-count {configuredCount > 0 ? 'has-keys' : 'no-keys'}">
+        {configuredCount} of {providers.length} providers
+      </span>
+    </div>
   </div>
 
+  <!-- Primary Providers -->
   <div class="api-keys-grid">
-    <!-- OpenAI -->
-    <div class="api-key-card">
-      <div class="card-header">
-        <h3>OpenAI (GPT-4o)</h3>
-        {#if savedKeys.openai}
-          <span class="badge badge-success">✓ Configured</span>
-        {:else}
-          <span class="badge badge-warning">Not configured</span>
-        {/if}
-      </div>
-
-      <div class="key-input-group">
-        <div class="input-wrapper">
-          <input
-            type={showKeys.openai ? 'text' : 'password'}
-            bind:value={apiKeys.openai}
-            placeholder="sk-..."
-            class="key-input"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            on:click={() => toggleShowKey('openai')}
-          >
-            {showKeys.openai ? '👁️' : '👁️‍🗨️'}
-          </button>
-        </div>
-
-        <div class="button-group">
-          <button
-            type="button"
-            class="btn-test"
-            on:click={() => testApiKey('openai')}
-            disabled={!apiKeys.openai || testingKeys.openai}
-          >
-            {testingKeys.openai ? 'Testing...' : 'Test'}
-          </button>
-
-          {#if savedKeys.openai}
-            <button
-              type="button"
-              class="btn-delete"
-              on:click={() => deleteApiKey('openai')}
-            >
-              Delete
-            </button>
+    {#each primaryProviders as provider}
+      <div class="api-key-card {provider.tier === 'recommended' ? 'recommended' : ''}">
+        <div class="card-header">
+          <div class="provider-info">
+            <h3>{provider.name}</h3>
+            <span class="tier-badge {getTierClass(provider.tier)}">{provider.tierLabel}</span>
+          </div>
+          {#if savedKeys[provider.id as ProviderId]}
+            <span class="badge badge-success">Configured</span>
+          {:else}
+            <span class="badge badge-warning">Not set</span>
           {/if}
         </div>
-      </div>
 
-      {#if testResults.openai !== null}
-        <div class="test-result {testResults.openai ? 'success' : 'error'}">
-          {testResults.openai ? '✓ Connection successful' : '✗ Connection failed'}
-        </div>
-      {/if}
+        <p class="provider-desc">{provider.description}</p>
 
-      <p class="help-text">
-        Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
-      </p>
-    </div>
-
-    <!-- Anthropic (Claude) -->
-    <div class="api-key-card">
-      <div class="card-header">
-        <h3>Anthropic (Claude)</h3>
-        {#if savedKeys.anthropic}
-          <span class="badge badge-success">✓ Configured</span>
-        {:else}
-          <span class="badge badge-warning">Not configured</span>
-        {/if}
-      </div>
-
-      <div class="key-input-group">
-        <div class="input-wrapper">
-          <input
-            type={showKeys.anthropic ? 'text' : 'password'}
-            bind:value={apiKeys.anthropic}
-            placeholder="sk-ant-..."
-            class="key-input"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            on:click={() => toggleShowKey('anthropic')}
-          >
-            {showKeys.anthropic ? '👁️' : '👁️‍🗨️'}
-          </button>
-        </div>
-
-        <div class="button-group">
-          <button
-            type="button"
-            class="btn-test"
-            on:click={() => testApiKey('anthropic')}
-            disabled={!apiKeys.anthropic || testingKeys.anthropic}
-          >
-            {testingKeys.anthropic ? 'Testing...' : 'Test'}
-          </button>
-
-          {#if savedKeys.anthropic}
+        <div class="key-input-group">
+          <div class="input-wrapper">
+            <input
+              type={showKeys[provider.id as ProviderId] ? 'text' : 'password'}
+              bind:value={apiKeys[provider.id as ProviderId]}
+              placeholder={provider.placeholder}
+              class="key-input"
+            />
             <button
               type="button"
-              class="btn-delete"
-              on:click={() => deleteApiKey('anthropic')}
+              class="toggle-visibility"
+              on:click={() => toggleShowKey(provider.id as ProviderId)}
+              title={showKeys[provider.id as ProviderId] ? 'Hide' : 'Show'}
             >
-              Delete
+              {showKeys[provider.id as ProviderId] ? 'Hide' : 'Show'}
             </button>
-          {/if}
-        </div>
-      </div>
+          </div>
 
-      {#if testResults.anthropic !== null}
-        <div class="test-result {testResults.anthropic ? 'success' : 'error'}">
-          {testResults.anthropic ? '✓ Connection successful' : '✗ Connection failed'}
-        </div>
-      {/if}
-
-      <p class="help-text">
-        Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a>
-      </p>
-    </div>
-
-    <!-- DeepSeek -->
-    <div class="api-key-card">
-      <div class="card-header">
-        <h3>DeepSeek (Budget)</h3>
-        {#if savedKeys.deepseek}
-          <span class="badge badge-success">✓ Configured</span>
-        {:else}
-          <span class="badge badge-warning">Not configured</span>
-        {/if}
-      </div>
-
-      <div class="key-input-group">
-        <div class="input-wrapper">
-          <input
-            type={showKeys.deepseek ? 'text' : 'password'}
-            bind:value={apiKeys.deepseek}
-            placeholder="sk-..."
-            class="key-input"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            on:click={() => toggleShowKey('deepseek')}
-          >
-            {showKeys.deepseek ? '👁️' : '👁️‍🗨️'}
-          </button>
-        </div>
-
-        <div class="button-group">
-          <button
-            type="button"
-            class="btn-test"
-            on:click={() => testApiKey('deepseek')}
-            disabled={!apiKeys.deepseek || testingKeys.deepseek}
-          >
-            {testingKeys.deepseek ? 'Testing...' : 'Test'}
-          </button>
-
-          {#if savedKeys.deepseek}
+          <div class="button-group">
             <button
               type="button"
-              class="btn-delete"
-              on:click={() => deleteApiKey('deepseek')}
+              class="btn-test"
+              on:click={() => testApiKey(provider.id as ProviderId)}
+              disabled={!apiKeys[provider.id as ProviderId] || testingKeys[provider.id as ProviderId]}
             >
-              Delete
+              {testingKeys[provider.id as ProviderId] ? 'Testing...' : 'Test'}
             </button>
-          {/if}
-        </div}
-      </div>
 
-      {#if testResults.deepseek !== null}
-        <div class="test-result {testResults.deepseek ? 'success' : 'error'}">
-          {testResults.deepseek ? '✓ Connection successful' : '✗ Connection failed'}
+            {#if savedKeys[provider.id as ProviderId]}
+              <button
+                type="button"
+                class="btn-delete"
+                on:click={() => deleteApiKey(provider.id as ProviderId)}
+              >
+                Delete
+              </button>
+            {/if}
+          </div>
         </div>
-      {/if}
 
-      <p class="help-text">
-        Get your API key from <a href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek Platform</a>
-      </p>
-    </div>
-
-    <!-- Qwen -->
-    <div class="api-key-card">
-      <div class="card-header">
-        <h3>Qwen (Budget)</h3>
-        {#if savedKeys.qwen}
-          <span class="badge badge-success">✓ Configured</span>
-        {:else}
-          <span class="badge badge-warning">Not configured</span>
+        {#if testResults[provider.id as ProviderId] !== null}
+          <div class="test-result {testResults[provider.id as ProviderId] ? 'success' : 'error'}">
+            {testResults[provider.id as ProviderId] ? 'Connection successful' : 'Connection failed'}
+          </div>
         {/if}
+
+        <p class="help-text">
+          Get key from <a href={provider.docsUrl} target="_blank">{provider.docsLabel}</a>
+          <span class="env-var">ENV: {provider.envVar}</span>
+        </p>
       </div>
+    {/each}
+  </div>
 
-      <div class="key-input-group">
-        <div class="input-wrapper">
-          <input
-            type={showKeys.qwen ? 'text' : 'password'}
-            bind:value={apiKeys.qwen}
-            placeholder="sk-..."
-            class="key-input"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            on:click={() => toggleShowKey('qwen')}
-          >
-            {showKeys.qwen ? '👁️' : '👁️‍🗨️'}
-          </button>
-        </div>
+  <!-- Additional Providers (Expandable) -->
+  <div class="additional-section">
+    <button class="toggle-additional" on:click={() => showAllProviders = !showAllProviders}>
+      <span>{showAllProviders ? '&#9660;' : '&#9654;'} More Providers ({additionalProviders.length})</span>
+    </button>
 
-        <div class="button-group">
-          <button
-            type="button"
-            class="btn-test"
-            on:click={() => testApiKey('qwen')}
-            disabled={!apiKeys.qwen || testingKeys.qwen}
-          >
-            {testingKeys.qwen ? 'Testing...' : 'Test'}
-          </button>
+    {#if showAllProviders}
+      <div class="api-keys-grid additional">
+        {#each additionalProviders as provider}
+          <div class="api-key-card">
+            <div class="card-header">
+              <div class="provider-info">
+                <h3>{provider.name}</h3>
+                <span class="tier-badge {getTierClass(provider.tier)}">{provider.tierLabel}</span>
+              </div>
+              {#if savedKeys[provider.id as ProviderId]}
+                <span class="badge badge-success">Configured</span>
+              {:else}
+                <span class="badge badge-warning">Not set</span>
+              {/if}
+            </div>
 
-          {#if savedKeys.qwen}
-            <button
-              type="button"
-              class="btn-delete"
-              on:click={() => deleteApiKey('qwen')}
-            >
-              Delete
-            </button>
-          {/if}
-        </div>
+            <p class="provider-desc">{provider.description}</p>
+
+            <div class="key-input-group">
+              <div class="input-wrapper">
+                <input
+                  type={showKeys[provider.id as ProviderId] ? 'text' : 'password'}
+                  bind:value={apiKeys[provider.id as ProviderId]}
+                  placeholder={provider.placeholder}
+                  class="key-input"
+                />
+                <button
+                  type="button"
+                  class="toggle-visibility"
+                  on:click={() => toggleShowKey(provider.id as ProviderId)}
+                >
+                  {showKeys[provider.id as ProviderId] ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              <div class="button-group">
+                <button
+                  type="button"
+                  class="btn-test"
+                  on:click={() => testApiKey(provider.id as ProviderId)}
+                  disabled={!apiKeys[provider.id as ProviderId] || testingKeys[provider.id as ProviderId]}
+                >
+                  {testingKeys[provider.id as ProviderId] ? 'Testing...' : 'Test'}
+                </button>
+
+                {#if savedKeys[provider.id as ProviderId]}
+                  <button
+                    type="button"
+                    class="btn-delete"
+                    on:click={() => deleteApiKey(provider.id as ProviderId)}
+                  >
+                    Delete
+                  </button>
+                {/if}
+              </div>
+            </div>
+
+            {#if testResults[provider.id as ProviderId] !== null}
+              <div class="test-result {testResults[provider.id as ProviderId] ? 'success' : 'error'}">
+                {testResults[provider.id as ProviderId] ? 'Connection successful' : 'Connection failed'}
+              </div>
+            {/if}
+
+            <p class="help-text">
+              Get key from <a href={provider.docsUrl} target="_blank">{provider.docsLabel}</a>
+            </p>
+          </div>
+        {/each}
       </div>
-
-      {#if testResults.qwen !== null}
-        <div class="test-result {testResults.qwen ? 'success' : 'error'}">
-          {testResults.qwen ? '✓ Connection successful' : '✗ Connection failed'}
-        </div>
-      {/if}
-
-      <p class="help-text">
-        Get your API key from <a href="https://dashscope.console.aliyun.com/apiKey" target="_blank">Qwen DashScope</a>
-      </p>
-    </div>
+    {/if}
   </div>
 
   <!-- Save button -->
@@ -431,11 +397,11 @@
       on:click={saveApiKeys}
       disabled={isSaving}
     >
-      {isSaving ? 'Saving...' : 'Save API Keys'}
+      {isSaving ? 'Saving...' : 'Save All API Keys'}
     </button>
 
     {#if saveMessage}
-      <div class="save-message {saveMessage.includes('✅') ? 'success' : 'error'}">
+      <div class="save-message {saveMessage.includes('successfully') ? 'success' : 'error'}">
         {saveMessage}
       </div>
     {/if}
@@ -443,16 +409,17 @@
 
   <!-- Info panel -->
   <div class="info-panel">
-    <h4>💡 Which keys do I need?</h4>
+    <h4>Which keys do I need?</h4>
     <ul>
-      <li><strong>Minimum</strong>: Any 1 cloud provider (OpenAI, Anthropic, or DeepSeek)</li>
-      <li><strong>Recommended</strong>: OpenAI + Anthropic (enables voice tournaments)</li>
-      <li><strong>Optimal</strong>: All 4 providers (full multi-model tournament capability)</li>
+      <li><strong>Quick Start</strong>: Just DeepSeek - excellent quality at $0.27/$1.10 per 1M tokens</li>
+      <li><strong>Balanced</strong>: DeepSeek + Google Gemini for variety</li>
+      <li><strong>Premium</strong>: Add OpenAI or Anthropic for best-in-class quality</li>
+      <li><strong>Offline</strong>: No keys needed - uses local Ollama models (free)</li>
     </ul>
 
-    <p class="cost-note">
-      <strong>Cost estimate</strong>: Most writers spend $0.50-1/month (Balanced tier). Budget tier available at $0/month using local models only.
-    </p>
+    <div class="cost-note">
+      <strong>Typical cost</strong>: $0.50-1/month for most writers (Balanced tier)
+    </div>
   </div>
 </div>
 
@@ -460,6 +427,7 @@
   .settings-agents {
     padding: 2rem;
     max-width: 1200px;
+    color: #ffffff;
   }
 
   .header {
@@ -467,51 +435,127 @@
   }
 
   .header h2 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem 0;
   }
 
   .description {
-    color: #a0a0a0;
+    color: #b0b0b0;
     font-size: 0.875rem;
     line-height: 1.5;
+    margin: 0 0 1rem 0;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #1a1a1a;
+    border-radius: 4px;
+    width: fit-content;
+  }
+
+  .status-label {
+    color: #888888;
+    font-size: 0.875rem;
+  }
+
+  .status-count {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .status-count.has-keys {
+    color: #00ff88;
+  }
+
+  .status-count.no-keys {
+    color: #ffb000;
   }
 
   .api-keys-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
   .api-key-card {
     background: #2d2d2d;
     border: 1px solid #404040;
     border-radius: 8px;
-    padding: 1.5rem;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .api-key-card.recommended {
+    border-color: #00d9ff;
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a3a4a40 100%);
   }
 
   .card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
   }
 
-  .card-header h3 {
+  .provider-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .provider-info h3 {
     font-size: 1rem;
     font-weight: 600;
-    color: #ffffff;
     margin: 0;
   }
 
-  .badge {
+  .tier-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .tier-recommended {
+    background: #00d9ff;
+    color: #1a1a1a;
+  }
+
+  .tier-premium {
+    background: #ffb000;
+    color: #1a1a1a;
+  }
+
+  .tier-balanced {
+    background: #00ff88;
+    color: #1a1a1a;
+  }
+
+  .tier-budget {
+    background: #888888;
+    color: #1a1a1a;
+  }
+
+  .provider-desc {
     font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
+    color: #888888;
+    margin: 0 0 1rem 0;
+    line-height: 1.4;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-weight: 500;
+    white-space: nowrap;
   }
 
   .badge-success {
@@ -525,7 +569,7 @@
   }
 
   .key-input-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .input-wrapper {
@@ -542,7 +586,7 @@
     padding: 0.5rem;
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
   }
 
   .key-input:focus {
@@ -553,15 +597,17 @@
   .toggle-visibility {
     background: #1a1a1a;
     border: 1px solid #404040;
-    color: #ffffff;
-    padding: 0.5rem;
+    color: #888888;
+    padding: 0.5rem 0.75rem;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.75rem;
+    transition: all 0.2s;
   }
 
   .toggle-visibility:hover {
     border-color: #00d9ff;
+    color: #00d9ff;
   }
 
   .button-group {
@@ -570,9 +616,9 @@
   }
 
   .btn-test, .btn-delete {
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 4px;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -604,8 +650,8 @@
   }
 
   .test-result {
-    font-size: 0.875rem;
-    padding: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 4px;
     margin-bottom: 0.5rem;
   }
@@ -621,9 +667,14 @@
   }
 
   .help-text {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #666666;
     margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .help-text a {
@@ -635,6 +686,41 @@
     text-decoration: underline;
   }
 
+  .env-var {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: #555555;
+  }
+
+  /* Additional providers section */
+  .additional-section {
+    margin-bottom: 2rem;
+  }
+
+  .toggle-additional {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #1a1a1a;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    color: #00d9ff;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-additional:hover {
+    background: #252525;
+    border-color: #00d9ff;
+  }
+
+  .api-keys-grid.additional {
+    margin-bottom: 0;
+  }
+
+  /* Actions */
   .actions {
     display: flex;
     align-items: center;
@@ -676,18 +762,19 @@
     color: #ff3366;
   }
 
+  /* Info panel */
   .info-panel {
-    background: #2d2d2d;
-    border: 1px solid #404040;
-    border-radius: 8px;
     padding: 1.5rem;
+    background: #1a3a4a20;
+    border: 1px solid #00d9ff40;
+    border-radius: 8px;
   }
 
   .info-panel h4 {
     font-size: 1rem;
     font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 1rem;
+    color: #00d9ff;
+    margin: 0 0 0.75rem 0;
   }
 
   .info-panel ul {
@@ -697,7 +784,7 @@
   }
 
   .info-panel li {
-    color: #a0a0a0;
+    color: #b0b0b0;
     font-size: 0.875rem;
     line-height: 1.8;
     padding-left: 1rem;
@@ -705,17 +792,24 @@
   }
 
   .info-panel li::before {
-    content: "•";
+    content: ">";
     position: absolute;
     left: 0;
     color: #00d9ff;
   }
 
+  .info-panel li strong {
+    color: #ffffff;
+  }
+
   .cost-note {
-    color: #a0a0a0;
+    color: #b0b0b0;
     font-size: 0.875rem;
-    margin: 0;
     padding-top: 1rem;
     border-top: 1px solid #404040;
+  }
+
+  .cost-note strong {
+    color: #00d9ff;
   }
 </style>

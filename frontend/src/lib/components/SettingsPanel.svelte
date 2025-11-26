@@ -13,14 +13,14 @@
 -->
 <script>
   import { createEventDispatcher } from 'svelte';
-  import SettingsAgents from './SettingsAgents.svelte';
-  import SettingsOrchestrator from './SettingsOrchestrator.svelte';
-  import SettingsScoring from './SettingsScoring.svelte';
-  import SettingsAntiPatterns from './SettingsAntiPatterns.svelte';
-  import SettingsEnhancement from './SettingsEnhancement.svelte';
-  import SettingsTournament from './SettingsTournament.svelte';
-  import SettingsForeman from './SettingsForeman.svelte';
-  import SettingsContext from './SettingsContext.svelte';
+  import SettingsAgents from './Settings/SettingsAgents.svelte';
+  import SettingsOrchestrator from './Settings/SettingsOrchestrator.svelte';
+  import SettingsScoring from './Settings/SettingsScoring.svelte';
+  import SettingsVoice from './Settings/SettingsVoice.svelte';
+  import SettingsEnhancement from './Settings/SettingsEnhancement.svelte';
+  import SettingsForeman from './Settings/SettingsForeman.svelte';
+  import SettingsHealth from './Settings/SettingsHealth.svelte';
+  import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
 
   export let activeTab = 'agents';
 
@@ -30,11 +30,11 @@
     { id: 'agents', label: 'API Keys', icon: 'key', priority: 'P0' },
     { id: 'orchestrator', label: 'AI Model', icon: 'cpu', priority: 'P0' },
     { id: 'scoring', label: 'Scoring', icon: 'chart', priority: 'P2' },
-    { id: 'anti-patterns', label: 'Anti-Patterns', icon: 'mic', priority: 'P2' },
+    { id: 'voice', label: 'Voice', icon: 'mic', priority: 'P2' },
     { id: 'enhancement', label: 'Enhancement', icon: 'wand', priority: 'P2' },
-    { id: 'tournament', label: 'Tournament', icon: 'chart', priority: 'P2' },
     { id: 'foreman', label: 'Foreman', icon: 'bot', priority: 'P2' },
-    { id: 'context', label: 'Context', icon: 'settings', priority: 'P2' },
+    { id: 'health', label: 'Health Checks', icon: 'heart', priority: 'P2' },
+    { id: 'advanced', label: 'Advanced', icon: 'settings', priority: 'P3' },
   ];
 
   // Icons for each tab
@@ -125,16 +125,16 @@
       <SettingsOrchestrator />
     {:else if activeTab === 'scoring'}
       <SettingsScoring />
-    {:else if activeTab === 'anti-patterns'}
-      <SettingsAntiPatterns />
+    {:else if activeTab === 'voice'}
+      <SettingsVoice />
     {:else if activeTab === 'enhancement'}
       <SettingsEnhancement />
-    {:else if activeTab === 'tournament'}
-      <SettingsTournament />
     {:else if activeTab === 'foreman'}
       <SettingsForeman />
-    {:else if activeTab === 'context'}
-      <SettingsContext />
+    {:else if activeTab === 'health'}
+      <SettingsHealth />
+    {:else if activeTab === 'advanced'}
+      <SettingsAdvanced />
     {/if}
   </div>
 </div>
@@ -237,4 +237,5 @@
     padding: var(--space-6, 24px);
     overflow-y: auto;
   }
+
 </style>
