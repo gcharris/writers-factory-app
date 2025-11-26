@@ -1,0 +1,461 @@
+# Writers Factory - Project Status
+**Last Updated**: 2025-11-26
+**Current Phase**: Phase 5 (UI/UX Implementation)
+**Overall Progress**: ~85% Complete
+
+---
+
+## Executive Summary
+
+Writers Factory is a desktop application for AI-assisted novel writing with intelligent multi-model orchestration. The backend is feature-complete through Phase 3E, with 95% of Phase 5 UI work done. Current focus: 3-panel layout refactor and remaining UI components.
+
+---
+
+## Phase Completion Status
+
+### ✅ Phase 1: Foundation (Complete)
+- Tauri + Svelte + Python backend
+- NetworkX + SQLite graph engine
+- Core UI components (Editor, Graph, Agent panels)
+- Tournament mode drafting logic
+
+### ✅ Phase 2: Oracle (Complete)
+- NotebookLM MCP integration
+- Research notebook queries
+- Live Google NotebookLM verification
+
+### ✅ Phase 2B: Voice Calibration (Complete)
+- Dynamic agent registry (API key detection)
+- Multi-agent tournament with 5 writing strategies
+- Voice reference bundle generation (Gold-Standard, Anti-Patterns)
+- Foreman mode transitions (ARCHITECT → VOICE_CALIBRATION → DIRECTOR)
+
+### ✅ Phase 3: Metabolism (Complete)
+- The Foreman (Ollama-powered creative partner)
+- Foreman KB (SQLite knowledge base)
+- Consolidator service (KB → Knowledge Graph)
+- Session persistence
+
+### ✅ Phase 3B: Director Mode - Backend (Complete)
+**All 4 services implemented with 16 API endpoints:**
+
+1. **Scene Analyzer** (5-category rubric: Voice 30%, Character 20%, Metaphor 20%, Anti-Pattern 15%, Phase 15%)
+2. **Scaffold Generator** (Two-stage flow with NotebookLM enrichment)
+3. **Scene Writer** (Multi-model tournament: 3+ models × 5 strategies = 15 variants)
+4. **Scene Enhancement** (Two modes: Action Prompt 85+, 6-Pass 70-84)
+
+### ✅ Phase 3C: Settings-Driven Director Mode (Complete)
+- 3-tier settings system (Project → Global → Default)
+- Voice Bundle YAML auto-generation
+- Dynamic service configuration
+- Zero hard-coded patterns
+
+### ✅ Phase 3D: Graph Health Service (Complete)
+**All 7 health checks with cloud-native LLM analysis:**
+
+**Structural Integrity:**
+- Pacing Failure Detection
+- Beat Progress Validation (15-beat Save the Cat!)
+- Plot/Timeline Consistency
+
+**Character Arc Health:**
+- Fatal Flaw Challenge Monitoring
+- Cast Function Verification
+
+**Thematic Health:**
+- Symbolic Layering
+- Theme Resonance Score
+
+**APIs:** 7 endpoints + historical trends + manual overrides
+
+### ✅ Phase 3E: Intelligent Model Orchestration (Complete)
+**3 sub-phases completed:**
+
+1. **Dual-Model Foreman** - 8 task types with intelligent routing (fast local for coordination, powerful cloud for reasoning)
+2. **Cloud-Native Health Checks** - 7 health checks with configurable model assignments (Claude, GPT-4o, DeepSeek, Qwen)
+3. **Model Orchestrator** - 3 quality tiers (Budget $0/month, Balanced $0.50-1/month, Premium $3-5/month)
+
+**Impact:** Full multi-provider support (11 LLMs), automatic model selection, cost estimation
+
+### 🔲 Phase 4: Multi-Model Tournament (Deferred)
+**Status:** Optional - 90% value already delivered by Phase 3E
+**Rationale:** Phase 3E provides Budget/Balanced/Premium tiers and automatic model selection. Phase 4 would add tournament-style multi-model querying for critical decisions.
+
+---
+
+## Phase 5: UI/UX Implementation - 85% Complete
+
+### ✅ Track 1: Critical UI (Complete)
+**Goal:** Unblock backend features
+**11 components, 1,750 lines**
+
+- SettingsAgents.svelte - API key configuration (BLOCKER REMOVAL)
+- SettingsOrchestrator.svelte - Quality tier selection
+- MainLayout.svelte - 4-panel IDE layout
+- ForemanChatPanel.svelte - Chat interface
+- StudioPanel.svelte - Studio cards and mode selection
+- GraphPanel.svelte - Knowledge Graph visualization
+- AgentRegistryPanel.svelte - Available agents display
+- NotebookRegistration.svelte - NotebookLM integration
+- StoryBibleEditor.svelte - 15-beat structure editor
+- VoiceReferenceView.svelte - Voice Bundle display
+- ProjectSelector.svelte - Project management
+
+**Impact:** All cloud features now accessible. Model Orchestrator active.
+
+### ✅ Track 3: Feature UI (95% Complete)
+
+#### ✅ Phase 1: ARCHITECT Mode UI (Complete)
+**3 components, 890 lines**
+- StoryBibleEditor.svelte (467 lines)
+- StoryBibleSidebar.svelte (235 lines)
+- BeatCard.svelte (188 lines)
+
+#### ✅ Phase 2: VOICE_CALIBRATION Mode UI (Complete)
+**6 components, 1,250 lines**
+- VoiceTournamentPanel.svelte (347 lines)
+- VoiceVariantCard.svelte (289 lines)
+- StrategyComparison.svelte (221 lines)
+- VoiceReferenceView.svelte (185 lines)
+- VoiceGoldStandard.svelte (142 lines)
+- VoiceAntiPatterns.svelte (66 lines)
+
+#### ✅ Phase 3: DIRECTOR Mode UI (Complete)
+**8 components, 6,751 lines + 502 lines API/state**
+- ScaffoldGenerator.svelte (1,231 lines)
+- ActionPromptView.svelte (830 lines)
+- SixPassEnhancement.svelte (781 lines)
+- SceneScoreBreakdown.svelte (765 lines)
+- SceneVariantGrid.svelte (733 lines)
+- StructureVariantSelector.svelte (712 lines)
+- EnhancementPanel.svelte (645 lines)
+- SceneComparison.svelte (552 lines)
+
+#### ✅ Phase 4: Graph Health UI (Complete)
+**4 components, ~107KB**
+- GraphHealthDashboard.svelte (29KB)
+- HealthReportDetail.svelte (30KB)
+- HealthTrends.svelte (21KB)
+- ThemeOverridePanel.svelte (25KB)
+
+#### ✅ Phase 5: Settings + Polish (Complete)
+**9 settings tabs implemented:**
+- SettingsSquad.svelte - Squad selection (NEW - Nov 2025)
+- SettingsAgents.svelte - API keys
+- SettingsOrchestrator.svelte - Quality tiers
+- SettingsScoring.svelte - Scene scoring weights
+- SettingsVoice.svelte - Voice calibration
+- SettingsEnhancement.svelte - Enhancement thresholds
+- SettingsForeman.svelte - Foreman behavior
+- SettingsHealth.svelte - Health checks
+- SettingsAdvanced.svelte - Context window, expert mode
+
+#### ✅ Squad System UI (Complete - Nov 2025)
+**3 components, ~10 hours**
+- SquadWizard.svelte - Squad creation and management
+- SquadCard.svelte - Squad display
+- SquadSelector.svelte - Squad selection dropdown
+
+**Total Completed:** 55+ components (~63% of estimated 87 total)
+
+---
+
+## 🚧 Current Work (Week of Nov 25-29, 2025)
+
+### Priority 1: UX Overhaul (In Progress)
+**Assigned To:**
+- **Claude Cloud (funny-wilbur branch)** - 3-Panel Layout + Binder
+- **Gemini** - Monaco Editor ✅ Complete
+
+**Overall Status:** 🟡 85% Complete
+
+#### ✅ Completed (Nov 26)
+1. **Monaco Editor Integration** - Gemini
+   - Replaced plain textarea with Monaco editor
+   - Configured for prose writing (serif font, markdown highlighting)
+   - Preview toggle, word wrap, line numbers
+   - All code-centric features disabled
+
+2. **3-Panel Layout** - Claude Cloud (funny-wilbur)
+   - Studio panel removed from 4-panel layout
+   - Foreman panel expanded from 320px to 400px
+   - Studio tools moved to dropdown menu
+   - Live Graph preserved in Foreman panel
+
+3. **Graph Updates** - Claude Cloud (funny-wilbur)
+   - Enhanced graph visualization
+   - Improved performance and interactions
+
+4. **NotebookLM Integration** - Claude Cloud (funny-wilbur)
+   - Integration complete
+   - Query interface working
+
+#### 🟡 In Progress
+**FileTree Simplification** - Claude Cloud (funny-wilbur)
+- Removing automatic categorization
+- Building hierarchical tree structure
+- Making it work like VS Code/Finder/Explorer
+
+**Documentation:**
+- [UI_REFACTOR_3_PANEL_LAYOUT.md](tasks/UI_REFACTOR_3_PANEL_LAYOUT.md)
+- [SIMPLIFY_FILETREE_BINDER.md](tasks/SIMPLIFY_FILETREE_BINDER.md)
+- [IMPLEMENT_MONACO_EDITOR.md](tasks/IMPLEMENT_MONACO_EDITOR.md)
+
+---
+
+## Remaining Work (Phase 5)
+
+### NotebookLM Integration UI (Priority: High)
+**Estimated Effort:** ~15 hours
+**Status:** ⚪ Not started
+
+**Components Needed:**
+- NotebookLMQuery.svelte - Search interface
+- NotebookSourceViewer.svelte - Source document display
+- NotebookCitation.svelte - Citation links
+
+### Knowledge Graph Advanced UI (Priority: Medium)
+**Estimated Effort:** ~25 hours
+**Status:** ⚪ Not started
+
+**Components Needed:**
+- GraphExplorer.svelte - Interactive node visualization
+- NodeEditor.svelte - Edit node properties
+- RelationshipEditor.svelte - Edit edges
+- GraphFilter.svelte - Filter by node type
+- GraphSearch.svelte - Search nodes/relationships
+
+### Session Management UI (Priority: Medium)
+**Estimated Effort:** ~12 hours
+**Status:** ⚪ Not started
+
+**Components Needed:**
+- SessionList.svelte - List of chat sessions
+- SessionArchive.svelte - Archive old sessions
+- SessionExport.svelte - Export sessions
+
+### Foreman Work Orders UI (Priority: Low)
+**Estimated Effort:** ~18 hours
+**Status:** ⚪ Not started
+
+**Components Needed:**
+- WorkOrderList.svelte - Active work orders
+- WorkOrderCard.svelte - Individual work order display
+- WorkOrderProgress.svelte - Progress tracker
+- WorkOrderHistory.svelte - Completed work orders
+
+### Polish & UX (Priority: Low)
+**Estimated Effort:** ~10 hours
+**Status:** ⚪ Not started
+
+**Tasks:**
+- Keyboard shortcuts implementation
+- Context menus (right-click)
+- Loading states and spinners
+- Error handling UI
+- Toast notifications
+- Onboarding tutorial
+
+**Total Remaining:** ~80 hours (~2 weeks)
+
+---
+
+## Phase 6: Polish & Release (Not Started)
+
+**Tasks:**
+1. Build `.dmg` / `.exe` installers
+2. Lazy loading for large graphs
+3. External agent registry plugin system
+4. User guides and quick start tutorials
+5. End-to-end workflow validation
+
+**Estimated Effort:** ~40 hours (~1 week)
+
+---
+
+## Technical Debt & Known Issues
+
+### Recently Fixed ✅
+- HTML entity rendering (▶ and ▼ symbols) - Fixed Nov 26
+- Squad Configuration loading from settings.yaml - Fixed Nov 26
+
+### Current Issues (None critical)
+- Plain textarea instead of Monaco editor (tracked in Priority 3)
+- FileTree has confusing categorization (tracked in Priority 2)
+- 4-panel layout wastes space on Studio tools (tracked in Priority 1)
+
+---
+
+## Documentation Status
+
+### Complete ✅
+- [04_roadmap.md](04_roadmap.md) - Implementation roadmap
+- [PHASE_3_5_COMPLETION_SUMMARY.md](dev_logs/PHASE_3_5_COMPLETION_SUMMARY.md) - Phase 3-5 summary
+- [UI_GAP_ANALYSIS.md](specs/UI_GAP_ANALYSIS.md) - Complete gap analysis
+- [UI_COMPONENT_INVENTORY.md](specs/UI_COMPONENT_INVENTORY.md) - Component inventory
+- [CONFIGURABLE_MODEL_ASSIGNMENTS.md](CONFIGURABLE_MODEL_ASSIGNMENTS.md) - Model config guide
+- [DIRECTOR_MODE_SPECIFICATION.md](specs/DIRECTOR_MODE_SPECIFICATION.md) - Director Mode spec
+- [SETTINGS_CONFIGURATION.md](specs/SETTINGS_CONFIGURATION.md) - Settings spec
+
+### Recently Created ✅
+- [UI_REFACTOR_3_PANEL_LAYOUT.md](tasks/UI_REFACTOR_3_PANEL_LAYOUT.md) - 3-panel refactor spec
+- [SIMPLIFY_FILETREE_BINDER.md](tasks/SIMPLIFY_FILETREE_BINDER.md) - FileTree simplification
+- [IMPLEMENT_MONACO_EDITOR.md](tasks/IMPLEMENT_MONACO_EDITOR.md) - Monaco integration
+- [tasks/README.md](tasks/README.md) - Task coordination guide
+
+### Needs Update 🔄
+- [UX_ROADMAP.md](archive/superseded/UX_ROADMAP.md) - Superseded by current 3-panel design
+- [index.md](index.md) - Course info for Skoltech ISP 2026
+
+---
+
+## System Architecture Summary
+
+### Backend (Complete)
+- **Framework:** FastAPI + Python 3.11
+- **Storage:** SQLite (Settings, Foreman KB, Health Reports)
+- **Graph Engine:** NetworkX
+- **LLM Providers:** 11 providers (OpenAI, Anthropic, DeepSeek, Qwen, Kimi, Zhipu, Tencent, Mistral, xAI, Google, Yandex)
+- **Services:** 8 major services (Scene Analyzer, Scaffold Generator, Scene Writer, Scene Enhancement, Voice Calibration, Graph Health, Model Orchestrator, Foreman)
+
+### Frontend (85% Complete)
+- **Framework:** Svelte 5 + SvelteKit
+- **Desktop:** Tauri 2
+- **UI Theme:** Cyber-Noir (dark with gold/cyan/purple accents)
+- **Current Layout:** 4-panel → migrating to 3-panel
+- **Port:** localhost:1420 (Tauri dev server)
+
+### Integration
+- **Backend Port:** 8000 (FastAPI)
+- **MCP:** NotebookLM integration via `notebooklm-mcp`
+- **File System:** Tauri FS plugin for project folder access
+
+---
+
+## Cost Analysis
+
+### Current Monthly Cost (by tier)
+- **Budget Tier:** $0/month (Ollama local only)
+- **Balanced Tier:** $0.50-1/month (mix of local + cheap cloud)
+- **Premium Tier:** $3-5/month (Claude Sonnet, GPT-4o for critical tasks)
+
+**Most writers:** ~$0.50/month (Balanced tier)
+
+---
+
+## Development Velocity
+
+### Recent Accomplishments (Nov 2025)
+- ✅ Squad System UI (3 components)
+- ✅ Settings panels complete (9 tabs)
+- ✅ Graph Health UI (4 components)
+- ✅ HTML entity rendering fix
+- ✅ Squad Configuration loading fix
+- ✅ 3-panel layout specification
+- ✅ FileTree simplification specification
+- ✅ Monaco editor specification
+
+### Current Sprint (Nov 25-29)
+- 🟡 3-panel layout refactor (Claude Cloud)
+- ⚪ FileTree simplification (pending)
+- ⚪ Monaco editor integration (pending)
+
+### Next Sprint (Dec 2-6)
+- NotebookLM Integration UI (3 components)
+- Knowledge Graph Advanced UI (5 components)
+
+---
+
+## Risk Assessment
+
+### Low Risk ✅
+- Backend stability (no critical bugs)
+- Settings system working well
+- Model orchestration proven
+- All 11 LLM providers functional
+
+### Medium Risk 🟡
+- 3-panel layout refactor (in progress, well-documented)
+- Monaco editor integration (dependencies installed, clear spec)
+
+### No Critical Risks ✅
+All blockers removed. Backend feature-complete. UI work is straightforward component implementation.
+
+---
+
+## Team Coordination
+
+### Current Agents
+- **Claude Code** (this agent) - Task documentation, bug fixes
+- **Claude Cloud (unnamed agent)** - 3-panel layout refactor (in progress)
+- **elegant-mendeleev** - 🪦 RIP (screenshot assassination)
+
+### Available for Delegation
+- Claude Code
+- Claude IDE
+- Gemini 3 Pro ("sits around doing nothing all day" - user quote 😄)
+
+---
+
+## Next Milestones
+
+### Milestone 1: UX Overhaul (Dec 1, 2025)
+- ✅ 3-panel layout refactor
+- ✅ FileTree simplification
+- ✅ Monaco editor integration
+
+**ETA:** 3-4 days (6-9 hours total)
+
+### Milestone 2: Feature Parity (Dec 15, 2025)
+- NotebookLM Integration UI
+- Knowledge Graph Advanced UI
+- Session Management UI
+
+**ETA:** ~2 weeks (52 hours)
+
+### Milestone 3: Production Ready (Jan 1, 2026)
+- Polish & UX refinements
+- Build installers (.dmg/.exe)
+- User guides and tutorials
+- End-to-end testing
+
+**ETA:** ~3 weeks (80 hours)
+
+---
+
+## Success Metrics
+
+### Feature Completeness
+- ✅ Backend: 100% complete (Phases 1-3E)
+- 🟡 Frontend: 85% complete (Phase 5)
+- ⚪ Polish: 0% complete (Phase 6)
+
+**Overall:** ~85% complete
+
+### User Experience
+- ✅ API keys configurable (SettingsAgents.svelte)
+- ✅ All Foreman modes accessible (ARCHITECT, VOICE_CALIBRATION, DIRECTOR)
+- ✅ Model Orchestrator active (Budget/Balanced/Premium tiers)
+- ✅ Graph Health dashboard functional
+- 🟡 Writing experience (pending Monaco editor)
+- 🟡 File navigation (pending FileTree simplification)
+
+### Documentation
+- ✅ Backend fully documented
+- ✅ All Phase 5 work documented
+- ✅ Task specs ready for delegation
+- ⚪ User guides (Phase 6)
+
+---
+
+## Conclusion
+
+Writers Factory is in excellent shape with ~85% completion. Backend is feature-complete and stable. Frontend has all critical UI components. Current focus is UX refinement (3-panel layout, Monaco editor, FileTree simplification) followed by remaining feature UI components (NotebookLM, Knowledge Graph Advanced, Session Management).
+
+**Estimated Time to Production:** 6-8 weeks (120-160 hours)
+
+**Next Action:** Complete 3-panel layout refactor (Claude Cloud working on it now).
+
+---
+
+*Last updated: 2025-11-26 by Claude Code*
