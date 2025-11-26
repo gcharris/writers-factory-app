@@ -1,26 +1,46 @@
 <!--
   Writers Factory - Main Application Page
 
-  4-Panel IDE Layout (Cyber-Noir Theme):
-  ┌────────────┬─────────────────────────┬──────────────────┬───────────────┐
-  │  BINDER    │       CANVAS            │   THE FOREMAN    │   STUDIO      │
-  │  (240px)   │    (flex, min 500px)    │     (320px)      │   (280px)     │
-  │            │                         │                  │               │
-  │  FileTree  │   Monaco Editor         │  Chat + Graph    │  Tool Cards   │
-  └────────────┴─────────────────────────┴──────────────────┴───────────────┘
+  3-Panel IDE Layout (Cyber-Noir Theme):
+  ┌────────────┬─────────────────────────────┬──────────────────────────┐
+  │  BINDER    │           CANVAS            │      THE FOREMAN         │
+  │  (240px)   │      (flex, min 500px)      │        (400px)           │
+  │            │                             │                          │
+  │  FileTree  │   Monaco Editor             │  Chat Interface          │
+  └────────────┴─────────────────────────────┴──────────────────────────┘
+
+  Modals accessible from Foreman header:
+  - NotebookLM: Research queries grounded in uploaded sources
+  - Studio Tools: Tabbed panel with Voice Tournament, Scaffold, Health, etc.
+  - Graph Viewer: Knowledge Graph visualization
+  - Settings: Configuration panels
 -->
 <script>
   import MainLayout from '$lib/components/MainLayout.svelte';
-  import StudioPanel from '$lib/components/StudioPanel.svelte';
   import FileTree from '$lib/components/FileTree.svelte';
   import Editor from '$lib/components/Editor.svelte';
   import ForemanPanel from '$lib/components/ForemanPanel.svelte';
-  import { activeFile } from '$lib/stores';
+  import Modal from '$lib/components/Modal.svelte';
+  import SettingsPanel from '$lib/components/SettingsPanel.svelte';
+  import StudioToolsPanel from '$lib/components/StudioToolsPanel.svelte';
+  import GraphModal from '$lib/components/GraphModal.svelte';
+  import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
+  import { activeFile, activeModal } from '$lib/stores';
 
   // Breadcrumb from active file
   $: breadcrumb = $activeFile
     ? $activeFile.split('/').slice(-3).join(' / ')
     : 'No file selected';
+
+  // Modal open state derived from store
+  $: settingsOpen = $activeModal === 'settings';
+  $: studioOpen = $activeModal === 'studio-tools';
+  $: graphOpen = $activeModal === 'graph-viewer';
+  $: notebookOpen = $activeModal === 'notebooklm';
+
+  function closeModal() {
+    activeModal.set(null);
+  }
 </script>
 
 <MainLayout>
@@ -59,16 +79,31 @@
     </div>
   </svelte:fragment>
 
-  <!-- THE FOREMAN Panel: Chat + Live Graph split view -->
+  <!-- THE FOREMAN Panel: Chat with header buttons -->
   <svelte:fragment slot="foreman">
     <ForemanPanel />
   </svelte:fragment>
-
-  <!-- STUDIO Panel: Tool card grid -->
-  <svelte:fragment slot="studio">
-    <StudioPanel />
-  </svelte:fragment>
 </MainLayout>
+
+<!-- Settings Modal -->
+<Modal bind:open={settingsOpen} title="Settings" size="large" on:close={closeModal}>
+  <SettingsPanel />
+</Modal>
+
+<!-- Studio Tools Modal -->
+<Modal bind:open={studioOpen} title="Studio Tools" size="large" on:close={closeModal}>
+  <StudioToolsPanel />
+</Modal>
+
+<!-- Graph Viewer Modal -->
+<Modal bind:open={graphOpen} title="Knowledge Graph" size="large" on:close={closeModal}>
+  <GraphModal />
+</Modal>
+
+<!-- NotebookLM Modal -->
+<Modal bind:open={notebookOpen} title="NotebookLM Research" size="large" on:close={closeModal}>
+  <NotebookLMPanel />
+</Modal>
 
 <style>
   /* Canvas Container */

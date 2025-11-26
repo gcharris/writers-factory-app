@@ -187,3 +187,20 @@ export const directorStep = writable(0); // 0: Scaffold, 1: Structure, 2: Genera
 // Beat progress tracking
 export const currentBeat = writable(null); // { number, name, percentage, description }
 export const manuscriptProgress = writable(0); // 0-100 percentage through manuscript
+
+// --- Knowledge Graph State ---
+
+// Selected node in graph explorer
+export const selectedNode = writable(null);
+
+// Graph filter settings
+export const graphFilters = writable({
+  enabledTypes: ['CHARACTER', 'LOCATION', 'THEME', 'EVENT', 'OBJECT', 'CONCEPT'],
+  searchQuery: ''
+});
+
+// Search query (also available separately for convenience)
+export const searchQuery = writable('');
+
+// Pinned nodes (nodes locked in position)
+export const pinnedNodes = writable(new Set());
