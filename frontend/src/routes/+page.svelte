@@ -25,7 +25,8 @@
   import StudioToolsPanel from '$lib/components/StudioToolsPanel.svelte';
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
-  import { activeFile, activeModal } from '$lib/stores';
+  import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
+  import { activeFile, activeModal, foremanChatHistory } from '$lib/stores';
 
   // Breadcrumb from active file
   $: breadcrumb = $activeFile
@@ -37,9 +38,24 @@
   $: studioOpen = $activeModal === 'studio-tools';
   $: graphOpen = $activeModal === 'graph-viewer';
   $: notebookOpen = $activeModal === 'notebooklm';
+  $: sessionsOpen = $activeModal === 'session-manager';
 
   function closeModal() {
     activeModal.set(null);
+  }
+
+  // Handle loading a session from session manager
+  function handleLoadSession(event) {
+    const { sessionId, history } = event.detail;
+    // Convert session history to chat format and load
+    const messages = history
+      .filter(e => e.role !== 'system')
+      .map(e => ({
+        role: e.role,
+        text: e.content
+      }));
+    foremanChatHistory.set(messages);
+    closeModal();
   }
 </script>
 
@@ -104,6 +120,14 @@
 <Modal bind:open={notebookOpen} title="NotebookLM Research" size="large" on:close={closeModal}>
   <NotebookLMPanel />
 </Modal>
+
+<!-- Session Manager Modal -->
+{#if sessionsOpen}
+  <SessionManagerModal
+    on:load-session={handleLoadSession}
+    on:close={closeModal}
+  />
+{/if}
 
 <style>
   /* Canvas Container */
