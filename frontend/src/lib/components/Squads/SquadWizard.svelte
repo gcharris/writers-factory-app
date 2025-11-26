@@ -387,12 +387,15 @@
                 {/if}
               </div>
 
-              <button
+              <div
                 class="btn-details"
+                role="button"
+                tabindex="0"
                 on:click|stopPropagation={() => toggleSquadDetails(squad.id)}
+                on:keydown|stopPropagation={(e) => e.key === 'Enter' && toggleSquadDetails(squad.id)}
               >
                 {expandedSquadId === squad.id ? '&#9660; Hide Details' : '&#9654; Show Details'}
-              </button>
+              </div>
 
               {#if expandedSquadId === squad.id}
                 <div class="squad-details">

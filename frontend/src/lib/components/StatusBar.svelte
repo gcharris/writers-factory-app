@@ -93,7 +93,7 @@
     </div>
 
     <!-- Spend Tracker -->
-    {#if budgetLimit !== null}
+    {#if budgetLimit != null && budgetLimit !== undefined}
       <div class="status-item spend-tracker">
         <span class="spend-amount">${currentSpend.toFixed(2)}</span>
         <span class="spend-separator">/</span>

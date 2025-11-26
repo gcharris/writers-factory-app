@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "presets": {
     "local": {
       "id": "local",
@@ -50,11 +50,11 @@
         "min_ram_gb": 8,
         "api_keys": ["DEEPSEEK_API_KEY"]
       },
-      "optional_api_keys": ["QWEN_API_KEY", "ZHIPU_API_KEY", "GEMINI_API_KEY"],
+      "optional_api_keys": ["QWEN_API_KEY", "ZHIPU_API_KEY", "GEMINI_API_KEY", "KIMI_API_KEY", "TENCENT_API_KEY"],
       "default_models": {
         "foreman_strategic": "deepseek-chat",
         "foreman_coordinator": "mistral:7b",
-        "tournament": ["deepseek-chat", "qwen-plus", "zhipu-glm4", "gemini-2.0-flash-exp"],
+        "tournament": ["deepseek-chat", "qwen-plus", "glm-4", "gemini-2.0-flash-exp"],
         "health_checks": {
           "default": "mistral:7b",
           "timeline_consistency": "deepseek-chat",
@@ -94,7 +94,7 @@
         "tournament": [
           "claude-3-7-sonnet-20250219",
           "gpt-4o",
-          "grok-2",
+          "grok-2-latest",
           "mistral-large-latest",
           "deepseek-chat",
           "qwen-plus"
@@ -118,12 +118,170 @@
         "weekly_usd": 3.50,
         "monthly_usd": 15.00
       }
+    },
+    "heavyweight": {
+      "id": "heavyweight",
+      "name": "Heavyweight Tournament",
+      "description": "Maximum prose quality - Opus + GPT-4o + Sonnet",
+      "icon": "🏆",
+      "tier": "opus",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": false,
+        "min_ram_gb": 4,
+        "api_keys": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
+      },
+      "optional_api_keys": ["XAI_API_KEY", "MISTRAL_API_KEY"],
+      "default_models": {
+        "foreman_strategic": "claude-3-opus-20240229",
+        "foreman_coordinator": "claude-3-7-sonnet-20250219",
+        "tournament": [
+          "claude-3-opus-20240229",
+          "gpt-4o",
+          "claude-3-7-sonnet-20250219",
+          "mistral-large-latest"
+        ],
+        "health_checks": {
+          "default": "claude-3-7-sonnet-20250219",
+          "timeline_consistency": "claude-3-opus-20240229",
+          "theme_resonance": "claude-3-opus-20240229",
+          "flaw_challenges": "gpt-4o",
+          "cast_function": "claude-3-7-sonnet-20250219",
+          "pacing_analysis": "gpt-4o",
+          "beat_progress": "claude-3-7-sonnet-20250219",
+          "symbolic_layering": "claude-3-opus-20240229"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "claude-3-7-sonnet-20250219"
+      },
+      "cost_estimate": {
+        "weekly_usd": 20.00,
+        "monthly_usd": 80.00
+      },
+      "notes": "Best for final drafts and prize-worthy prose. High cost but maximum quality."
+    },
+    "multilingual": {
+      "id": "multilingual",
+      "name": "Multilingual Squad",
+      "description": "Optimized for non-English fiction (French, Russian, Chinese)",
+      "icon": "🌍",
+      "tier": "budget",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": false,
+        "min_ram_gb": 4,
+        "api_keys": ["MISTRAL_API_KEY"]
+      },
+      "optional_api_keys": ["DEEPSEEK_API_KEY", "QWEN_API_KEY", "KIMI_API_KEY", "ANTHROPIC_API_KEY", "YANDEX_API_KEY"],
+      "language_specializations": {
+        "french": {
+          "primary_model": "mistral-large-latest",
+          "backup_model": "claude-3-7-sonnet-20250219",
+          "notes": "Mistral is the best for French fiction - it's a French company!"
+        },
+        "russian": {
+          "primary_model": "yandexgpt",
+          "backup_model": "qwen-max",
+          "tertiary_model": "gpt-4o",
+          "notes": "YandexGPT is the best for Russian cultural fluency. Qwen 3 (qwen-max) also excellent for Russian."
+        },
+        "chinese": {
+          "primary_model": "deepseek-chat",
+          "backup_model": "qwen-max",
+          "tertiary_model": "moonshot-v1-128k",
+          "notes": "Chinese models excel at Chinese fiction"
+        },
+        "spanish": {
+          "primary_model": "gpt-4o",
+          "backup_model": "mistral-large-latest",
+          "notes": "Strong support from multiple models"
+        },
+        "german": {
+          "primary_model": "mistral-large-latest",
+          "backup_model": "gpt-4o",
+          "notes": "European models handle German well"
+        }
+      },
+      "default_models": {
+        "foreman_strategic": "mistral-large-latest",
+        "foreman_coordinator": "deepseek-chat",
+        "tournament": [
+          "mistral-large-latest",
+          "deepseek-chat",
+          "qwen-max",
+          "moonshot-v1-128k"
+        ],
+        "health_checks": {
+          "default": "deepseek-chat",
+          "timeline_consistency": "deepseek-chat",
+          "theme_resonance": "mistral-large-latest",
+          "flaw_challenges": "deepseek-chat",
+          "cast_function": "qwen-plus",
+          "pacing_analysis": "deepseek-chat",
+          "beat_progress": "deepseek-chat",
+          "symbolic_layering": "mistral-large-latest"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "deepseek-chat"
+      },
+      "cost_estimate": {
+        "weekly_usd": 2.00,
+        "monthly_usd": 8.00
+      }
+    },
+    "unfiltered": {
+      "id": "unfiltered",
+      "name": "Unfiltered Squad",
+      "description": "For mature/dark content - models with minimal content filtering",
+      "icon": "🔓",
+      "tier": "premium",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": true,
+        "min_ram_gb": 8,
+        "api_keys": ["XAI_API_KEY"]
+      },
+      "optional_api_keys": ["DEEPSEEK_API_KEY", "QWEN_API_KEY", "MISTRAL_API_KEY"],
+      "content_warning": "This squad uses models with minimal content filtering. Suitable for adult fiction, dark themes, graphic violence, and mature romance.",
+      "default_models": {
+        "foreman_strategic": "grok-2-latest",
+        "foreman_coordinator": "mistral:7b",
+        "tournament": [
+          "grok-2-latest",
+          "deepseek-chat",
+          "mistral-large-latest",
+          "mistral:7b"
+        ],
+        "health_checks": {
+          "default": "deepseek-chat",
+          "timeline_consistency": "deepseek-chat",
+          "theme_resonance": "grok-2-latest",
+          "flaw_challenges": "grok-2-latest",
+          "cast_function": "deepseek-chat",
+          "pacing_analysis": "deepseek-chat",
+          "beat_progress": "deepseek-chat",
+          "symbolic_layering": "grok-2-latest"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "deepseek-chat"
+      },
+      "cost_estimate": {
+        "weekly_usd": 5.00,
+        "monthly_usd": 20.00
+      }
     }
   },
   "model_tiers": {
     "free": ["mistral:7b", "llama3.2:3b"],
-    "budget": ["deepseek-chat", "qwen-plus", "zhipu-glm4", "gemini-2.0-flash-exp"],
-    "premium": ["claude-3-7-sonnet-20250219", "gpt-4o", "grok-2", "mistral-large-latest"]
+    "budget": ["deepseek-chat", "qwen-plus", "qwen-turbo", "qwen-turbo-latest", "glm-4", "gemini-2.0-flash-exp", "moonshot-v1-128k", "hunyuan-lite", "gpt-4o-mini", "gpt-3.5-turbo", "yandexgpt-lite"],
+    "premium": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "gpt-4o", "grok-2-latest", "mistral-large-latest", "qwen-max", "yandexgpt"],
+    "opus": ["claude-3-opus-20240229"]
   },
   "model_metadata": {
     "mistral:7b": {
@@ -131,70 +289,189 @@
       "provider": "ollama",
       "description": "Fast local model for coordination tasks",
       "cost_per_1m_input": 0,
-      "cost_per_1m_output": 0
+      "cost_per_1m_output": 0,
+      "content_filter": "unfiltered",
+      "languages": ["en", "fr", "de", "es"]
     },
     "llama3.2:3b": {
       "name": "Llama 3.2 3B",
       "provider": "ollama",
       "description": "Ultra-fast local model for quick tasks",
       "cost_per_1m_input": 0,
-      "cost_per_1m_output": 0
+      "cost_per_1m_output": 0,
+      "content_filter": "unfiltered",
+      "languages": ["en", "es", "pt"]
     },
     "deepseek-chat": {
       "name": "DeepSeek V3",
       "provider": "deepseek",
-      "description": "Best value for strategic reasoning",
+      "description": "Best value for strategic reasoning, permissive for mature content",
       "cost_per_1m_input": 0.27,
-      "cost_per_1m_output": 1.10
+      "cost_per_1m_output": 1.10,
+      "content_filter": "permissive",
+      "languages": ["en", "zh"]
     },
     "qwen-plus": {
       "name": "Qwen Plus",
       "provider": "qwen",
       "description": "Polyglot research and cultural nuance",
       "cost_per_1m_input": 0.40,
-      "cost_per_1m_output": 1.20
+      "cost_per_1m_output": 1.20,
+      "content_filter": "permissive",
+      "languages": ["en", "zh", "ar"]
     },
-    "zhipu-glm4": {
+    "qwen-turbo": {
+      "name": "Qwen Turbo",
+      "provider": "qwen",
+      "description": "Fast iteration and draft summaries",
+      "cost_per_1m_input": 0.30,
+      "cost_per_1m_output": 0.60,
+      "content_filter": "permissive",
+      "languages": ["en", "zh"]
+    },
+    "glm-4": {
       "name": "Zhipu GLM-4",
       "provider": "zhipu",
       "description": "Strategic plotting and structure",
       "cost_per_1m_input": 0.50,
-      "cost_per_1m_output": 0.50
+      "cost_per_1m_output": 0.50,
+      "content_filter": "moderate",
+      "languages": ["en", "zh"]
     },
     "gemini-2.0-flash-exp": {
       "name": "Gemini 2.0 Flash",
       "provider": "google",
-      "description": "Fast iteration with long context",
+      "description": "Fast iteration with 1M token context",
       "cost_per_1m_input": 0.075,
-      "cost_per_1m_output": 0.30
+      "cost_per_1m_output": 0.30,
+      "content_filter": "moderate",
+      "languages": ["en", "fr", "de", "es", "ja", "ko"]
+    },
+    "gpt-4o-mini": {
+      "name": "GPT-4o Mini",
+      "provider": "openai",
+      "description": "Fast and affordable OpenAI model",
+      "cost_per_1m_input": 0.15,
+      "cost_per_1m_output": 0.60,
+      "content_filter": "moderate",
+      "languages": ["en", "fr", "de", "es", "ru"]
+    },
+    "moonshot-v1-128k": {
+      "name": "Moonshot Kimi",
+      "provider": "kimi",
+      "description": "Excellent for long-form Chinese fiction, 128K context",
+      "cost_per_1m_input": 0.80,
+      "cost_per_1m_output": 0.80,
+      "content_filter": "permissive",
+      "languages": ["en", "zh"]
+    },
+    "hunyuan-lite": {
+      "name": "Tencent Hunyuan",
+      "provider": "tencent",
+      "description": "Dialogue and character voice, very affordable",
+      "cost_per_1m_input": 0.10,
+      "cost_per_1m_output": 0.10,
+      "content_filter": "permissive",
+      "languages": ["en", "zh"]
     },
     "claude-3-7-sonnet-20250219": {
       "name": "Claude Sonnet 4",
       "provider": "anthropic",
-      "description": "Best narrative reasoning and nuance",
+      "description": "Best narrative reasoning and emotional nuance",
       "cost_per_1m_input": 3.00,
-      "cost_per_1m_output": 15.00
+      "cost_per_1m_output": 15.00,
+      "content_filter": "moderate",
+      "languages": ["en", "fr", "de", "es", "ru"]
+    },
+    "claude-3-5-sonnet-20241022": {
+      "name": "Claude 3.5 Sonnet",
+      "provider": "anthropic",
+      "description": "Excellent prose and emotional depth",
+      "cost_per_1m_input": 3.00,
+      "cost_per_1m_output": 15.00,
+      "content_filter": "strict",
+      "languages": ["en", "fr", "de", "es"]
+    },
+    "claude-3-opus-20240229": {
+      "name": "Claude 3 Opus",
+      "provider": "anthropic",
+      "description": "Maximum quality for literary masterwork",
+      "cost_per_1m_input": 15.00,
+      "cost_per_1m_output": 75.00,
+      "content_filter": "strict",
+      "languages": ["en", "fr", "de", "es"]
     },
     "gpt-4o": {
       "name": "GPT-4o",
       "provider": "openai",
-      "description": "Best thematic analysis and logic",
+      "description": "Best thematic analysis and dialogue",
       "cost_per_1m_input": 2.50,
-      "cost_per_1m_output": 10.00
+      "cost_per_1m_output": 10.00,
+      "content_filter": "moderate",
+      "languages": ["en", "fr", "de", "es", "ru", "ja"]
     },
-    "grok-2": {
+    "grok-2-latest": {
       "name": "Grok 2",
       "provider": "xai",
-      "description": "Unconventional creative voice",
+      "description": "Unfiltered creative - dark themes, mature content, edgy voice",
       "cost_per_1m_input": 2.00,
-      "cost_per_1m_output": 10.00
+      "cost_per_1m_output": 10.00,
+      "content_filter": "unfiltered",
+      "languages": ["en"]
     },
     "mistral-large-latest": {
       "name": "Mistral Large",
       "provider": "mistral",
-      "description": "Prose polish and style refinement",
+      "description": "Best for French fiction and European literary style",
       "cost_per_1m_input": 2.00,
-      "cost_per_1m_output": 6.00
+      "cost_per_1m_output": 6.00,
+      "content_filter": "permissive",
+      "languages": ["en", "fr", "de", "es", "it"]
+    },
+    "qwen-max": {
+      "name": "Qwen Max (Qwen 3)",
+      "provider": "qwen",
+      "description": "Top-tier multilingual - excellent Russian, literary quality",
+      "cost_per_1m_input": 1.60,
+      "cost_per_1m_output": 6.40,
+      "content_filter": "permissive",
+      "languages": ["en", "zh", "ru", "fr", "de", "es", "ar", "ja", "ko"]
+    },
+    "qwen-turbo-latest": {
+      "name": "Qwen Turbo (Qwen 3)",
+      "provider": "qwen",
+      "description": "Fast multilingual with 1M context, strong Russian support",
+      "cost_per_1m_input": 0.30,
+      "cost_per_1m_output": 0.60,
+      "content_filter": "permissive",
+      "languages": ["en", "zh", "ru", "fr", "de", "es"]
+    },
+    "yandexgpt": {
+      "name": "YandexGPT Pro",
+      "provider": "yandex",
+      "description": "Best for Russian fiction - native cultural fluency and idioms",
+      "cost_per_1m_input": 1.20,
+      "cost_per_1m_output": 2.40,
+      "content_filter": "moderate",
+      "languages": ["ru", "en"]
+    },
+    "yandexgpt-lite": {
+      "name": "YandexGPT Lite",
+      "provider": "yandex",
+      "description": "Fast Russian drafting at lower cost",
+      "cost_per_1m_input": 0.20,
+      "cost_per_1m_output": 0.40,
+      "content_filter": "moderate",
+      "languages": ["ru", "en"]
+    },
+    "gpt-3.5-turbo": {
+      "name": "GPT-3.5 Turbo",
+      "provider": "openai",
+      "description": "Simple, fast, naturally conversational - great for dialogue",
+      "cost_per_1m_input": 0.50,
+      "cost_per_1m_output": 1.50,
+      "content_filter": "moderate",
+      "languages": ["en", "fr", "de", "es"]
     }
   }
 }

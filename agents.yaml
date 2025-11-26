@@ -46,6 +46,29 @@ agents:
     use_cases: ["tournament", "context_injection"]
     enabled: true
 
+  - id: "qwen-max"
+    name: "Qwen Max (Qwen 3)"
+    provider: "qwen"
+    api_key_env: "QWEN_API_KEY"
+    model: "qwen-max"
+    role: "The Multilingual Virtuoso. You excel at literary Russian, complex narratives, and cultural depth."
+    use_cases: ["tournament", "russian_fiction", "literary", "multilingual"]
+    enabled: true
+    languages: ["en", "zh", "ru", "fr", "de", "es", "ar", "ja", "ko"]
+    quality_tier: "premium"
+
+  - id: "qwen-turbo-latest"
+    name: "Qwen Turbo (Qwen 3)"
+    provider: "qwen"
+    api_key_env: "QWEN_API_KEY"
+    model: "qwen-turbo-latest"
+    role: "The Swift Polyglot. Fast multilingual drafting with strong Russian and Chinese support."
+    use_cases: ["quick_drafts", "russian_dialogue", "multilingual_iteration"]
+    enabled: true
+    languages: ["en", "zh", "ru", "fr", "de", "es"]
+    context_window: 1000000
+    cost_tier: "budget"
+
   - id: "mistral-large"
     name: "Mistral Large"
     provider: "mistral"
@@ -64,6 +87,28 @@ agents:
     use_cases: ["tournament", "plotting"]
     enabled: true
 
+  - id: "moonshot-kimi"
+    name: "Moonshot Kimi"
+    provider: "kimi"
+    api_key_env: "KIMI_API_KEY"
+    model: "moonshot-v1-128k"
+    role: "The Long-Form Master. You excel at extended narratives, character arcs, and Chinese fiction."
+    use_cases: ["tournament", "long_form", "chinese_fiction"]
+    enabled: true
+    languages: ["en", "zh"]
+    context_window: 128000
+
+  - id: "tencent-hunyuan"
+    name: "Tencent Hunyuan"
+    provider: "tencent"
+    api_key_env: "TENCENT_API_KEY"
+    model: "hunyuan-lite"
+    role: "The Dialogue Specialist. You bring natural conversation and authentic character voice."
+    use_cases: ["tournament", "dialogue", "character_voice"]
+    enabled: true
+    languages: ["en", "zh"]
+    cost_tier: "budget"
+
   - id: "gemini-2.0-flash"
     name: "Gemini 2.0 Flash"
     provider: "google"
@@ -72,6 +117,44 @@ agents:
     role: "The Multimodal Analyst. You excel at research, analysis, and contextual reasoning."
     use_cases: ["tournament", "analysis", "research"]
     enabled: true
+
+  # --- Russian-Native Models ---
+
+  - id: "yandexgpt-pro"
+    name: "YandexGPT Pro"
+    provider: "yandex"
+    api_key_env: "YANDEX_API_KEY"
+    model: "yandexgpt"
+    role: "The Russian Master. Native Russian cultural fluency, idioms, and literary style."
+    use_cases: ["tournament", "russian_fiction", "russian_dialogue", "slavic_literature"]
+    enabled: true
+    languages: ["ru", "en"]
+    quality_tier: "premium"
+
+  - id: "yandexgpt-lite"
+    name: "YandexGPT Lite"
+    provider: "yandex"
+    api_key_env: "YANDEX_API_KEY"
+    model: "yandexgpt-lite"
+    role: "The Russian Scout. Fast Russian drafting and dialogue at lower cost."
+    use_cases: ["quick_drafts", "russian_dialogue", "russian_iteration"]
+    enabled: true
+    languages: ["ru", "en"]
+    cost_tier: "budget"
+
+  # --- Additional OpenAI Models ---
+
+  - id: "gpt-3.5-turbo"
+    name: "GPT-3.5 Turbo"
+    provider: "openai"
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-3.5-turbo"
+    role: "The Conversationalist. Simple, fast, and naturally conversational."
+    use_cases: ["quick_drafts", "dialogue", "casual_tone", "conversational"]
+    enabled: true
+    cost_tier: "budget"
+
+  # --- Local Models ---
 
   - id: "ollama-mistral-7b"
     name: "Ollama Mistral 7B"
