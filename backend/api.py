@@ -3786,6 +3786,367 @@ async def get_tournament(tournament_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to get tournament: {str(e)}")
 
 
+# ==================== SQUAD SYSTEM ENDPOINTS (Phase 3F) ====================
+
+# --- Pydantic Models for Squad System ---
+class ApplySquadRequest(BaseModel):
+    squad_id: str
+    project_id: Optional[str] = None
+
+
+class SetTournamentModelsRequest(BaseModel):
+    models: List[str]
+    project_id: Optional[str] = None
+
+
+class EstimateCostRequest(BaseModel):
+    models: List[str]
+    num_strategies: int = 5
+    avg_tokens_per_variant: int = 2000
+
+
+class VoiceRecommendationRequest(BaseModel):
+    tournament_results: List[Dict[str, Any]]
+    current_squad: str
+    project_id: Optional[str] = None
+
+
+class GenreRecommendationRequest(BaseModel):
+    genre: str
+
+
+# --- Squad Service Initialization ---
+def get_squad_service():
+    """Get or create the squad service singleton."""
+    from backend.services.hardware_service import HardwareService
+    from backend.services.squad_service import SquadService
+
+    hardware_service = HardwareService()
+    return SquadService(settings_service, hardware_service)
+
+
+@app.get("/system/hardware", summary="Detect system hardware")
+async def get_hardware_info():
+    """
+    Detect system hardware capabilities.
+
+    Returns:
+        - RAM (total and available)
+        - CPU cores
+        - GPU availability and specs
+        - Ollama installation status
+        - Installed Ollama models
+        - Recommended maximum model size
+    """
+    from backend.services.hardware_service import HardwareService
+
+    try:
+        hardware_service = HardwareService()
+        info = hardware_service.detect()
+        return info.to_dict()
+    except Exception as e:
+        logging.error(f"Hardware detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Hardware detection failed: {str(e)}")
+
+
+@app.get("/system/local-models", summary="Get recommended local models")
+async def get_recommended_local_models():
+    """
+    Get recommended local models based on hardware.
+
+    Returns list of models that can run on this system,
+    with installation status and recommended purposes.
+    """
+    from backend.services.hardware_service import HardwareService
+
+    try:
+        hardware_service = HardwareService()
+        models = hardware_service.get_recommended_local_models()
+        return {
+            "models": models,
+            "count": len(models)
+        }
+    except Exception as e:
+        logging.error(f"Local model detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Local model detection failed: {str(e)}")
+
+
+@app.get("/squad/available", summary="Get available squads")
+async def get_available_squads():
+    """
+    Get squads available based on hardware and API keys.
+
+    Returns all three squad presets with availability status,
+    missing requirements, and warnings for optional features.
+    """
+    try:
+        squad_service = get_squad_service()
+        squads = squad_service.get_available_squads()
+        return {
+            "squads": squads,
+            "count": len(squads)
+        }
+    except Exception as e:
+        logging.error(f"Squad availability check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Squad availability check failed: {str(e)}")
+
+
+@app.post("/squad/apply", summary="Apply a squad configuration")
+async def apply_squad(request: ApplySquadRequest):
+    """
+    Apply a squad's configuration to settings.
+
+    This updates:
+    - Foreman task models
+    - Health check models
+    - Tournament defaults
+    - Squad metadata
+
+    Args:
+        squad_id: "local" | "hybrid" | "pro"
+        project_id: Optional project-specific override
+
+    Returns:
+        Applied configuration summary
+    """
+    try:
+        squad_service = get_squad_service()
+        result = squad_service.apply_squad(request.squad_id, request.project_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Squad application failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Squad application failed: {str(e)}")
+
+
+@app.get("/squad/active", summary="Get active squad")
+async def get_active_squad(project_id: Optional[str] = None):
+    """
+    Get the currently active squad ID.
+
+    Args:
+        project_id: Optional project-specific settings
+
+    Returns:
+        Current squad ID and setup status
+    """
+    try:
+        squad_service = get_squad_service()
+        active = squad_service.get_active_squad(project_id)
+        setup_complete = settings_service.get("squad.setup_complete", project_id) or False
+        course_mode = settings_service.get("squad.course_mode", project_id) or False
+
+        return {
+            "squad": active,
+            "setup_complete": setup_complete,
+            "course_mode": course_mode
+        }
+    except Exception as e:
+        logging.error(f"Failed to get active squad: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get active squad: {str(e)}")
+
+
+@app.get("/squad/tournament-models", summary="Get tournament models")
+async def get_tournament_models(
+    project_id: Optional[str] = None,
+    include_unavailable: bool = False
+):
+    """
+    Get models available for tournament selection.
+
+    Returns list of models with tier, availability, cost, and selection status.
+    Models are grouped by tier (free, budget, premium).
+
+    Args:
+        project_id: For project-specific settings
+        include_unavailable: Include models without API keys
+
+    Returns:
+        List of model dicts with metadata and selection status
+    """
+    try:
+        squad_service = get_squad_service()
+        models = squad_service.get_tournament_models(project_id, include_unavailable)
+        return {
+            "models": models,
+            "count": len(models),
+            "selected_count": len([m for m in models if m["selected"]])
+        }
+    except Exception as e:
+        logging.error(f"Failed to get tournament models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get tournament models: {str(e)}")
+
+
+@app.post("/squad/tournament-models", summary="Set tournament models")
+async def set_tournament_models(request: SetTournamentModelsRequest):
+    """
+    Set custom tournament model selection.
+
+    This overrides the squad's default tournament models.
+    Clear with DELETE /squad/tournament-models/custom to revert to defaults.
+
+    Args:
+        models: List of model IDs to use in tournaments
+        project_id: For project-specific override
+    """
+    try:
+        squad_service = get_squad_service()
+        squad_service.set_tournament_models(request.models, request.project_id)
+        return {
+            "status": "success",
+            "models": request.models,
+            "count": len(request.models)
+        }
+    except Exception as e:
+        logging.error(f"Failed to set tournament models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to set tournament models: {str(e)}")
+
+
+@app.delete("/squad/tournament-models/custom", summary="Clear custom tournament models")
+async def clear_custom_tournament_models(project_id: Optional[str] = None):
+    """
+    Clear custom tournament model selection.
+
+    Reverts to the active squad's default tournament models.
+    """
+    try:
+        squad_service = get_squad_service()
+        squad_service.clear_custom_tournament_models(project_id)
+        return {"status": "success", "message": "Reverted to squad defaults"}
+    except Exception as e:
+        logging.error(f"Failed to clear custom tournament models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear custom models: {str(e)}")
+
+
+@app.post("/squad/estimate-cost", summary="Estimate tournament cost")
+async def estimate_tournament_cost(request: EstimateCostRequest):
+    """
+    Estimate cost for a tournament run with selected models.
+
+    Args:
+        models: List of model IDs
+        num_strategies: Number of writing strategies (default 5)
+        avg_tokens_per_variant: Average tokens per variant
+
+    Returns:
+        Cost estimate with breakdown by model
+    """
+    try:
+        squad_service = get_squad_service()
+        estimate = squad_service.estimate_tournament_cost(
+            request.models,
+            request.num_strategies,
+            request.avg_tokens_per_variant
+        )
+        return estimate
+    except Exception as e:
+        logging.error(f"Cost estimation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Cost estimation failed: {str(e)}")
+
+
+@app.get("/squad/voice-recommendation", summary="Get voice recommendation")
+async def get_voice_recommendation(project_id: Optional[str] = None):
+    """
+    Get the voice-based squad recommendation.
+
+    This is populated after a voice tournament is completed and analyzed.
+
+    Returns:
+        Recommendation with top model, score, and reasoning
+    """
+    try:
+        recommendation = settings_service.get("squad.voice_recommendation", project_id)
+        return recommendation or {
+            "recommended_squad": None,
+            "reason": "No voice tournament has been run yet"
+        }
+    except Exception as e:
+        logging.error(f"Failed to get voice recommendation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get voice recommendation: {str(e)}")
+
+
+@app.post("/squad/voice-recommendation", summary="Generate voice recommendation")
+async def generate_voice_recommendation(request: VoiceRecommendationRequest):
+    """
+    Generate squad recommendation from voice tournament results.
+
+    Analyzes which models best matched the author's target voice
+    and recommends the appropriate squad.
+
+    Args:
+        tournament_results: List of {model, score, strategy} from voice tournament
+        current_squad: User's current squad selection
+        project_id: Optional project-specific settings
+
+    Returns:
+        Recommendation with reasoning and alternatives
+    """
+    try:
+        squad_service = get_squad_service()
+        recommendation = squad_service.generate_voice_recommendation(
+            request.tournament_results,
+            request.current_squad,
+            request.project_id
+        )
+        return recommendation
+    except Exception as e:
+        logging.error(f"Voice recommendation generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Voice recommendation failed: {str(e)}")
+
+
+@app.post("/squad/genre-recommendation", summary="Get genre-based recommendation")
+async def get_genre_recommendation(request: GenreRecommendationRequest):
+    """
+    Get squad recommendation based on genre.
+
+    Different genres may benefit from different model strengths.
+    For example, literary fiction benefits from Claude's nuance,
+    while thrillers benefit from DeepSeek's structural thinking.
+
+    Args:
+        genre: Genre name (e.g., "cyberpunk", "romance", "literary")
+
+    Returns:
+        Recommendation with squad, key models, and reasoning
+    """
+    try:
+        squad_service = get_squad_service()
+        recommendation = squad_service.get_squad_for_genre(request.genre)
+        return recommendation
+    except Exception as e:
+        logging.error(f"Genre recommendation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Genre recommendation failed: {str(e)}")
+
+
+@app.post("/squad/course-mode", summary="Toggle course mode")
+async def toggle_course_mode(
+    enabled: bool,
+    project_id: Optional[str] = None
+):
+    """
+    Toggle course mode on/off.
+
+    Course mode:
+    - When enabled, uses instructor-provided API keys
+    - Hybrid Squad available to all students at no cost
+    - Pro Squad still requires student BYOK
+
+    Args:
+        enabled: True to enable course mode
+        project_id: Optional project-specific setting
+    """
+    try:
+        settings_service.set("squad.course_mode", enabled, project_id)
+        return {
+            "course_mode": enabled,
+            "message": "Course mode enabled" if enabled else "Course mode disabled"
+        }
+    except Exception as e:
+        logging.error(f"Failed to toggle course mode: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to toggle course mode: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

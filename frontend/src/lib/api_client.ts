@@ -1443,6 +1443,297 @@ export class WritersFactoryAPI {
     }> {
         return this._request(`/health/theme/overrides?project_id=${projectId}`);
     }
+
+    // ==========================================
+    // Squad System (Phase 3F)
+    // ==========================================
+
+    /**
+     * Detect system hardware capabilities.
+     * Returns RAM, CPU, GPU, Ollama status, and recommended model sizes.
+     */
+    async getHardwareInfo(): Promise<HardwareInfo> {
+        return this._request('/system/hardware');
+    }
+
+    /**
+     * Get recommended local models based on hardware.
+     * Returns models that can run on this system with installation status.
+     */
+    async getRecommendedLocalModels(): Promise<{
+        models: LocalModelRecommendation[];
+        count: number;
+    }> {
+        return this._request('/system/local-models');
+    }
+
+    /**
+     * Get squads available based on hardware and API keys.
+     * Returns all three squad presets with availability status.
+     */
+    async getAvailableSquads(): Promise<{
+        squads: SquadPreset[];
+        count: number;
+    }> {
+        return this._request('/squad/available');
+    }
+
+    /**
+     * Apply a squad's configuration to settings.
+     * @param squadId "local" | "hybrid" | "pro"
+     * @param projectId Optional project-specific override
+     */
+    async applySquad(squadId: string, projectId?: string): Promise<{
+        squad: string;
+        applied_models: {
+            foreman_strategic: string;
+            foreman_coordinator: string;
+            tournament_defaults: string[];
+            health_checks: Record<string, string>;
+        };
+        status: string;
+    }> {
+        return this._request('/squad/apply', {
+            method: 'POST',
+            body: JSON.stringify({ squad_id: squadId, project_id: projectId }),
+        });
+    }
+
+    /**
+     * Get the currently active squad ID.
+     * @param projectId Optional project-specific settings
+     */
+    async getActiveSquad(projectId?: string): Promise<{
+        squad: string;
+        setup_complete: boolean;
+        course_mode: boolean;
+    }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/squad/active${params}`);
+    }
+
+    /**
+     * Get models available for tournament selection.
+     * @param projectId For project-specific settings
+     * @param includeUnavailable Include models without API keys
+     */
+    async getTournamentModels(
+        projectId?: string,
+        includeUnavailable: boolean = false
+    ): Promise<{
+        models: TournamentModel[];
+        count: number;
+        selected_count: number;
+    }> {
+        const params = new URLSearchParams();
+        if (projectId) params.append('project_id', projectId);
+        if (includeUnavailable) params.append('include_unavailable', 'true');
+        const queryString = params.toString();
+        return this._request(`/squad/tournament-models${queryString ? '?' + queryString : ''}`);
+    }
+
+    /**
+     * Set custom tournament model selection.
+     * @param models List of model IDs to use in tournaments
+     * @param projectId For project-specific override
+     */
+    async setTournamentModels(models: string[], projectId?: string): Promise<{
+        status: string;
+        models: string[];
+        count: number;
+    }> {
+        return this._request('/squad/tournament-models', {
+            method: 'POST',
+            body: JSON.stringify({ models, project_id: projectId }),
+        });
+    }
+
+    /**
+     * Clear custom tournament model selection.
+     * Reverts to the active squad's default tournament models.
+     */
+    async clearCustomTournamentModels(projectId?: string): Promise<{
+        status: string;
+        message: string;
+    }> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/squad/tournament-models/custom${params}`, { method: 'DELETE' });
+    }
+
+    /**
+     * Estimate cost for a tournament run with selected models.
+     * @param models List of model IDs
+     * @param numStrategies Number of writing strategies (default 5)
+     * @param avgTokensPerVariant Average tokens per variant
+     */
+    async estimateTournamentCost(
+        models: string[],
+        numStrategies: number = 5,
+        avgTokensPerVariant: number = 2000
+    ): Promise<TournamentCostEstimate> {
+        return this._request('/squad/estimate-cost', {
+            method: 'POST',
+            body: JSON.stringify({
+                models,
+                num_strategies: numStrategies,
+                avg_tokens_per_variant: avgTokensPerVariant
+            }),
+        });
+    }
+
+    /**
+     * Get the voice-based squad recommendation.
+     * Populated after a voice tournament is completed and analyzed.
+     */
+    async getVoiceRecommendation(projectId?: string): Promise<VoiceRecommendation> {
+        const params = projectId ? `?project_id=${projectId}` : '';
+        return this._request(`/squad/voice-recommendation${params}`);
+    }
+
+    /**
+     * Generate squad recommendation from voice tournament results.
+     * @param tournamentResults List of {model, score, strategy} from voice tournament
+     * @param currentSquad User's current squad selection
+     * @param projectId Optional project-specific settings
+     */
+    async generateVoiceRecommendation(
+        tournamentResults: Array<{ model: string; score: number; strategy?: string }>,
+        currentSquad: string,
+        projectId?: string
+    ): Promise<VoiceRecommendation> {
+        return this._request('/squad/voice-recommendation', {
+            method: 'POST',
+            body: JSON.stringify({
+                tournament_results: tournamentResults,
+                current_squad: currentSquad,
+                project_id: projectId
+            }),
+        });
+    }
+
+    /**
+     * Get squad recommendation based on genre.
+     * @param genre Genre name (e.g., "cyberpunk", "romance", "literary")
+     */
+    async getGenreRecommendation(genre: string): Promise<GenreRecommendation> {
+        return this._request('/squad/genre-recommendation', {
+            method: 'POST',
+            body: JSON.stringify({ genre }),
+        });
+    }
+
+    /**
+     * Toggle course mode on/off.
+     * @param enabled True to enable course mode
+     * @param projectId Optional project-specific setting
+     */
+    async toggleCourseMode(enabled: boolean, projectId?: string): Promise<{
+        course_mode: boolean;
+        message: string;
+    }> {
+        const params = new URLSearchParams({ enabled: enabled.toString() });
+        if (projectId) params.append('project_id', projectId);
+        return this._request(`/squad/course-mode?${params.toString()}`, { method: 'POST' });
+    }
+}
+
+// --- Squad System Interfaces ---
+export interface HardwareInfo {
+    ram_gb: number;
+    available_ram_gb: number;
+    cpu_cores: number;
+    gpu_available: boolean;
+    gpu_name: string | null;
+    gpu_vram_gb: number | null;
+    ollama_installed: boolean;
+    ollama_version: string | null;
+    ollama_models: string[];
+    recommended_max_params: string;
+    platform: string;
+}
+
+export interface LocalModelRecommendation {
+    id: string;
+    name: string;
+    purpose: string;
+    size_gb: number;
+    tier: string;
+    installed: boolean;
+}
+
+export interface SquadPreset {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    tier: string;
+    recommended: boolean;
+    available: boolean;
+    missing_requirements: string[];
+    warnings: string[];
+    available_tournament_models: string[];
+    requirements: {
+        ollama_required: boolean;
+        min_ram_gb: number;
+        api_keys: string[];
+    };
+    default_models: {
+        foreman_strategic: string;
+        foreman_coordinator: string;
+        tournament: string[];
+        health_checks: Record<string, string>;
+    };
+    cost_estimate: {
+        weekly_usd: number;
+        monthly_usd: number;
+    };
+}
+
+export interface TournamentModel {
+    id: string;
+    name: string;
+    tier: string;
+    provider: string;
+    available: boolean;
+    selected: boolean;
+    cost_per_1m_input: number;
+    cost_per_1m_output: number;
+    description: string;
+}
+
+export interface TournamentCostEstimate {
+    total_cost: number;
+    breakdown: Array<{
+        model: string;
+        model_name: string;
+        variants: number;
+        cost: number;
+    }>;
+    total_variants: number;
+    assumptions: {
+        input_tokens_per_variant: number;
+        output_tokens_per_variant: number;
+        strategies: number;
+    };
+}
+
+export interface VoiceRecommendation {
+    recommended_squad: string | null;
+    top_model: string | null;
+    top_model_name: string | null;
+    top_score: number | null;
+    top_tier: string | null;
+    current_squad: string | null;
+    budget_alternative: string | null;
+    budget_score: number | null;
+    reason: string;
+    alternative?: string;
+}
+
+export interface GenreRecommendation {
+    squad: string;
+    reason: string;
+    key_models: string[];
 }
 
 // --- Health Report Interfaces ---

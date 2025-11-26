@@ -1,0 +1,200 @@
+{
+  "version": "1.0",
+  "presets": {
+    "local": {
+      "id": "local",
+      "name": "Local Squad",
+      "description": "100% offline, zero cost, privacy-focused",
+      "icon": "🏠",
+      "tier": "free",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": true,
+        "min_ram_gb": 8,
+        "api_keys": []
+      },
+      "optional_api_keys": [],
+      "default_models": {
+        "foreman_strategic": "mistral:7b",
+        "foreman_coordinator": "mistral:7b",
+        "tournament": ["mistral:7b", "llama3.2:3b"],
+        "health_checks": {
+          "default": "mistral:7b",
+          "timeline_consistency": "mistral:7b",
+          "theme_resonance": "mistral:7b",
+          "flaw_challenges": "mistral:7b",
+          "cast_function": "mistral:7b",
+          "pacing_analysis": "mistral:7b",
+          "beat_progress": "mistral:7b",
+          "symbolic_layering": "mistral:7b"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "mistral:7b"
+      },
+      "cost_estimate": {
+        "weekly_usd": 0,
+        "monthly_usd": 0
+      }
+    },
+    "hybrid": {
+      "id": "hybrid",
+      "name": "Hybrid Squad",
+      "description": "Best value - cloud intelligence + local speed",
+      "icon": "💎",
+      "tier": "budget",
+      "recommended": true,
+      "requirements": {
+        "ollama_required": true,
+        "min_ram_gb": 8,
+        "api_keys": ["DEEPSEEK_API_KEY"]
+      },
+      "optional_api_keys": ["QWEN_API_KEY", "ZHIPU_API_KEY", "GEMINI_API_KEY"],
+      "default_models": {
+        "foreman_strategic": "deepseek-chat",
+        "foreman_coordinator": "mistral:7b",
+        "tournament": ["deepseek-chat", "qwen-plus", "zhipu-glm4", "gemini-2.0-flash-exp"],
+        "health_checks": {
+          "default": "mistral:7b",
+          "timeline_consistency": "deepseek-chat",
+          "theme_resonance": "deepseek-chat",
+          "flaw_challenges": "deepseek-chat",
+          "cast_function": "qwen-plus",
+          "pacing_analysis": "mistral:7b",
+          "beat_progress": "mistral:7b",
+          "symbolic_layering": "deepseek-chat"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "mistral:7b"
+      },
+      "cost_estimate": {
+        "weekly_usd": 0.50,
+        "monthly_usd": 2.00
+      }
+    },
+    "pro": {
+      "id": "pro",
+      "name": "Pro Squad",
+      "description": "Maximum quality for professional writers",
+      "icon": "🚀",
+      "tier": "premium",
+      "recommended": false,
+      "requirements": {
+        "ollama_required": false,
+        "min_ram_gb": 4,
+        "api_keys": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
+      },
+      "optional_api_keys": ["XAI_API_KEY", "MISTRAL_API_KEY", "DEEPSEEK_API_KEY"],
+      "default_models": {
+        "foreman_strategic": "claude-3-7-sonnet-20250219",
+        "foreman_coordinator": "deepseek-chat",
+        "tournament": [
+          "claude-3-7-sonnet-20250219",
+          "gpt-4o",
+          "grok-2",
+          "mistral-large-latest",
+          "deepseek-chat",
+          "qwen-plus"
+        ],
+        "health_checks": {
+          "default": "deepseek-chat",
+          "timeline_consistency": "claude-3-7-sonnet-20250219",
+          "theme_resonance": "gpt-4o",
+          "flaw_challenges": "deepseek-chat",
+          "cast_function": "qwen-plus",
+          "pacing_analysis": "deepseek-chat",
+          "beat_progress": "deepseek-chat",
+          "symbolic_layering": "gpt-4o"
+        }
+      },
+      "fallback": {
+        "offline_model": "mistral:7b",
+        "api_failure_model": "deepseek-chat"
+      },
+      "cost_estimate": {
+        "weekly_usd": 3.50,
+        "monthly_usd": 15.00
+      }
+    }
+  },
+  "model_tiers": {
+    "free": ["mistral:7b", "llama3.2:3b"],
+    "budget": ["deepseek-chat", "qwen-plus", "zhipu-glm4", "gemini-2.0-flash-exp"],
+    "premium": ["claude-3-7-sonnet-20250219", "gpt-4o", "grok-2", "mistral-large-latest"]
+  },
+  "model_metadata": {
+    "mistral:7b": {
+      "name": "Mistral 7B",
+      "provider": "ollama",
+      "description": "Fast local model for coordination tasks",
+      "cost_per_1m_input": 0,
+      "cost_per_1m_output": 0
+    },
+    "llama3.2:3b": {
+      "name": "Llama 3.2 3B",
+      "provider": "ollama",
+      "description": "Ultra-fast local model for quick tasks",
+      "cost_per_1m_input": 0,
+      "cost_per_1m_output": 0
+    },
+    "deepseek-chat": {
+      "name": "DeepSeek V3",
+      "provider": "deepseek",
+      "description": "Best value for strategic reasoning",
+      "cost_per_1m_input": 0.27,
+      "cost_per_1m_output": 1.10
+    },
+    "qwen-plus": {
+      "name": "Qwen Plus",
+      "provider": "qwen",
+      "description": "Polyglot research and cultural nuance",
+      "cost_per_1m_input": 0.40,
+      "cost_per_1m_output": 1.20
+    },
+    "zhipu-glm4": {
+      "name": "Zhipu GLM-4",
+      "provider": "zhipu",
+      "description": "Strategic plotting and structure",
+      "cost_per_1m_input": 0.50,
+      "cost_per_1m_output": 0.50
+    },
+    "gemini-2.0-flash-exp": {
+      "name": "Gemini 2.0 Flash",
+      "provider": "google",
+      "description": "Fast iteration with long context",
+      "cost_per_1m_input": 0.075,
+      "cost_per_1m_output": 0.30
+    },
+    "claude-3-7-sonnet-20250219": {
+      "name": "Claude Sonnet 4",
+      "provider": "anthropic",
+      "description": "Best narrative reasoning and nuance",
+      "cost_per_1m_input": 3.00,
+      "cost_per_1m_output": 15.00
+    },
+    "gpt-4o": {
+      "name": "GPT-4o",
+      "provider": "openai",
+      "description": "Best thematic analysis and logic",
+      "cost_per_1m_input": 2.50,
+      "cost_per_1m_output": 10.00
+    },
+    "grok-2": {
+      "name": "Grok 2",
+      "provider": "xai",
+      "description": "Unconventional creative voice",
+      "cost_per_1m_input": 2.00,
+      "cost_per_1m_output": 10.00
+    },
+    "mistral-large-latest": {
+      "name": "Mistral Large",
+      "provider": "mistral",
+      "description": "Prose polish and style refinement",
+      "cost_per_1m_input": 2.00,
+      "cost_per_1m_output": 6.00
+    }
+  }
+}
