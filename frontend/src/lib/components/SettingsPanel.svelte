@@ -23,12 +23,14 @@
   import SettingsForeman from './Settings/SettingsForeman.svelte';
   import SettingsHealth from './Settings/SettingsHealth.svelte';
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
+  import SettingsAssistant from './Settings/SettingsAssistant.svelte';
 
-  export let activeTab = 'squad';
+  export let activeTab = 'assistant';
 
   const dispatch = createEventDispatcher();
 
   const tabs = [
+    { id: 'assistant', label: 'Assistant', icon: 'sparkles', priority: 'P1' },
     { id: 'squad', label: 'Squad', icon: 'users', priority: 'P0' },
     { id: 'agents', label: 'API Keys', icon: 'key', priority: 'P0' },
     { id: 'orchestrator', label: 'AI Model', icon: 'cpu', priority: 'P0' },
@@ -42,6 +44,9 @@
 
   // Icons for each tab
   const tabIcons = {
+    sparkles: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+    </svg>`,
     users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
       <circle cx="9" cy="7" r="4"></circle>
@@ -128,7 +133,9 @@
 
   <!-- Content Area -->
   <div class="settings-content">
-    {#if activeTab === 'squad'}
+    {#if activeTab === 'assistant'}
+      <SettingsAssistant />
+    {:else if activeTab === 'squad'}
       <SettingsSquad />
     {:else if activeTab === 'agents'}
       <SettingsAgents />

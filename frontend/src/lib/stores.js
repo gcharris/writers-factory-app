@@ -188,6 +188,33 @@ export const directorStep = writable(0); // 0: Scaffold, 1: Structure, 2: Genera
 export const currentBeat = writable(null); // { number, name, percentage, description }
 export const manuscriptProgress = writable(0); // 0-100 percentage through manuscript
 
+// --- Assistant Panel State (Muse/Scribe) ---
+
+// Configurable assistant name (default: "Muse")
+export const assistantName = persistentWritable('wf_assistant_name', 'Muse');
+
+// Writing stage (auto-detected, manually overridable)
+export const currentStage = persistentWritable('wf_current_stage', 'conception');
+
+// Stage progress (tracks completion of each stage)
+export const stageProgress = writable({
+  conception: 0,
+  voice: 0,
+  execution: 0,
+  polish: 0
+});
+
+// Assistant settings
+export const assistantSettings = persistentWritable('wf_assistant_settings', {
+  autoIncludeFile: true,
+  showStage: true,
+  confirmStageChange: false,
+  // Voice input settings
+  voiceEnabled: true,
+  voiceLanguage: 'en-US',
+  voiceContinuous: true
+});
+
 // --- Knowledge Graph State ---
 
 // Selected node in graph explorer
@@ -204,3 +231,171 @@ export const searchQuery = writable('');
 
 // Pinned nodes (nodes locked in position)
 export const pinnedNodes = writable(new Set());
+
+// --- Work Order State (Background Tasks) ---
+
+/**
+ * Work order structure:
+ * {
+ *   id: string,
+ *   type: 'voice_tournament' | 'scene_generation' | 'story_bible' | 'health_check' | 'consolidation',
+ *   name: string,
+ *   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+ *   progress: { current: number, total: number } | null,
+ *   message: string | null,
+ *   started_at: string | null,
+ *   completed_at: string | null,
+ *   result: any | null,
+ *   error: string | null
+ * }
+ */
+
+// All work orders (history + active)
+export const workOrders = persistentWritable('wf_work_orders', []);
+
+// Currently active work order (null if idle)
+export const activeWorkOrder = writable(null);
+
+// Work order history visibility
+export const showWorkOrderHistory = writable(false);
+
+/**
+ * Helper: Create a new work order
+ * @param {string} type - Work order type
+ * @param {string} name - Human-readable name
+ * @returns {object} New work order object
+ */
+export function createWorkOrder(type, name) {
+  return {
+    id: `wo_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    type,
+    name,
+    status: 'pending',
+    progress: null,
+    message: null,
+    started_at: null,
+    completed_at: null,
+    result: null,
+    error: null
+  };
+}
+
+/**
+ * Helper: Update work order in store
+ * @param {string} id - Work order ID
+ * @param {object} updates - Fields to update
+ */
+export function updateWorkOrder(id, updates) {
+  workOrders.update(orders => {
+    const idx = orders.findIndex(o => o.id === id);
+    if (idx >= 0) {
+      orders[idx] = { ...orders[idx], ...updates };
+    }
+    return [...orders];
+  });
+
+  // Also update active work order if it matches
+  activeWorkOrder.update(active => {
+    if (active && active.id === id) {
+      return { ...active, ...updates };
+    }
+    return active;
+  });
+}
+
+/**
+ * Helper: Start a work order
+ * @param {object} workOrder - Work order to start
+ */
+export function startWorkOrder(workOrder) {
+  const startedOrder = {
+    ...workOrder,
+    status: 'running',
+    started_at: new Date().toISOString()
+  };
+
+  workOrders.update(orders => [startedOrder, ...orders]);
+  activeWorkOrder.set(startedOrder);
+
+  return startedOrder;
+}
+
+/**
+ * Helper: Complete a work order
+ * @param {string} id - Work order ID
+ * @param {any} result - Result data
+ */
+export function completeWorkOrder(id, result = null) {
+  const updates = {
+    status: 'completed',
+    completed_at: new Date().toISOString(),
+    result
+  };
+
+  updateWorkOrder(id, updates);
+
+  activeWorkOrder.update(active => {
+    if (active && active.id === id) {
+      return null;
+    }
+    return active;
+  });
+}
+
+/**
+ * Helper: Fail a work order
+ * @param {string} id - Work order ID
+ * @param {string} error - Error message
+ */
+export function failWorkOrder(id, error) {
+  const updates = {
+    status: 'failed',
+    completed_at: new Date().toISOString(),
+    error
+  };
+
+  updateWorkOrder(id, updates);
+
+  activeWorkOrder.update(active => {
+    if (active && active.id === id) {
+      return null;
+    }
+    return active;
+  });
+}
+
+/**
+ * Helper: Cancel a work order
+ * @param {string} id - Work order ID
+ */
+export function cancelWorkOrder(id) {
+  const updates = {
+    status: 'cancelled',
+    completed_at: new Date().toISOString()
+  };
+
+  updateWorkOrder(id, updates);
+
+  activeWorkOrder.update(active => {
+    if (active && active.id === id) {
+      return null;
+    }
+    return active;
+  });
+}
+
+/**
+ * Helper: Clear completed/failed work orders older than N days
+ * @param {number} days - Days to keep (default 7)
+ */
+export function clearOldWorkOrders(days = 7) {
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+
+  workOrders.update(orders =>
+    orders.filter(o =>
+      o.status === 'running' ||
+      o.status === 'pending' ||
+      (o.completed_at && new Date(o.completed_at).getTime() > cutoff)
+    )
+  );
+}

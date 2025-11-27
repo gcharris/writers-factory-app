@@ -1,32 +1,45 @@
 <!--
-  ForemanPanel.svelte - The Foreman Chat Interface
+  ForemanPanel.svelte - The Assistant Chat Interface (Muse/Scribe)
 
-  Clean chat interface with:
-  - Full-height chat with work order display
-  - Three header buttons: Studio, Graph, Settings (open modals)
+  IDE-style chat interface with:
+  - Immediate chat access (no project gate)
+  - Configurable assistant name
+  - Header buttons: Notebook, Studio, Graph, Sessions, Settings
   - Enhanced input with @mention and attachments
+  - Optional project context display
 -->
 <script>
   import { onMount, createEventDispatcher } from 'svelte';
   import { apiClient } from '$lib/api_client';
   import {
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
-    foremanWorkOrder, foremanChatHistory, activeModal
+    foremanWorkOrder, foremanChatHistory, activeModal, activeFile,
+    assistantName, currentStage, assistantSettings,
+    showWorkOrderHistory, cancelWorkOrder
   } from '$lib/stores';
+  import AgentDropdown from './chat/AgentDropdown.svelte';
+  import StageDropdown from './chat/StageDropdown.svelte';
+  import MentionPicker from './chat/MentionPicker.svelte';
+  import AttachButton from './chat/AttachButton.svelte';
+  import ContextBadge from './chat/ContextBadge.svelte';
+  import VoiceInput from './chat/VoiceInput.svelte';
+  import StatusBar from './chat/StatusBar.svelte';
+  import WorkOrderHistory from './chat/WorkOrderHistory.svelte';
 
   const dispatch = createEventDispatcher();
 
   let messages = [];
   let input = "";
-  let status = "checking...";
+  let status = "Ready";
   let isLoading = false;
-  let showStartProject = false;
-  let projectTitle = "";
-  let protagonistName = "";
   let kbStats = null;
+  let hasProject = false;
 
   // Enhanced input state
   let showMentionMenu = false;
+  let selectedAgent = 'default';
+  let contextItems = []; // Array of { type, name, id?, path?, content? }
+  let inputRef;
 
   // Sync messages with Foreman chat history
   $: {
@@ -35,10 +48,17 @@
     }
   }
 
+  // Track if we have an active project
+  $: hasProject = $foremanActive && $foremanProjectTitle;
+
   onMount(async () => {
     await checkForemanStatus();
-    if (!$foremanActive) {
-      showStartProject = true;
+    // Add welcome message if chat is empty
+    if (messages.length === 0) {
+      messages = [{
+        role: 'system',
+        text: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
+      }];
     }
   });
 
@@ -72,11 +92,13 @@
       }
     } catch (e) {
       console.warn('Failed to check Foreman status:', e);
-      status = "Offline";
+      // Even if backend is down, chat should work (degraded mode)
+      status = "Ready";
     }
   }
 
-  async function newProject() {
+  // Reset project context (but keep chat available)
+  async function resetProject() {
     try {
       await apiClient.foremanReset();
       foremanActive.set(false);
@@ -84,42 +106,15 @@
       foremanProjectTitle.set(null);
       foremanProtagonist.set(null);
       foremanWorkOrder.set(null);
-      messages = [];
-      foremanChatHistory.set([]);
-      showStartProject = true;
-    } catch (e) {
-      console.error('Failed to reset Foreman:', e);
-    }
-  }
-
-  async function startProject() {
-    if (!projectTitle.trim() || !protagonistName.trim()) return;
-
-    isLoading = true;
-    try {
-      const result = await apiClient.foremanStart(projectTitle, protagonistName);
-      foremanActive.set(true);
-      foremanMode.set(result.mode);
-      foremanProjectTitle.set(result.project_title);
-      foremanProtagonist.set(result.protagonist_name);
-
-      showStartProject = false;
-      projectTitle = "";
-      protagonistName = "";
-
-      const welcomeMsg = {
+      // Don't clear messages - keep chat history
+      const systemMsg = {
         role: 'system',
-        text: `Foreman initialized in ${result.mode} mode for "${result.project_title}" with protagonist ${result.protagonist_name}.`
+        text: 'Project context cleared. I\'m still here to help!'
       };
-      messages = [welcomeMsg];
+      messages = [...messages, systemMsg];
       foremanChatHistory.set(messages);
-
-      await checkForemanStatus();
     } catch (e) {
-      const errorMsg = { role: 'system', text: `Failed to start project: ${e.message}` };
-      messages = [errorMsg];
-    } finally {
-      isLoading = false;
+      console.error('Failed to reset project:', e);
     }
   }
 
@@ -163,11 +158,7 @@
   function handleKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (showStartProject) {
-        startProject();
-      } else {
-        sendMessage();
-      }
+      sendMessage();
     }
   }
 
@@ -253,38 +244,127 @@
   // ============================================
   // Enhanced Input Functions
   // ============================================
-  async function handleAttachment() {
-    // Use Tauri dialog to select files
-    // TODO: Implement file attachment
-    console.log('Attachment feature coming soon');
+
+  // Auto-include active file as context (if enabled)
+  $: if ($assistantSettings.autoIncludeFile && $activeFile) {
+    const fileName = $activeFile.split('/').pop();
+    const existingFile = contextItems.find(c => c.type === 'active-file');
+    if (!existingFile) {
+      // Add as non-removable active file indicator
+      contextItems = [
+        { type: 'active-file', name: fileName, path: $activeFile, removable: false },
+        ...contextItems.filter(c => c.type !== 'active-file')
+      ];
+    } else if (existingFile.path !== $activeFile) {
+      // Update to new file
+      contextItems = contextItems.map(c =>
+        c.type === 'active-file' ? { ...c, name: fileName, path: $activeFile } : c
+      );
+    }
+  } else if (!$assistantSettings.autoIncludeFile) {
+    // Remove auto-included file if setting disabled
+    contextItems = contextItems.filter(c => c.type !== 'active-file');
   }
 
-  function handleVoiceInput() {
-    // TODO: Implement voice input with Web Speech API
-    console.log('Voice input feature coming soon');
+  function handleAttachment(e) {
+    const attachment = e.detail;
+    // Add attachment to context
+    contextItems = [...contextItems, {
+      type: attachment.type,
+      name: attachment.name,
+      content: attachment.content,
+      size: attachment.size,
+      mimeType: attachment.mimeType,
+      removable: true
+    }];
+  }
+
+  function handleMentionSelect(e) {
+    const mention = e.detail;
+    // Add mention to context items
+    contextItems = [...contextItems, {
+      type: mention.type,
+      name: mention.name,
+      id: mention.id,
+      path: mention.path,
+      removable: true
+    }];
+    // Also insert into input
+    input = input + `@${mention.name} `;
+    inputRef?.focus();
+  }
+
+  function removeContextItem(e) {
+    const { index } = e.detail;
+    contextItems = contextItems.filter((_, i) => i !== index);
+  }
+
+  function handleAgentChange(e) {
+    selectedAgent = e.detail.agent;
+  }
+
+  function openAgentSettings() {
+    activeModal.set('settings');
+    // TODO: Navigate to Squad tab
+  }
+
+  // Voice input handlers
+  function handleVoiceResult(e) {
+    const { transcript } = e.detail;
+    if (transcript) {
+      // Append to existing input with a space
+      input = input ? `${input} ${transcript}` : transcript;
+      inputRef?.focus();
+    }
+  }
+
+  function handleVoiceInterim(e) {
+    // Could show live preview - for now just log
+    // console.log('Interim:', e.detail.transcript);
+  }
+
+  function handleVoiceError(e) {
+    const { error } = e.detail;
+    // Show error as system message
+    const errorMsg = { role: 'system', text: `Voice input: ${error}` };
+    messages = [...messages, errorMsg];
   }
 
   function toggleMentionMenu() {
     showMentionMenu = !showMentionMenu;
+  }
+
+  // Work order handlers
+  function openWorkOrderHistory() {
+    showWorkOrderHistory.set(true);
+  }
+
+  function handleCancelTask(e) {
+    const { id } = e.detail;
+    if (confirm('Cancel this task?')) {
+      cancelWorkOrder(id);
+    }
+  }
+
+  function closeWorkOrderHistory() {
+    showWorkOrderHistory.set(false);
   }
 </script>
 
 <div class="foreman-panel">
   <!-- Chat Section (Full Height) -->
   <div class="chat-section">
-    <!-- The Foreman Header -->
+    <!-- Assistant Header -->
     <div class="foreman-header">
       <div class="header-left">
         <span class="foreman-avatar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="10" r="3"></circle>
-            <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
           </svg>
         </span>
-        <span class="header-title">The Foreman</span>
+        <span class="header-title">{$assistantName}</span>
         <div class="header-status">
-          <span class="status-dot {status === 'Online' ? 'online' : status === 'Ready' ? 'ready' : 'offline'}"></span>
+          <span class="status-dot {status === 'Online' ? 'online' : 'ready'}"></span>
           <span class="status-text">{status}</span>
         </div>
       </div>
@@ -383,34 +463,7 @@
       </div>
     {/if}
 
-    <!-- Start Project Form -->
-    {#if showStartProject}
-      <div class="start-project">
-        <div class="start-project-header">Start New Project</div>
-        <div class="form-group">
-          <label>Project Title</label>
-          <input
-            type="text"
-            bind:value={projectTitle}
-            placeholder="e.g., Big Brain"
-            on:keydown={handleKeydown}
-          />
-        </div>
-        <div class="form-group">
-          <label>Protagonist Name</label>
-          <input
-            type="text"
-            bind:value={protagonistName}
-            placeholder="e.g., Mickey Bardot"
-            on:keydown={handleKeydown}
-          />
-        </div>
-        <button class="start-btn" on:click={startProject} disabled={isLoading || !projectTitle.trim() || !protagonistName.trim()}>
-          {isLoading ? 'Starting...' : 'Start Project'}
-        </button>
-      </div>
-    {:else}
-      <!-- Chat Messages -->
+    <!-- Chat Messages -->
       <div class="chat-messages">
         {#each messages as msg, i}
           <div class="message {msg.role}">
@@ -493,65 +546,91 @@
 
       <!-- Enhanced Chat Input -->
       <div class="chat-input-enhanced">
-        <div class="input-toolbar">
-          <button
-            class="toolbar-btn"
-            on:click={toggleMentionMenu}
-            title="@mention files or context"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
-            </svg>
-          </button>
-
-          <button
-            class="toolbar-btn"
-            on:click={handleAttachment}
-            title="Attach files"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-            </svg>
-          </button>
+        <!-- Top Row: Dropdowns -->
+        <div class="input-controls">
+          <AgentDropdown
+            {selectedAgent}
+            on:change={handleAgentChange}
+            on:configure={openAgentSettings}
+          />
+          {#if $assistantSettings.showStage}
+            <StageDropdown on:change />
+          {/if}
         </div>
 
-        <textarea
-          bind:value={input}
-          on:keydown={handleKeydown}
-          placeholder="Ask the Foreman..."
-          disabled={isLoading}
-          rows="1"
-        ></textarea>
+        <!-- Context Badges -->
+        <ContextBadge items={contextItems} on:remove={removeContextItem} />
 
-        <div class="input-actions">
-          <button
-            class="toolbar-btn"
-            on:click={handleVoiceInput}
-            title="Voice input"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-            </svg>
-          </button>
+        <!-- Input Row -->
+        <div class="input-row">
+          <div class="input-toolbar">
+            <button
+              class="toolbar-btn mention-btn"
+              class:active={showMentionMenu}
+              on:click={toggleMentionMenu}
+              title="@mention files or context"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
+              </svg>
+            </button>
 
-          <button
-            class="send-btn"
-            on:click={sendMessage}
-            disabled={isLoading || !input.trim()}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
+            <AttachButton on:attach={handleAttachment} />
+          </div>
+
+          <div class="input-field-wrapper">
+            <textarea
+              bind:this={inputRef}
+              bind:value={input}
+              on:keydown={handleKeydown}
+              placeholder="Ask {$assistantName}..."
+              disabled={isLoading}
+              rows="1"
+            ></textarea>
+
+            <!-- Mention Picker (positioned above input) -->
+            <MentionPicker
+              bind:open={showMentionMenu}
+              on:select={handleMentionSelect}
+              on:close={() => showMentionMenu = false}
+            />
+          </div>
+
+          <div class="input-actions">
+            <VoiceInput
+              disabled={isLoading}
+              on:result={handleVoiceResult}
+              on:interim={handleVoiceInterim}
+              on:error={handleVoiceError}
+            />
+
+            <button
+              class="send-btn"
+              on:click={sendMessage}
+              disabled={isLoading || !input.trim()}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-    {/if}
+
+      <!-- Status Bar (bottom of panel) -->
+      <StatusBar
+        on:open-history={openWorkOrderHistory}
+        on:cancel-task={handleCancelTask}
+      />
   </div>
 </div>
+
+<!-- Work Order History Modal -->
+{#if $showWorkOrderHistory}
+  <WorkOrderHistory on:close={closeWorkOrderHistory} />
+{/if}
 
 <style>
   .foreman-panel {
@@ -752,74 +831,6 @@
     color: var(--success);
   }
 
-  /* Start Project Form */
-  .start-project {
-    padding: var(--space-4);
-    background: var(--bg-primary);
-    flex: 1;
-  }
-
-  .start-project-header {
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-    color: var(--accent-gold);
-    margin-bottom: var(--space-4);
-  }
-
-  .form-group {
-    margin-bottom: var(--space-3);
-  }
-
-  .form-group label {
-    display: block;
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-1);
-  }
-
-  .form-group input {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: var(--text-sm);
-    font-family: var(--font-ui);
-  }
-
-  .form-group input:focus {
-    outline: none;
-    border-color: var(--accent-gold);
-    box-shadow: 0 0 0 2px var(--accent-gold-muted);
-  }
-
-  .form-group input::placeholder {
-    color: var(--text-muted);
-  }
-
-  .start-btn {
-    width: 100%;
-    padding: var(--space-2) var(--space-4);
-    background: var(--accent-gold);
-    border: none;
-    border-radius: var(--radius-md);
-    color: var(--bg-primary);
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .start-btn:hover:not(:disabled) {
-    background: var(--accent-gold-hover);
-  }
-
-  .start-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   /* Chat Messages */
   .chat-messages {
     flex: 1;
@@ -958,17 +969,33 @@
   /* Enhanced Chat Input */
   .chat-input-enhanced {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3);
     background: var(--bg-tertiary);
     border-top: 1px solid var(--border);
+  }
+
+  .input-controls {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
   }
 
   .input-toolbar,
   .input-actions {
     display: flex;
     gap: var(--space-1);
+  }
+
+  .input-field-wrapper {
+    flex: 1;
+    position: relative;
   }
 
   .toolbar-btn {
@@ -991,8 +1018,14 @@
     color: var(--text-secondary);
   }
 
+  .toolbar-btn.mention-btn.active {
+    background: var(--accent-cyan-muted);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+
   .chat-input-enhanced textarea {
-    flex: 1;
+    width: 100%;
     padding: var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border);
