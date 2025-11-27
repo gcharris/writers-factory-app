@@ -1139,8 +1139,19 @@ class ForemanStartRequest(BaseModel):
     notebooks: dict = None  # {notebook_id: role}
 
 
+class ContextItem(BaseModel):
+    type: str  # "file", "mention", "attachment"
+    path: Optional[str] = None  # For file type
+    id: Optional[str] = None  # For mention type
+    content: Optional[str] = None  # For attachment type
+    filename: Optional[str] = None  # For attachment type
+
+
 class ForemanChatRequest(BaseModel):
     message: str
+    context: Optional[List[ContextItem]] = None  # Attached context items
+    agent: Optional[str] = "default"  # Agent to route to
+    include_open_file: Optional[bool] = False  # Auto-include active file
 
 
 class ForemanNotebookRequest(BaseModel):
@@ -1204,12 +1215,59 @@ async def foreman_chat(request: ForemanChatRequest):
     The Foreman will:
     - Consider the work order status
     - Review relevant KB entries
+    - Process attached context (files, mentions, attachments)
     - Respond with craft-aware guidance
     - Optionally take actions (query NotebookLM, write templates, etc.)
     """
     try:
         foreman = get_foreman()
-        result = await foreman.chat(request.message)
+
+        # Build message with context
+        message = request.message
+        context_text = ""
+
+        if request.context:
+            context_parts = []
+            content_path = Path(os.path.dirname(__file__)) / "content"
+
+            for item in request.context:
+                if item.type == "file" and item.path:
+                    # Read file content
+                    file_path = content_path.parent / item.path
+                    if file_path.exists():
+                        try:
+                            content = file_path.read_text(encoding="utf-8")
+                            context_parts.append(f"[File: {item.path}]\n{content}")
+                        except Exception as e:
+                            logger.warning(f"Could not read context file {item.path}: {e}")
+
+                elif item.type == "mention" and item.id:
+                    # Look up mention in graph
+                    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+                    if os.path.exists(graph_path):
+                        try:
+                            with open(graph_path, "r") as f:
+                                graph = json.load(f)
+                            for node in graph.get("nodes", []):
+                                node_id = f"{node.get('type', '').lower()}_{node.get('id', '')}"
+                                if node_id == item.id:
+                                    context_parts.append(f"[Mention: {node.get('label')}]\n{json.dumps(node, indent=2)}")
+                                    break
+                        except Exception as e:
+                            logger.warning(f"Could not lookup mention {item.id}: {e}")
+
+                elif item.type == "attachment" and item.content:
+                    # Include raw attachment content
+                    filename = item.filename or "attachment"
+                    context_parts.append(f"[Attachment: {filename}]\n{item.content}")
+
+            if context_parts:
+                context_text = "\n\n---\nContext:\n" + "\n\n".join(context_parts)
+
+        # Combine message with context
+        full_message = message + context_text if context_text else message
+
+        result = await foreman.chat(full_message)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
@@ -1359,6 +1417,253 @@ async def foreman_advance_to_director():
         raise HTTPException(status_code=400, detail=result)
 
     return result
+
+
+# =============================================================================
+# Stage Detection & Mentions (Assistant Panel Integration)
+# =============================================================================
+
+class StageChangeRequest(BaseModel):
+    stage: str  # conception, voice, execution, polish
+
+
+# Store for manual stage override (in-memory for now)
+_manual_stage_override: Optional[str] = None
+
+
+def _detect_current_stage() -> dict:
+    """
+    Auto-detect writing stage based on project state.
+
+    Returns stage info with progress percentages.
+    """
+    global _manual_stage_override
+
+    # If manual override is set, use it
+    if _manual_stage_override:
+        return {
+            "current": _manual_stage_override,
+            "completed": _get_completed_stages(_manual_stage_override),
+            "progress": _calculate_all_progress(),
+            "can_change": True,
+            "auto_detected": False
+        }
+
+    # Auto-detect based on project state
+    try:
+        service = get_story_bible_service()
+        report = service.get_validation_report()
+        conception_progress = report.get('completion_score', 0)
+        phase2_complete = report.get('phase2_complete', False)
+    except Exception:
+        conception_progress = 0
+        phase2_complete = False
+
+    # Check for voice reference
+    voice_reference_exists = _check_voice_reference()
+
+    # Check for draft chapters
+    drafts_exist, draft_count = _check_draft_files()
+
+    # Determine current stage
+    if conception_progress < 100:
+        current = "conception"
+        completed = []
+    elif not voice_reference_exists:
+        current = "voice"
+        completed = ["conception"]
+    elif drafts_exist:
+        # Check manuscript size for polish stage
+        if draft_count >= 10:  # ~10 chapters suggests polish stage
+            current = "polish"
+            completed = ["conception", "voice", "execution"]
+        else:
+            current = "execution"
+            completed = ["conception", "voice"]
+    else:
+        current = "execution"
+        completed = ["conception", "voice"]
+
+    return {
+        "current": current,
+        "completed": completed,
+        "progress": {
+            "conception": conception_progress,
+            "voice": 100 if voice_reference_exists else 0,
+            "execution": min(100, draft_count * 10) if drafts_exist else 0,
+            "polish": 0
+        },
+        "can_change": True,
+        "auto_detected": True
+    }
+
+
+def _get_completed_stages(current: str) -> list:
+    """Get list of completed stages based on current stage."""
+    stages = ["conception", "voice", "execution", "polish"]
+    current_idx = stages.index(current) if current in stages else 0
+    return stages[:current_idx]
+
+
+def _calculate_all_progress() -> dict:
+    """Calculate progress for all stages."""
+    try:
+        service = get_story_bible_service()
+        report = service.get_validation_report()
+        conception = report.get('completion_score', 0)
+    except Exception:
+        conception = 0
+
+    voice = 100 if _check_voice_reference() else 0
+    drafts_exist, draft_count = _check_draft_files()
+    execution = min(100, draft_count * 10) if drafts_exist else 0
+
+    return {
+        "conception": conception,
+        "voice": voice,
+        "execution": execution,
+        "polish": 0
+    }
+
+
+def _check_voice_reference() -> bool:
+    """Check if voice reference file exists."""
+    content_path = Path(os.path.dirname(__file__)) / "content"
+    voice_paths = [
+        content_path / "VoiceReference.md",
+        content_path / "Voice_Reference.md",
+        content_path / "Story Bible" / "Voice" / "VoiceReference.md",
+        content_path / "Story Bible" / "Voice_Bundle.md",
+    ]
+    return any(p.exists() for p in voice_paths)
+
+
+def _check_draft_files() -> tuple[bool, int]:
+    """Check for draft chapter files. Returns (exists, count)."""
+    content_path = Path(os.path.dirname(__file__)) / "content"
+    chapter_patterns = [
+        content_path / "Chapters",
+        content_path / "Manuscript",
+        content_path / "Drafts",
+    ]
+
+    count = 0
+    for pattern_dir in chapter_patterns:
+        if pattern_dir.exists():
+            count += len(list(pattern_dir.glob("*.md")))
+
+    return count > 0, count
+
+
+@app.get("/foreman/stage", summary="Get current writing stage")
+async def get_foreman_stage():
+    """
+    Auto-detect current writing stage based on project state.
+
+    Returns current stage, completed stages, and progress percentages.
+    Used by StageDropdown.svelte for stage indicator.
+    """
+    return _detect_current_stage()
+
+
+@app.post("/foreman/stage", summary="Manually change writing stage")
+async def change_foreman_stage(request: StageChangeRequest):
+    """
+    Manually override the writing stage focus.
+
+    This doesn't change project state, just shifts the assistant's focus.
+    """
+    global _manual_stage_override
+
+    valid_stages = ["conception", "voice", "execution", "polish"]
+
+    if request.stage not in valid_stages:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid stage. Must be one of: {valid_stages}"
+        )
+
+    _manual_stage_override = request.stage
+
+    stage_names = {
+        "conception": "Conception",
+        "voice": "Voice",
+        "execution": "Execution",
+        "polish": "Polish"
+    }
+
+    return {
+        "success": True,
+        "message": f"Focus changed to {stage_names[request.stage]} stage",
+        "current": request.stage
+    }
+
+
+@app.delete("/foreman/stage", summary="Reset stage to auto-detection")
+async def reset_foreman_stage():
+    """Reset stage override and return to auto-detection."""
+    global _manual_stage_override
+    _manual_stage_override = None
+
+    return {
+        "success": True,
+        "message": "Stage reset to auto-detection",
+        "current": _detect_current_stage()["current"]
+    }
+
+
+@app.get("/mentions/search", summary="Search for @mentionable entities")
+async def search_mentions(q: str, limit: int = 10):
+    """
+    Search Knowledge Graph and content files for mentionable entities.
+
+    Returns characters, locations, themes, and files matching the query.
+    Used by MentionPicker.svelte for @mention suggestions.
+    """
+    results = []
+    query_lower = q.lower()
+
+    # Search Knowledge Graph
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if os.path.exists(graph_path):
+        try:
+            with open(graph_path, "r", encoding="utf-8") as f:
+                graph_data = json.load(f)
+
+            for node in graph_data.get("nodes", []):
+                label = node.get("label", "")
+                if query_lower in label.lower():
+                    node_type = node.get("type", "unknown").lower()
+                    results.append({
+                        "type": node_type,
+                        "name": label,
+                        "id": f"{node_type}_{node.get('id', '')}",
+                        "file": node.get("file_path", "")
+                    })
+        except Exception as e:
+            logger.error(f"Error searching graph: {e}")
+
+    # Search content directory files
+    content_path = Path(os.path.dirname(__file__)) / "content"
+    if content_path.exists():
+        try:
+            for file_path in content_path.rglob("*.md"):
+                file_name = file_path.stem
+                if query_lower in file_name.lower():
+                    # Avoid duplicates from graph
+                    if not any(r["name"] == file_name for r in results):
+                        results.append({
+                            "type": "file",
+                            "name": file_name,
+                            "id": f"file_{file_path.stem}",
+                            "path": str(file_path.relative_to(content_path.parent))
+                        })
+        except Exception as e:
+            logger.error(f"Error searching files: {e}")
+
+    # Limit and return
+    return {"results": results[:limit]}
 
 
 # =============================================================================
