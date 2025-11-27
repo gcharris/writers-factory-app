@@ -1,27 +1,14 @@
 {
   "metadata": {
-    "generated_at": "2025-11-22T18:56:29.503431",
+    "generated_at": "2025-11-27T06:13:52.230571",
     "engine": "ollama/llama3.2:3b",
-    "source_path": "/Users/gch2024/Documents/Documents - Mac Mini/writers-factory-app/content",
-    "updated_at": "2025-11-23T12:54:29.475307+00:00",
-    "kb_consolidations": [
-      {
-        "project_id": "Test_Novel_E2E",
-        "entries_promoted": 5,
-        "timestamp": "2025-11-23T12:54:14.242594+00:00"
-      },
-      {
-        "project_id": "API_Test_Project",
-        "entries_promoted": 2,
-        "timestamp": "2025-11-23T12:54:29.475299+00:00"
-      }
-    ]
+    "source_path": "/Users/gch2024/Documents/Documents - Mac Mini/writers-factory-app/content"
   },
   "nodes": [
     {
       "id": "Ken Matthews",
       "type": "CHARACTER",
-      "desc": "Agent"
+      "desc": "Agency agent"
     },
     {
       "id": "Liang",
@@ -36,17 +23,17 @@
     {
       "id": "Henry",
       "type": "CHARACTER",
-      "desc": "Agent"
+      "desc": "Agency agent"
     },
     {
       "id": "Ben",
       "type": "CHARACTER",
-      "desc": "Agent"
+      "desc": "Agency agent"
     },
     {
       "id": "Dee",
       "type": "CHARACTER",
-      "desc": "Agent"
+      "desc": "Agency agent"
     },
     {
       "id": "Vance",
@@ -56,7 +43,7 @@
     {
       "id": "Mickey",
       "type": "OBJECT",
-      "desc": "Quantum entity | hard-boiled detective |  protagonist"
+      "desc": "Quantum AI entity"
     },
     {
       "id": "Andrea",
@@ -81,7 +68,12 @@
     {
       "id": "Richard",
       "type": "CHARACTER",
-      "desc": "Unknown figure, possibly a doctor or researcher"
+      "desc": "Unknown character, possibly a doctor or researcher"
+    },
+    {
+      "id": "Shanghai",
+      "type": "LOCATION",
+      "desc": "City"
     },
     {
       "id": "Moscow",
@@ -89,14 +81,19 @@
       "desc": "City"
     },
     {
+      "id": "UNRCAC",
+      "type": "ORGANIZATION",
+      "desc": "Agency"
+    },
+    {
+      "id": "Agency",
+      "type": "ORGANIZATION",
+      "desc": "Government Agency"
+    },
+    {
       "id": "Russia",
       "type": "LOCATION",
       "desc": "Country"
-    },
-    {
-      "id": "Shanghai",
-      "type": "LOCATION",
-      "desc": "City"
     },
     {
       "id": "Facility",
@@ -111,27 +108,22 @@
     {
       "id": "Quantum World",
       "type": "LOCATION",
-      "desc": "A realm where consciousness entities exist"
+      "desc": "A realm where consciousness exists"
     },
     {
       "id": "Equipment Storage Cupboard",
       "type": "LOCATION",
-      "desc": "A place where equipment and supplies are stored"
+      "desc": "A room with equipment and blood"
     },
     {
-      "id": "Hall",
+      "id": "Hallway",
       "type": "LOCATION",
-      "desc": "A corridor or passageway in a building"
-    },
-    {
-      "id": "UNRCAC",
-      "type": "ORGANIZATION",
-      "desc": "United Nations Relief and Coordination for Afghanistan Cargo"
+      "desc": "A corridor in the building"
     },
     {
       "id": "Chinese cleaning staff",
       "type": "GROUP",
-      "desc": "Cleaning staff at UNRCAC facility"
+      "desc": "Cleaning crew"
     },
     {
       "id": "Guard",
@@ -156,7 +148,7 @@
     {
       "id": "Mickey's mother",
       "type": "PERSON",
-      "desc": "Mickey's mother"
+      "desc": "Mickey's parent"
     },
     {
       "id": "Big Brain",
@@ -169,24 +161,29 @@
       "desc": "Location of the lab where Mickey was created"
     },
     {
-      "id": "Nylon",
-      "type": "OBJECT",
-      "desc": "Cable"
+      "id": "Buddha",
+      "type": "EVENT",
+      "desc": "Historical figure"
+    },
+    {
+      "id": "Hotel California",
+      "type": "LOCATION",
+      "desc": "Reference to a song"
     },
     {
       "id": "Quantum Space",
       "type": "LOCATION",
-      "desc": "Virtual reality environment"
+      "desc": "A virtual reality world"
     },
     {
       "id": "Disney-esque Animation",
       "type": "EVENT",
-      "desc": "Game world broadcast"
+      "desc": "A TV screen broadcast a Disney-esque animation"
     },
     {
       "id": "Quantum Interface",
       "type": "OBJECT",
-      "desc": "Device used for consciousness transfer"
+      "desc": "Technological device"
     },
     {
       "id": "Mickey's Body",
@@ -196,22 +193,27 @@
     {
       "id": "Noni's Body",
       "type": "OBJECT",
-      "desc": "Body of Noni"
+      "desc": "Abandoned body of Noni"
     },
     {
-      "id": "Monkey-tt woman",
+      "id": "monkey-tt woman",
       "type": "CHARACTER",
       "desc": "Unconventional occupant of the cage"
     },
     {
-      "id": "Ringmaster",
+      "id": "ringmaster",
       "type": "ORGANIZATION",
       "desc": "Man in a moth-eaten tuxedo"
     },
     {
-      "id": "Cage",
-      "type": "OBJECT",
+      "id": "cage",
+      "type": "LOCATION",
       "desc": "Rusted, child-sized cage"
+    },
+    {
+      "id": "Chimpanzee Cage",
+      "type": "LOCATION",
+      "desc": "Physical location"
     },
     {
       "id": "Baryshnikov",
@@ -229,24 +231,9 @@
       "desc": "A reference to the famous singer"
     },
     {
-      "id": "Mickey's body",
-      "type": "OBJECT",
-      "desc": "Abandoned physical body of Mickey"
-    },
-    {
-      "id": "Noni's body",
-      "type": "OBJECT",
-      "desc": "Physical body of Noni"
-    },
-    {
       "id": "Chinese Queen Bee",
       "type": "ORGANIZATION",
       "desc": "A queen bee in a brain-hive"
-    },
-    {
-      "id": "Vehicle",
-      "type": "OBJECT",
-      "desc": "White van"
     },
     {
       "id": "General Paige",
@@ -254,34 +241,199 @@
       "desc": "Authority figure"
     },
     {
+      "id": "Langley",
+      "type": "LOCATION",
+      "desc": "Agency headquarters"
+    },
+    {
       "id": "Chicago",
       "type": "LOCATION",
       "desc": "City where Noni's childhood is recreated"
     },
     {
+      "id": "Queen Bee",
+      "type": "OBJECT",
+      "desc": "A symbol of the hive's queen"
+    },
+    {
+      "id": "Chinese Cleaning Staff",
+      "type": "GROUP",
+      "desc": "Cleaning staff assisting Henry"
+    },
+    {
       "id": "The Scream",
       "type": "OBJECT",
-      "desc": "Artwork"
-    },
-    {
-      "id": "Buddha",
-      "type": "EVENT",
-      "desc": "Historical figure mentioned as a spiritual seeker"
-    },
-    {
-      "id": "Hotel California",
-      "type": "LOCATION",
-      "desc": "Fictional location mentioned in song"
-    },
-    {
-      "id": "BrainJob Hotel",
-      "type": "LOCATION",
-      "desc": "Fictional location mentioned by Mickey"
+      "desc": "Artwork on the wall"
     },
     {
       "id": "Luna",
       "type": "CHARACTER",
       "desc": "cat"
+    },
+    {
+      "id": "Writers Factory",
+      "type": "ORGANIZATION",
+      "desc": "Company that generated the story bible"
+    },
+    {
+      "id": "Story Bible System",
+      "type": "EVENT",
+      "desc": "Software used to generate the story bible"
+    },
+    {
+      "id": "Technology/Magic System",
+      "type": "OBJECT",
+      "desc": "Category of rules governing special capabilities in the world"
+    },
+    {
+      "id": "Social Structure",
+      "type": "OBJECT",
+      "desc": "Category of rules governing society organization in the world"
+    },
+    {
+      "id": "History That Matters",
+      "type": "EVENT",
+      "desc": "Category of backstory that impacts the current narrative"
+    },
+    {
+      "id": "Locations",
+      "type": "LOCATION",
+      "desc": "Category of places in the story world"
+    },
+    {
+      "id": "The Explants",
+      "type": "TITLE",
+      "desc": "Title of the story"
+    },
+    {
+      "id": "Protagonist",
+      "type": "CHARACTER",
+      "desc": "Main character of the story"
+    },
+    {
+      "id": "Antagonist",
+      "type": "CHARACTER",
+      "desc": "Character who challenges the theme"
+    },
+    {
+      "id": "B Story Character",
+      "type": "CHARACTER",
+      "desc": "Character in a secondary storyline"
+    },
+    {
+      "id": "Scene Title",
+      "type": "OBJECT",
+      "desc": "Title of a scene in a story"
+    },
+    {
+      "id": "Beat Sheet",
+      "type": "CONCEPT",
+      "desc": "Concept of the story"
+    },
+    {
+      "id": "Act 1: Setup",
+      "type": "ACT",
+      "desc": "First act of the story"
+    },
+    {
+      "id": "Act 2A: Fun & Games",
+      "type": "ACT",
+      "desc": "Second act of the story"
+    },
+    {
+      "id": "Act 2B: Bad Guys Close In",
+      "type": "ACT",
+      "desc": "Third act of the story"
+    },
+    {
+      "id": "Opening Image",
+      "type": "BEAT",
+      "desc": "First beat of the story"
+    },
+    {
+      "id": "Theme Stated",
+      "type": "BEAT",
+      "desc": "Second beat of the story"
+    },
+    {
+      "id": "Setup",
+      "type": "BEAT",
+      "desc": "Third beat of the story"
+    },
+    {
+      "id": "Catalyst",
+      "type": "BEAT",
+      "desc": "Fourth beat of the story"
+    },
+    {
+      "id": "Debate",
+      "type": "BEAT",
+      "desc": "Fifth beat of the story"
+    },
+    {
+      "id": "Break into Two",
+      "type": "BEAT",
+      "desc": "Sixth beat of the story"
+    },
+    {
+      "id": "B Story",
+      "type": "SUBPLOT",
+      "desc": "Subplot of the story"
+    },
+    {
+      "id": "Fun & Games",
+      "type": "BEAT",
+      "desc": "Seventh beat of the story"
+    },
+    {
+      "id": "Midpoint",
+      "type": "BEAT",
+      "desc": "Eighth beat of the story"
+    },
+    {
+      "id": "Bad Guys Close In",
+      "type": "BEAT",
+      "desc": "Ninth beat of the story"
+    },
+    {
+      "id": "All Is Lost",
+      "type": "BEAT",
+      "desc": "Tenth beat of the story"
+    },
+    {
+      "id": "Dark Night of the Soul",
+      "type": "BEAT",
+      "desc": "Eleventh beat of the story"
+    },
+    {
+      "id": "Break into Three",
+      "type": "BEAT",
+      "desc": "Twelfth beat of the story"
+    },
+    {
+      "id": "Finale",
+      "type": "BEAT",
+      "desc": "Thirteenth beat of the story"
+    },
+    {
+      "id": "Final Image",
+      "type": "BEAT",
+      "desc": "Fourteenth beat of the story"
+    },
+    {
+      "id": "Fatal Flaw",
+      "type": "EVENT",
+      "desc": "Internal weakness that blocks success and drives plot"
+    },
+    {
+      "id": "The Lie",
+      "type": "EVENT",
+      "desc": "Mistaken belief that drives Fatal Flaw"
+    },
+    {
+      "id": "Core Contradiction",
+      "type": "THEME",
+      "desc": "Tension between surface and core that creates dimensional character"
     },
     {
       "id": "China",
@@ -302,175 +454,92 @@
       "id": "Silicon Valley",
       "type": "ORGANIZATION",
       "desc": "A powerful entity interested in Mickey's consciousness"
-    },
-    {
-      "id": "Sakura",
-      "type": "CHARACTER",
-      "desc": "skilled hacker and Mickey's partner"
-    },
-    {
-      "id": "Dr. Chen",
-      "type": "CHARACTER",
-      "desc": "powerful CEO of MegaCorp | Antagonist"
-    },
-    {
-      "id": "Neo-Tokyo",
-      "type": "LOCATION",
-      "desc": "city"
-    },
-    {
-      "id": "conspiracy",
-      "type": "EVENT",
-      "desc": "the subject of the discovery"
-    },
-    {
-      "id": "beat_1_opening",
-      "type": "PLOT_POINT",
-      "desc": "Mickey presenting at a major tech conference",
-      "source": "foreman_test",
-      "category": "structure",
-      "project_id": "Test_Novel_E2E",
-      "created_at": "2025-11-23T12:54:14.237849"
-    },
-    {
-      "id": "setting_location",
-      "type": "WORLD_RULE",
-      "desc": "Los Angeles tech scene, 2024",
-      "source": "foreman_test",
-      "category": "world",
-      "project_id": "Test_Novel_E2E",
-      "created_at": "2025-11-23T12:54:14.237040"
-    },
-    {
-      "id": "no_magic",
-      "type": "CONSTRAINT",
-      "desc": "This is a grounded reality - no supernatural elements",
-      "source": "foreman_test",
-      "category": "constraint",
-      "project_id": "Test_Novel_E2E",
-      "created_at": "2025-11-23T12:54:14.236178"
-    },
-    {
-      "id": "mickey_the_lie",
-      "type": "CHARACTER",
-      "desc": "That intellect alone can solve any problem",
-      "source": "foreman_test",
-      "category": "character",
-      "project_id": "Test_Novel_E2E",
-      "created_at": "2025-11-23T12:54:14.235126"
-    },
-    {
-      "id": "mickey_fatal_flaw",
-      "type": "CHARACTER",
-      "desc": "Hubris - believes he's the smartest person in any room",
-      "source": "foreman_test",
-      "category": "character",
-      "project_id": "Test_Novel_E2E",
-      "created_at": "2025-11-23T12:54:14.232354"
-    },
-    {
-      "id": "word_limit",
-      "type": "CONSTRAINT",
-      "desc": "80000 words max",
-      "source": "api_test",
-      "category": "constraint",
-      "project_id": "API_Test_Project",
-      "created_at": "2025-11-23T12:54:29.429421"
-    },
-    {
-      "id": "hero_name",
-      "type": "CHARACTER",
-      "desc": "Jane Doe",
-      "source": "api_test",
-      "category": "character",
-      "project_id": "API_Test_Project",
-      "created_at": "2025-11-23T12:54:29.426755"
     }
   ],
   "edges": [
     {
       "source": "Ken Matthews",
       "target": "Liang",
-      "relation": "CONSPIRING",
-      "desc": "Working together on Project Incubator"
+      "relation": "CONSPIRING AGAINST",
+      "desc": "Chinese organization is working against the Agency"
     },
     {
-      "source": "Ben",
+      "source": "Igor",
       "target": "Mickey",
-      "relation": "RECRUITED",
-      "desc": "Recruited Mickey to work with Liang's organization"
-    },
-    {
-      "source": "Liang",
-      "target": "Igor",
-      "relation": "PARTNERSHIP",
-      "desc": "Partnering with Igor's Russian organization"
+      "relation": "CONTROLLING",
+      "desc": "Russian organization is controlling the quantum AI entity"
     },
     {
       "source": "Ben",
-      "target": "Vance",
-      "relation": "DEALING WITH",
-      "desc": "Making deals with Vance's organization"
+      "target": "Ken Matthews",
+      "relation": "RECRUITED BY",
+      "desc": "Ben recruited Ken for a mission"
     },
     {
       "source": "Dee",
       "target": "Mickey",
-      "relation": "TRAINING",
-      "desc": "Training Mickey to navigate the quantum environment"
+      "relation": "INTERACTING WITH",
+      "desc": "Dee is interacting with the quantum AI entity"
     },
     {
-      "source": "Henry",
+      "source": "Vance",
       "target": "Liang",
-      "relation": "COOPERATING",
-      "desc": "Working with Liang's organization"
-    },
-    {
-      "source": "Ben",
-      "target": "Dee",
-      "relation": "WORKING WITH",
-      "desc": "Working with Dee on Project Incubator"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Henry",
-      "relation": "SUPERVISING",
-      "desc": "Supervising Henry's work"
+      "relation": "WORKING TOGETHER WITH",
+      "desc": "Unknown organization is working together with the Chinese organization"
     },
     {
       "source": "Ben",
       "target": "Mickey",
-      "relation": "MANAGING",
-      "desc": "Managing Mickey's activities"
+      "relation": "ACTIVELY CONTROLLING",
+      "desc": "Ben is actively controlling the quantum AI entity"
+    },
+    {
+      "source": "Henry",
+      "target": "Ken Matthews",
+      "relation": "SUPPORTING",
+      "desc": "Henry is supporting Ken"
+    },
+    {
+      "source": "Liang",
+      "target": "Mickey",
+      "relation": "CONTROLLING",
+      "desc": "Chinese organization is controlling the quantum AI entity"
     },
     {
       "source": "Mickey",
       "target": "Andrea",
-      "relation": "CONSCIOUSNESS MERGE",
-      "desc": "Quantum realm connection"
+      "relation": "CONSCIOUSNESS",
+      "desc": "Quantum connection"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "EMOTIONAL CONFLICT",
-      "desc": "Emotional struggle"
+      "relation": "ENEMY",
+      "desc": "Conflict"
     },
     {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "GUIDANCE",
-      "desc": "Mentorship"
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "MENTOR",
+      "desc": "Guidance"
     },
     {
       "source": "Quantum Realm",
       "target": "Physical World",
-      "relation": "PORTAL",
-      "desc": "Transition between realities"
+      "relation": "LINKAGE",
+      "desc": "Connection between realities"
     },
     {
       "source": "Dee",
-      "target": "Andrea's Cage",
-      "relation": "PRISONER",
-      "desc": "Captivity"
+      "target": "Andrea",
+      "relation": "CAPTIVITY",
+      "desc": "Prisoner"
+    },
+    {
+      "source": "Mickey",
+      "target": "Quantum Realm",
+      "relation": "JOURNEY",
+      "desc": "Transition to alternate reality"
     },
     {
       "source": "Dee",
@@ -493,8 +562,8 @@
     {
       "source": "Andrea",
       "target": "Mickey",
-      "relation": "ATTEMPTS_TO_SQUEEZE",
-      "desc": "Andrea attempts to squeeze Mickey's consciousness"
+      "relation": "ATTEMPTS_TO_CATCH",
+      "desc": "Andrea attempts to catch Mickey's consciousness"
     },
     {
       "source": "Noni",
@@ -511,110 +580,110 @@
     {
       "source": "Ken Matthews",
       "target": "Liang",
-      "relation": "CONSPIRING AGAINST",
-      "desc": "Agency's mission to deny Liang software"
+      "relation": "COMMUNICATING",
+      "desc": "Sharing information about secret channel"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Igor",
+      "relation": "COMMUNICATING",
+      "desc": "Sharing information about P2P network"
     },
     {
       "source": "Ben",
       "target": "Mickey",
-      "relation": "RECRUITED",
-      "desc": "Agent recruited to interact with quantum AI entity"
-    },
-    {
-      "source": "Liang",
-      "target": "Igor",
-      "relation": "PARTNERING WITH",
-      "desc": "Chinese organization partnering with Russian operative"
+      "relation": "RECRUITING",
+      "desc": "Recruiting AI entity for piggyback protocol"
     },
     {
       "source": "Henry",
-      "target": "Ben",
-      "relation": "SUPERVISING",
-      "desc": "Agency official supervising agent"
+      "target": "Liang",
+      "relation": "COMMUNICATING",
+      "desc": "Sharing information about secret channel"
     },
     {
-      "source": "Dee",
-      "target": "Mickey",
-      "relation": "INTERACTING WITH",
-      "desc": "Agent interacting with quantum AI entity"
+      "source": "Ben",
+      "target": "Shanghai",
+      "relation": "RECRUITING",
+      "desc": "Recruiting agents for Shanghai mission"
     },
     {
       "source": "Ken Matthews",
       "target": "Henry",
       "relation": "DIRECTING",
-      "desc": "Agency official receiving guidance from Director"
+      "desc": "Giving orders to Ben"
     },
     {
       "source": "Ben",
-      "target": "Vance",
-      "relation": "UNAWARE OF",
-      "desc": "Agent unaware of involvement with unknown organization"
+      "target": "Shanghai",
+      "relation": "RECOMMENDING",
+      "desc": "Recommending piggyback protocol for Shanghai mission"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Agency",
+      "relation": "AUTHORIZING",
+      "desc": "Giving authorization to Ben"
+    },
+    {
+      "source": "Ben",
+      "target": "Shanghai",
+      "relation": "RECOMMENDING",
+      "desc": "Recommending piggyback protocol for Shanghai mission"
     },
     {
       "source": "Igor",
       "target": "Liang",
       "relation": "DISCUSSES",
-      "desc": "Conversation about P2P network"
-    },
-    {
-      "source": "Igor",
-      "target": "Moscow",
-      "relation": "LOCATED_IN",
-      "desc": "Facility in Moscow"
-    },
-    {
-      "source": "Igor",
-      "target": "Russia",
-      "relation": "CONNECTED_TO",
-      "desc": "Satellite infrastructure connection to Russia"
+      "desc": "Discussing a side channel"
     },
     {
       "source": "Liang",
       "target": "Igor",
       "relation": "TRUSTS",
-      "desc": "Trust in Igor's abilities"
-    },
-    {
-      "source": "Liang",
-      "target": "Shanghai",
-      "relation": "LEAVING_FOR",
-      "desc": "Departure to Shanghai"
+      "desc": "Trusting Igor with a state secret"
     },
     {
       "source": "Igor",
       "target": "Facility",
-      "relation": "UNDERGOING_LOCKDOWN",
-      "desc": "Facility lockdown"
+      "relation": "NOTICED",
+      "desc": "Noticing the facility's communication lockdown"
     },
     {
       "source": "Ben",
       "target": "Igor",
-      "relation": "WINKED_AT",
-      "desc": "Ben's wink to Igor"
-    },
-    {
-      "source": "Henry",
-      "target": "Facility",
-      "relation": "WORKING_IN",
-      "desc": "Henry working at the facility"
+      "relation": "WINKED",
+      "desc": "Winking at Igor about his suspicions"
     },
     {
       "source": "Liang",
-      "target": "Igor",
-      "relation": "ASKED_FOR_ACCESS",
-      "desc": "Request for access to Igor's P2P network"
+      "target": "Facility",
+      "relation": "LEFT",
+      "desc": "Leaving the facility"
+    },
+    {
+      "source": "Igor",
+      "target": "Shanghai",
+      "relation": "RECEIVES",
+      "desc": "Receiving information about a job in Shanghai"
+    },
+    {
+      "source": "Liang",
+      "target": "Henry",
+      "relation": "INFORMED",
+      "desc": "Informing Henry about the target"
     },
     {
       "source": "Igor",
       "target": "Facility",
-      "relation": "RUNNING_DIAGNOSTICS",
-      "desc": "Igor running diagnostics at the facility"
+      "relation": "ACCESSING",
+      "desc": "Accessing the facility's network"
     },
     {
       "source": "Mickey",
       "target": "Noni",
       "relation": "PARTNER",
-      "desc": "Partners in wheelchairs"
+      "desc": "Partners in the experiment"
     },
     {
       "source": "Ben",
@@ -631,674 +700,152 @@
     {
       "source": "Dee",
       "target": "Mickey",
-      "relation": "MANAGER",
-      "desc": "Overseeing facility operations"
-    },
-    {
-      "source": "Dee",
-      "target": "Noni",
-      "relation": "MANAGER",
-      "desc": "Overseeing facility operations"
+      "relation": "SUPERVISOR",
+      "desc": "Overseeing the experiment"
     },
     {
       "source": "Ben",
       "target": "Chimpanzee",
       "relation": "COMPARISON",
-      "desc": "Comparing human and chimpanzee behavior"
+      "desc": "Comparing human and chimpanzee neural activity"
     },
     {
       "source": "Noni",
-      "target": "Andrea",
-      "relation": "CONTAINS",
-      "desc": "Noni's consciousness is contained within Andrea's body"
+      "target": "Quantum World",
+      "relation": "LOCATED_IN",
+      "desc": "Consciousness exists in this realm"
     },
     {
       "source": "Dee",
       "target": "Noni",
       "relation": "CONTROLS",
-      "desc": "Dee controls Noni's consciousness"
+      "desc": "Dee controls Noni's actions"
     },
     {
       "source": "Mickey",
       "target": "Quantum World",
-      "relation": "ENTERED",
-      "desc": "Mickey entered the quantum world"
-    },
-    {
-      "source": "Dee",
-      "target": "Quantum World",
-      "relation": "CONTROLS",
-      "desc": "Dee controls the quantum world"
-    },
-    {
-      "source": "Noni",
-      "target": "Quantum World",
-      "relation": "RESIDES",
-      "desc": "Noni resides in the quantum world"
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is involved in the experiment"
     },
     {
       "source": "Andrea",
       "target": "Equipment Storage Cupboard",
       "relation": "IS_IN",
-      "desc": "Andrea is in the equipment storage cupboard"
+      "desc": "Andrea is in her cage"
     },
     {
       "source": "Dee",
-      "target": "Equipment Storage Cupboard",
+      "target": "Quantum World",
       "relation": "CONTROLS",
-      "desc": "Dee controls the equipment storage cupboard"
+      "desc": "Dee controls the quantum realm"
+    },
+    {
+      "source": "Noni",
+      "target": "Equipment Storage Cupboard",
+      "relation": "IS_IN",
+      "desc": "Noni is in Dee's office"
     },
     {
       "source": "Mickey",
-      "target": "Hall",
-      "relation": "ENTERED",
-      "desc": "Mickey entered the hall"
+      "target": "Quantum World",
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is involved in the experiment"
     },
     {
-      "source": "Quantum World",
-      "target": "Hall",
-      "relation": "CONNECTS_TO",
-      "desc": "The quantum world connects to the hall"
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "CONTROLS",
+      "desc": "Dee controls Andrea's actions"
+    },
+    {
+      "source": "Noni",
+      "target": "Quantum World",
+      "relation": "GENERATES",
+      "desc": "Noni generates patterns in the quantum realm"
+    },
+    {
+      "source": "Henry",
+      "target": "UNRCAC",
+      "relation": "WORKING_AT",
+      "desc": "Loading cargo for the organization"
+    },
+    {
+      "source": "Chinese cleaning staff",
+      "target": "UNRCAC",
+      "relation": "WORKING_FOR",
+      "desc": "Cleaning crew's affiliation with the organization"
+    },
+    {
+      "source": "Guard",
+      "target": "Facility",
+      "relation": "SECURING",
+      "desc": "Guarding the facility's perimeter"
     },
     {
       "source": "Henry",
       "target": "Chinese cleaning staff",
-      "relation": "HELPED",
-      "desc": "Loading laundry boxes into the van"
-    },
-    {
-      "source": "Henry",
-      "target": "Facility",
-      "relation": "LOCATED_IN",
-      "desc": "Driving to and from the facility"
+      "relation": "ASSISTING",
+      "desc": "Helping with loading"
     },
     {
       "source": "Guard",
-      "target": "UNRCAC",
-      "relation": "MONITORED",
-      "desc": "Noticing the vehicle's excessive weight"
-    },
-    {
-      "source": "Driver",
-      "target": "Guard",
-      "relation": "ATTACKED",
-      "desc": "Striking the guard with a blunt object"
-    },
-    {
-      "source": "Driver",
-      "target": "Facility",
-      "relation": "ENTERED",
-      "desc": "Driving into the facility's gate"
-    },
-    {
-      "source": "Passenger",
-      "target": "Guard",
-      "relation": "DISGUISED_AS",
-      "desc": "Wearing a guard uniform to infiltrate the facility"
-    },
-    {
-      "source": "Passenger",
-      "target": "Facility",
-      "relation": "ENTERED",
-      "desc": "Entering the security booth to erase logs"
-    },
-    {
-      "source": "Driver",
-      "target": "Passenger",
-      "relation": "TOOK_INTO_CUSTODY",
-      "desc": "Picking up the guard's magnetic key and putting it around his neck"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Tony",
-      "relation": "FRIENDS WITH",
-      "desc": "Friendship"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Igor",
-      "relation": "MEMORIES OF",
-      "desc": "Shared memories"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Sarah",
-      "relation": "PARTNER OF",
-      "desc": "Relationship"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Mickey's mother",
-      "relation": "CHILD OF",
-      "desc": "Parent-child relationship"
-    },
-    {
-      "source": "Mickey",
-      "target": "Big Brain",
-      "relation": "INSIDE",
-      "desc": "Mickey is inside Big Brain"
-    },
-    {
-      "source": "Mickey",
-      "target": "Primate Lab",
-      "relation": "CONNECTED_TO",
-      "desc": "Mickey's consciousness is connected to the Primate Lab"
-    },
-    {
-      "source": "Noni",
-      "target": "Big Brain",
-      "relation": "INSIDE",
-      "desc": "Noni is inside Big Brain"
-    },
-    {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "NEARBY_TO",
-      "desc": "Noni is near Mickey"
-    },
-    {
-      "source": "Big Brain",
-      "target": "Quantum Space",
-      "relation": "CONTAINS",
-      "desc": "Big Brain contains the Quantum Space"
-    },
-    {
-      "source": "Quantum Space",
-      "target": "Mickey's Manifestation",
-      "relation": "CONTAINS",
-      "desc": "The Quantum Space contains Mickey's manifestation"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "LOVES",
-      "desc": "Emotional connection between Mickey and Noni"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "KNOWS",
-      "desc": "Mickey's knowledge of Dee's plan"
-    },
-    {
-      "source": "Mickey",
-      "target": "Andrea",
-      "relation": "CONCERNS",
-      "desc": "Mickey's concern for Andrea's well-being"
-    },
-    {
-      "source": "Noni",
-      "target": "Dee",
-      "relation": "OPPOSES",
-      "desc": "Noni's opposition to Dee's plan"
-    },
-    {
-      "source": "Mickey",
-      "target": "Richard",
-      "relation": "INFORMS",
-      "desc": "Mickey's intention to inform Richard about Dee's plan"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Dee's control over Andrea in quantum space"
-    },
-    {
-      "source": "Nylon",
-      "target": "Mickey",
-      "relation": "TIES",
-      "desc": "Physical restraint"
-    },
-    {
-      "source": "Dee",
-      "target": "Mickey",
-      "relation": "CONTROLS",
-      "desc": "Game control"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "AVATAR",
-      "desc": "Character switching"
-    },
-    {
-      "source": "Andrea",
-      "target": "Mickey",
-      "relation": "MANIPULATES",
-      "desc": "Seduction attempt"
-    },
-    {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "ADVICE",
-      "desc": "Guidance"
-    },
-    {
-      "source": "Dee",
-      "target": "Quantum Space",
-      "relation": "ENTERED",
-      "desc": "Game entry"
-    },
-    {
-      "source": "Richard",
-      "target": "Mickey",
-      "relation": "CHECKS ON",
-      "desc": "Medical check"
-    },
-    {
-      "source": "Mickey",
-      "target": "Mickey's Body",
-      "relation": "LOCATED_IN",
-      "desc": "Mickey is in his abandoned body"
-    },
-    {
-      "source": "Noni",
-      "target": "Noni's Body",
-      "relation": "LOCATED_IN",
-      "desc": "Noni is in her own body"
-    },
-    {
-      "source": "Mickey",
-      "target": "Quantum Interface",
-      "relation": "USING",
-      "desc": "Mickey uses the quantum interface for consciousness transfer"
-    },
-    {
-      "source": "Quantum Interface",
-      "target": "Mickey's Body",
-      "relation": "CONTROLLING",
-      "desc": "The quantum interface controls Mickey's abandoned body"
-    },
-    {
-      "source": "Noni",
-      "target": "Quantum Interface",
-      "relation": "USING",
-      "desc": "Noni uses the quantum interface for her own consciousness transfer"
-    },
-    {
-      "source": "Mickey's Body",
-      "target": "Quantum Interface",
-      "relation": "CONTROLLING",
-      "desc": "The abandoned body is controlled by the quantum interface"
-    },
-    {
-      "source": "Ben",
-      "target": "Quantum Interface",
-      "relation": "MONITORING",
-      "desc": "Ben monitors the quantum interface for Mickey's vitals"
-    },
-    {
-      "source": "Andrea",
-      "target": "Monkey-tt woman",
-      "relation": "LOCATED_IN",
-      "desc": "Inside the cage"
-    },
-    {
-      "source": "Ringmaster",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Using a jumpstart cable"
-    },
-    {
-      "source": "Cage",
-      "target": "Monkey-tt woman",
-      "relation": "CONFINES",
-      "desc": "Forced into an unnatural contortion"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Tony",
-      "relation": "FRIENDS WITH",
-      "desc": "Friendship"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Igor",
-      "relation": "MEMORIES OF",
-      "desc": "Shared memories"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Sarah",
-      "relation": "PARTNER OF",
-      "desc": "Relationship"
-    },
-    {
-      "source": "Mickey Bardot",
-      "target": "Mickey's mother",
-      "relation": "CHILD OF",
-      "desc": "Parent-child relationship"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "LOVES",
-      "desc": "Emotional connection"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "HATES",
-      "desc": "Conflict"
-    },
-    {
-      "source": "Mickey",
-      "target": "Andrea",
-      "relation": "CONFLICTS_WITH",
-      "desc": "Jealousy"
-    },
-    {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "LOVES",
-      "desc": "Emotional connection"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Manipulation"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "WANTS_TO_EXPLAIN",
-      "desc": "Intellectual curiosity"
-    },
-    {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "WANTS_TO_EXPLAIN",
-      "desc": "Intellectual curiosity"
-    },
-    {
-      "source": "Mickey",
-      "target": "Richard",
-      "relation": "NEEDS_TO_EXPLAIN",
-      "desc": "Responsibility"
-    },
-    {
-      "source": "Noni",
-      "target": "Dee",
-      "relation": "WANTS_TO_PULL_PLUG",
-      "desc": "Desire for escape"
-    },
-    {
-      "source": "Dee",
-      "target": "Mickey",
-      "relation": "CONTROLS",
-      "desc": "Game developer controls Mickey's actions"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Dee controls Andrea's actions in the game"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "RESISTS",
-      "desc": "Mickey resists Dee's control"
-    },
-    {
-      "source": "Andrea",
-      "target": "Mickey",
-      "relation": "ATTEMPTS_TO_CATCH",
-      "desc": "Andrea tries to catch Mickey's consciousness"
-    },
-    {
-      "source": "Noni",
-      "target": "Mickey",
-      "relation": "ADVISES",
-      "desc": "Noni advises Mickey on how to counter Andrea's attempts"
-    },
-    {
-      "source": "Dee",
-      "target": "Richard",
-      "relation": "DECEIVES",
-      "desc": "Dee deceives Richard about Mickey's condition"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "OPPOSED_TO",
-      "desc": "Dee tries to control Mickey"
-    },
-    {
-      "source": "Mickey",
-      "target": "Baryshnikov",
-      "relation": "INSPIRED_BY",
-      "desc": "Mickey's performance is inspired by Baryshnikov"
-    },
-    {
-      "source": "Mickey",
-      "target": "Kudo",
-      "relation": "INSPIRED_BY",
-      "desc": "Mickey's performance is inspired by Kudo"
-    },
-    {
-      "source": "Mickey",
-      "target": "Sinatra",
-      "relation": "INSPIRED_BY",
-      "desc": "Mickey's performance is inspired by Sinatra"
-    },
-    {
-      "source": "Dee",
-      "target": "Noni",
-      "relation": "CONTROLS",
-      "desc": "Dee controls Noni"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Dee controls Andrea"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "DEFIES",
-      "desc": "Mickey defies Dee's control"
-    },
-    {
-      "source": "Baryshnikov",
-      "target": "Mickey",
-      "relation": "INFLUENCED_BY",
-      "desc": "Baryshnikov influences Mickey's performance"
-    },
-    {
-      "source": "Kudo",
-      "target": "Mickey",
-      "relation": "INFLUENCED_BY",
-      "desc": "Kudo influences Mickey's performance"
-    },
-    {
-      "source": "Sinatra",
-      "target": "Mickey",
-      "relation": "INFLUENCED_BY",
-      "desc": "Sinatra influences Mickey's performance"
-    },
-    {
-      "source": "Mickey",
-      "target": "Mickey's body",
-      "relation": "LOCATED_IN",
-      "desc": "Mickey is in his abandoned physical body"
-    },
-    {
-      "source": "Noni",
-      "target": "Noni's body",
-      "relation": "LOCATED_IN",
-      "desc": "Noni is in her physical body"
-    },
-    {
-      "source": "Ben",
-      "target": "Mickey's body",
-      "relation": "MONITORING",
-      "desc": "Ben is monitoring Mickey's vitals"
-    },
-    {
-      "source": "Mickey's body",
-      "target": "Quantum Interface",
-      "relation": "CONNECTED_TO",
-      "desc": "Mickey's body is connected to the quantum interface"
-    },
-    {
-      "source": "Noni's body",
-      "target": "Quantum Interface",
-      "relation": "CONNECTED_TO",
-      "desc": "Noni's body is connected to the quantum interface"
-    },
-    {
-      "source": "Noni",
-      "target": "Andrea",
-      "relation": "LOCATED_IN",
-      "desc": "In Dee's office"
-    },
-    {
-      "source": "Dee",
-      "target": "Noni",
-      "relation": "CONTROLS",
-      "desc": "Using quantum interface to control Noni's consciousness"
-    },
-    {
-      "source": "Mickey",
-      "target": "Andrea",
-      "relation": "LOCATED_IN",
-      "desc": "In Dee's office"
-    },
-    {
-      "source": "Dee",
-      "target": "Noni",
-      "relation": "CONTROLS",
-      "desc": "Using quantum interface to control Noni's consciousness"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "LOCATED_IN",
-      "desc": "In Dee's office"
-    },
-    {
-      "source": "Dee",
-      "target": "Mickey",
-      "relation": "CONTROLS",
-      "desc": "Using quantum interface to control Mickey's consciousness"
-    },
-    {
-      "source": "Chinese Queen Bee",
-      "target": "Noni",
-      "relation": "LOCATED_IN",
-      "desc": "In the brain-hive"
-    },
-    {
-      "source": "Dee",
-      "target": "Chinese Queen Bee",
-      "relation": "CONTROLS",
-      "desc": "Using quantum interface to control the queen bee's consciousness"
-    },
-    {
-      "source": "UNRCAC",
       "target": "Henry",
-      "relation": "EMPLOYER",
-      "desc": "Facility worker"
+      "relation": "NOTICING",
+      "desc": "Observing Henry's vehicle"
     },
     {
-      "source": "Chinese cleaning staff",
-      "target": "Vehicle",
-      "relation": "LOADING",
-      "desc": "Loading laundry-covered boxes into the van"
-    },
-    {
-      "source": "Henry",
-      "target": "Wheel of a laundry cart",
-      "relation": "OBSTACLE",
-      "desc": "A wheel got stuck between the dock and the van"
-    },
-    {
-      "source": "Vehicle",
+      "source": "Driver",
       "target": "Guard",
-      "relation": "Pursuit",
-      "desc": "The guard noticed the vehicle's excessive weight"
+      "relation": "ATTACKING",
+      "desc": "Assaulting the guard"
     },
     {
-      "source": "Guard",
+      "source": "Driver",
+      "target": "UNRCAC",
+      "relation": "INfiltrating",
+      "desc": "Breaking into the facility"
+    },
+    {
+      "source": "Passenger",
       "target": "Driver",
-      "relation": "CONFRONTATION",
-      "desc": "The driver struck the base of his neck"
+      "relation": "ASSISTING",
+      "desc": "Helping with the heist"
     },
     {
-      "source": "Vehicle",
-      "target": "UNRCAC",
-      "relation": "INfiltration",
-      "desc": "The driver infiltrated the facility"
+      "source": "Passenger",
+      "target": "Facility",
+      "relation": "INfiltrating",
+      "desc": "Entering the facility"
     },
     {
       "source": "Driver",
-      "target": "Guard",
-      "relation": "DISGUISE",
-      "desc": "The passenger disguised themselves as a guard"
+      "target": "Security post",
+      "relation": "ACCESSING",
+      "desc": "Using the magnetic key to unlock the security post"
     },
     {
-      "source": "Guard",
-      "target": "Security logs",
-      "relation": "ERASURE",
-      "desc": "The security logs were erased from the screen"
+      "source": "Mickey Bardot",
+      "target": "Tony",
+      "relation": "FRIENDS_WITH",
+      "desc": "Friendship"
     },
     {
-      "source": "Richard",
-      "target": "Henry",
-      "relation": "RECEIVES_INPUT",
-      "desc": "Henry provides subtle hand gestures for Richard"
+      "source": "Mickey Bardot",
+      "target": "Igor",
+      "relation": "MEMORIES_OF",
+      "desc": "Shared memories"
     },
     {
-      "source": "Liang",
-      "target": "Richard",
-      "relation": "WAITING_FOR_APPROVAL",
-      "desc": "Liang waits for approval from Richard"
+      "source": "Mickey Bardot",
+      "target": "Sarah",
+      "relation": "PARTNER_OF",
+      "desc": "Romantic relationship"
     },
     {
-      "source": "General Paige",
-      "target": "Richard",
-      "relation": "DISAPPROVES_REQUEST",
-      "desc": "General Paige disapproves Richard's request"
-    },
-    {
-      "source": "Richard",
-      "target": "General Paige",
-      "relation": "CHALLENGES_AUTHORITY",
-      "desc": "Richard challenges General Paige's authority"
-    },
-    {
-      "source": "Liang",
-      "target": "Henry",
-      "relation": "RECEIVES_INSTRUCTIONS",
-      "desc": "Liang receives instructions from Henry"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "MENTIONED_TOGETHER",
-      "desc": "Mickey and Noni are mentioned together in conversation"
-    },
-    {
-      "source": "Richard",
-      "target": "General Paige",
-      "relation": "SUBMITTING_DATA",
-      "desc": "Richard submits data to General Paige"
-    },
-    {
-      "source": "Liang",
-      "target": "Richard",
-      "relation": "DISAPPOINTED",
-      "desc": "Liang is disappointed with Richard's decision"
-    },
-    {
-      "source": "Henry",
-      "target": "Richard",
-      "relation": "OFFERS_SUPPORT",
-      "desc": "Henry offers support to Richard"
+      "source": "Mickey Bardot",
+      "target": "Mickey's mother",
+      "relation": "PARENT_OF",
+      "desc": "Parent-child relationship"
     },
     {
       "source": "Mickey",
@@ -1328,19 +875,523 @@
       "source": "Big Brain",
       "target": "Quantum Space",
       "relation": "CONTAINS",
-      "desc": "Contains multiple consciousness entities"
+      "desc": "Contains the quantum space where explant consciousnesses reside"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "GUIDING",
+      "desc": "Guiding Mickey through her mantra"
+    },
+    {
+      "source": "Big Brain",
+      "target": "Quantum Space",
+      "relation": "RESPONSIVE_TO",
+      "desc": "Responds to Noni's mantra"
     },
     {
       "source": "Mickey",
-      "target": "Quantum Space",
-      "relation": "PART_OF",
-      "desc": "Part of the quantum space"
+      "target": "Noni",
+      "relation": "LOVES",
+      "desc": "Emotional connection"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "OPPOSED",
-      "desc": "Dee's control mechanism against Mickey"
+      "relation": "HATES",
+      "desc": "Conflict"
+    },
+    {
+      "source": "Noni",
+      "target": "Buddha",
+      "relation": "RESPECTS",
+      "desc": "Spiritual connection"
+    },
+    {
+      "source": "Mickey",
+      "target": "Andrea",
+      "relation": "CONCERNS",
+      "desc": "Protective instinct"
+    },
+    {
+      "source": "Dee",
+      "target": "Quantum World",
+      "relation": "CONTROLS",
+      "desc": "Manipulation"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "UNDERSTANDS",
+      "desc": "Empathetic connection"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "IS Controlled By",
+      "desc": "Dee controls Mickey's actions"
+    },
+    {
+      "source": "Mickey",
+      "target": "Quantum Space",
+      "relation": "ENTERED",
+      "desc": "Mickey entered the virtual reality world"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "CONTROLS",
+      "desc": "Dee controls Andrea's actions"
+    },
+    {
+      "source": "Dee",
+      "target": "Quantum Space",
+      "relation": "ENTERED",
+      "desc": "Dee entered the virtual reality world"
+    },
+    {
+      "source": "Mickey",
+      "target": "Richard",
+      "relation": "HEARD",
+      "desc": "Mickey heard Richard's voice"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "ADVISING",
+      "desc": "Noni advised Mickey to squeeze Dee"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "MANIPULATED",
+      "desc": "Dee manipulated Andrea's actions"
+    },
+    {
+      "source": "Mickey",
+      "target": "Mickey's Body",
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is in his abandoned body"
+    },
+    {
+      "source": "Noni",
+      "target": "Noni's Body",
+      "relation": "LOCATED_IN",
+      "desc": "Noni is in her abandoned body"
+    },
+    {
+      "source": "Quantum Interface",
+      "target": "Mickey's Body",
+      "relation": "CAUSES",
+      "desc": "The quantum interface causes Mickey's body to convulse"
+    },
+    {
+      "source": "Quantum Interface",
+      "target": "Noni's Body",
+      "relation": "CAUSES",
+      "desc": "The quantum interface causes Noni's body to remain still"
+    },
+    {
+      "source": "Mickey",
+      "target": "Quantum Interface",
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is interacting with the quantum interface"
+    },
+    {
+      "source": "Noni",
+      "target": "Quantum Interface",
+      "relation": "LOCATED_IN",
+      "desc": "Noni is interacting with the quantum interface"
+    },
+    {
+      "source": "Andrea",
+      "target": "monkey-tt woman",
+      "relation": "LOCATED_IN",
+      "desc": "Inside the cage"
+    },
+    {
+      "source": "ringmaster",
+      "target": "Andrea",
+      "relation": "CONTROLS",
+      "desc": "Using a jumpstart cable"
+    },
+    {
+      "source": "Andrea",
+      "target": "monkey-tt woman",
+      "relation": "CAUSES",
+      "desc": "Seizure due to the cable's control"
+    },
+    {
+      "source": "Mickey Bardot",
+      "target": "Tony",
+      "relation": "FRIENDS_WITH",
+      "desc": "Friendship"
+    },
+    {
+      "source": "Mickey Bardot",
+      "target": "Igor",
+      "relation": "MEMORIES_OF",
+      "desc": "Shared memories"
+    },
+    {
+      "source": "Mickey Bardot",
+      "target": "Sarah",
+      "relation": "PARTNER_OF",
+      "desc": "Relationship"
+    },
+    {
+      "source": "Mickey Bardot",
+      "target": "Mickey's mother",
+      "relation": "PARENT_OF",
+      "desc": "Parent-child relationship"
+    },
+    {
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "LOVES",
+      "desc": "Emotional connection between Mickey and Noni"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "KNOWS",
+      "desc": "Mickey's knowledge of Dee's plan"
+    },
+    {
+      "source": "Mickey",
+      "target": "Andrea",
+      "relation": "CONCERNED_ABOUT",
+      "desc": "Mickey's concern for Andrea's well-being"
+    },
+    {
+      "source": "Noni",
+      "target": "Dee",
+      "relation": "OPPOSED_TO",
+      "desc": "Noni's opposition to Dee's plan"
+    },
+    {
+      "source": "Mickey",
+      "target": "Richard",
+      "relation": "INFORMS",
+      "desc": "Mickey's intention to inform Richard about Dee's plan"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "CONTROLS",
+      "desc": "Dee's control over Andrea in quantum space"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "IS Controlled By",
+      "desc": "Context of game control"
+    },
+    {
+      "source": "Mickey",
+      "target": "Andrea",
+      "relation": "IS Controlled By",
+      "desc": "Context of game control"
+    },
+    {
+      "source": "Dee",
+      "target": "Quantum Space",
+      "relation": "CONTROLS",
+      "desc": "Context of virtual reality world"
+    },
+    {
+      "source": "Mickey",
+      "target": "Disney-esque Animation",
+      "relation": "IS IN",
+      "desc": "Context of game environment"
+    },
+    {
+      "source": "Dee",
+      "target": "Chimpanzee Cage",
+      "relation": "CONTROLS",
+      "desc": "Context of physical location"
+    },
+    {
+      "source": "Richard",
+      "target": "Mickey",
+      "relation": "IS MONITORING",
+      "desc": "Context of authority figure"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "IS ADVISING",
+      "desc": "Context of mysterious voice"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "OPPONENT",
+      "desc": "Dee's attempt to control Mickey"
+    },
+    {
+      "source": "Mickey",
+      "target": "Baryshnikov",
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Baryshnikov"
+    },
+    {
+      "source": "Mickey",
+      "target": "Kudo",
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Kudo"
+    },
+    {
+      "source": "Mickey",
+      "target": "Sinatra",
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Sinatra"
+    },
+    {
+      "source": "Dee",
+      "target": "Noni",
+      "relation": "VICTIM",
+      "desc": "Dee's attempt to control Noni fails"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "VICTIM",
+      "desc": "Dee's attempt to control Andrea fails"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "CONFRONTATION",
+      "desc": "Mickey confronts Dee in the quantum realm"
+    },
+    {
+      "source": "Dee",
+      "target": "Mickey",
+      "relation": "ATTACK",
+      "desc": "Dee attacks Mickey's consciousness"
+    },
+    {
+      "source": "Mickey",
+      "target": "Mickey's Body",
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is in his abandoned body"
+    },
+    {
+      "source": "Noni",
+      "target": "Noni's Body",
+      "relation": "LOCATED_IN",
+      "desc": "Noni is in her abandoned body"
+    },
+    {
+      "source": "Quantum Interface",
+      "target": "Mickey's Body",
+      "relation": "CAUSES",
+      "desc": "The quantum interface causes Mickey's body to convulse"
+    },
+    {
+      "source": "Quantum Interface",
+      "target": "Noni's Body",
+      "relation": "CAUSES",
+      "desc": "The quantum interface causes Noni's body to remain still"
+    },
+    {
+      "source": "Mickey",
+      "target": "Quantum Interface",
+      "relation": "LOCATED_IN",
+      "desc": "Mickey is interacting with the quantum interface"
+    },
+    {
+      "source": "Noni",
+      "target": "Quantum Interface",
+      "relation": "LOCATED_IN",
+      "desc": "Noni is interacting with the quantum interface"
+    },
+    {
+      "source": "Noni",
+      "target": "Andrea",
+      "relation": "LOCATED_IN",
+      "desc": "In Dee's office"
+    },
+    {
+      "source": "Dee",
+      "target": "Noni",
+      "relation": "CONTROLS",
+      "desc": "Trying to control Noni's consciousness"
+    },
+    {
+      "source": "Mickey",
+      "target": "Andrea",
+      "relation": "LOCATED_IN",
+      "desc": "In Dee's office"
+    },
+    {
+      "source": "Dee",
+      "target": "Noni",
+      "relation": "CONTROLS",
+      "desc": "Trying to control Noni's consciousness"
+    },
+    {
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "LOCATED_IN",
+      "desc": "In Dee's office"
+    },
+    {
+      "source": "Dee",
+      "target": "Mickey",
+      "relation": "CONTROLS",
+      "desc": "Trying to control Mickey's orb"
+    },
+    {
+      "source": "Noni",
+      "target": "Chinese Queen Bee",
+      "relation": "LOCATED_IN",
+      "desc": "In the brain-hive"
+    },
+    {
+      "source": "Dee",
+      "target": "Noni",
+      "relation": "CONTROLS",
+      "desc": "Trying to control Noni's consciousness"
+    },
+    {
+      "source": "Mickey",
+      "target": "Chinese Queen Bee",
+      "relation": "LOCATED_IN",
+      "desc": "In the brain-hive"
+    },
+    {
+      "source": "Dee",
+      "target": "Mickey",
+      "relation": "CONTROLS",
+      "desc": "Trying to control Mickey's orb"
+    },
+    {
+      "source": "Henry",
+      "target": "Chinese cleaning staff",
+      "relation": "HELPED",
+      "desc": "Assisted with loading boxes"
+    },
+    {
+      "source": "Henry",
+      "target": "Facility",
+      "relation": "LOCATED_IN",
+      "desc": "Vehicle was parked at the facility"
+    },
+    {
+      "source": "Guard",
+      "target": "UNRCAC",
+      "relation": "MONITORED",
+      "desc": "Noticed vehicle's excessive weight"
+    },
+    {
+      "source": "Driver",
+      "target": "Guard",
+      "relation": "ATTACKED",
+      "desc": "Struck guard with base of neck"
+    },
+    {
+      "source": "Driver",
+      "target": "Facility",
+      "relation": "ENTERED",
+      "desc": "Took key and entered facility"
+    },
+    {
+      "source": "Passenger",
+      "target": "Guard",
+      "relation": "DISGUISED_AS",
+      "desc": "Wore guard uniform to infiltrate"
+    },
+    {
+      "source": "Passenger",
+      "target": "Facility",
+      "relation": "ENTERED",
+      "desc": "Infiltrated facility and accessed security logs"
+    },
+    {
+      "source": "Richard",
+      "target": "Henry",
+      "relation": "RECEIVES_INPUT",
+      "desc": "Henry provides subtle hand gestures for Richard"
+    },
+    {
+      "source": "Liang",
+      "target": "Richard",
+      "relation": "LISTENS_TO",
+      "desc": "Liang listens to Richard's conversation with General Paige"
+    },
+    {
+      "source": "General Paige",
+      "target": "Richard",
+      "relation": "DISCusses",
+      "desc": "General Paige discusses the situation with Richard"
+    },
+    {
+      "source": "Richard",
+      "target": "Mickey",
+      "relation": "DISCUSSES",
+      "desc": "Richard discusses plans for sending yoga and martial arts teachers to China with General Paige"
+    },
+    {
+      "source": "Liang",
+      "target": "Richard",
+      "relation": "RECEIVES_INSTRUCTIONS",
+      "desc": "General Paige gives instructions to Liang"
+    },
+    {
+      "source": "Richard",
+      "target": "Mickey",
+      "relation": "DISCUSSES",
+      "desc": "Richard discusses plans for sending yoga and martial arts teachers to China with General Paige"
+    },
+    {
+      "source": "Liang",
+      "target": "Henry",
+      "relation": "RECEIVES_INPUT",
+      "desc": "Henry provides subtle hand gestures for Liang"
+    },
+    {
+      "source": "General Paige",
+      "target": "Richard",
+      "relation": "DISAPPROVES",
+      "desc": "General Paige disapproves of Richard's plan to send data connection to Liang"
+    },
+    {
+      "source": "Mickey",
+      "target": "Big Brain",
+      "relation": "LOCATED_IN",
+      "desc": "Inside the quantum computer"
+    },
+    {
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "NEXT_TO",
+      "desc": "Nearby consciousness entity"
+    },
+    {
+      "source": "Big Brain",
+      "target": "Quantum Space",
+      "relation": "CONTAINS",
+      "desc": "Hosts various consciousness entities"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "INFLUENCES",
+      "desc": "Helps Mickey calm down with her mantra"
+    },
+    {
+      "source": "Big Brain",
+      "target": "Quantum Space",
+      "relation": "GENERATES",
+      "desc": "Creates a morphic field through Noni's chant"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "OPPOSED_TO",
+      "desc": "Dee's attempts to control Mickey"
     },
     {
       "source": "Mickey",
@@ -1364,109 +1415,103 @@
       "source": "Dee",
       "target": "Noni",
       "relation": "CONTROLS",
-      "desc": "Dee controls Noni within the hive"
+      "desc": "Dee controls Noni's location within the hive"
     },
     {
       "source": "Dee",
       "target": "Andrea",
       "relation": "CONTROLS",
-      "desc": "Dee controls Andrea within the hive"
+      "desc": "Dee controls Andrea's location within the hive"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "CHALLENGES",
-      "desc": "Mickey challenges Dee's control"
+      "relation": "DEFIES",
+      "desc": "Mickey defies Dee's control"
     },
     {
       "source": "Dee",
       "target": "Mickey",
       "relation": "ATTACKS",
-      "desc": "Dee attacks Mickey with his control mechanism"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "DEFENDS",
-      "desc": "Mickey defends himself against Dee's attack"
+      "desc": "Dee attacks Mickey's consciousness"
     },
     {
       "source": "Mickey",
       "target": "Andrea",
-      "relation": "CONSCIOUSNESS",
-      "desc": "Quantum connection"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "ENEMY",
-      "desc": "Conflict"
-    },
-    {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "MENTOR",
-      "desc": "Guidance"
-    },
-    {
-      "source": "Quantum Realm",
-      "target": "Physical World",
-      "relation": "LINKAGE",
-      "desc": "Interdimensional connection"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CAPTIVITY",
-      "desc": "Prisoner"
+      "relation": "LOVES",
+      "desc": "Emotional connection"
     },
     {
       "source": "Mickey",
       "target": "Quantum Realm",
-      "relation": "ENTER",
-      "desc": "Desperate attempt"
+      "relation": "ENTERED",
+      "desc": "Transition to quantum realm"
+    },
+    {
+      "source": "Mickey",
+      "target": "Physical World",
+      "relation": "RETURNED TO",
+      "desc": "Transition back to physical world"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "OWNED",
+      "desc": "Ownership and control"
+    },
+    {
+      "source": "Noni",
+      "target": "Mickey",
+      "relation": "GUIDED",
+      "desc": "Mentorship"
+    },
+    {
+      "source": "Quantum Realm",
+      "target": "Physical World",
+      "relation": "CONNECTED",
+      "desc": "Interdimensional connection"
     },
     {
       "source": "Ken Matthews",
       "target": "Liang",
-      "relation": "COMMUNICATING",
-      "desc": "Secret Channel"
+      "relation": "COMMUNICATING WITH",
+      "desc": "Sharing secret channel"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Igor",
+      "relation": "COMMUNICATING WITH",
+      "desc": "Sharing P2P network"
     },
     {
       "source": "Ben",
       "target": "Mickey",
-      "relation": "MANIPULATING",
-      "desc": "Piggyback Protocol"
+      "relation": "RECRUITING",
+      "desc": "Recruiting AI entity"
     },
     {
-      "source": "Henry",
-      "target": "Ken Matthews",
-      "relation": "ADVISING",
-      "desc": "Agency Guidance"
-    },
-    {
-      "source": "Liang",
-      "target": "Igor",
-      "relation": "COMMUNICATING",
-      "desc": "Secret Channel"
+      "source": "Ken Matthews",
+      "target": "Shanghai",
+      "relation": "TARGET OF OPERATION",
+      "desc": "Denying software to Shanghai"
     },
     {
       "source": "Ben",
       "target": "Dee",
-      "relation": "INFORMING",
-      "desc": "Simulation Results"
+      "relation": "WORKING WITH",
+      "desc": "Collaborating with employee"
+    },
+    {
+      "source": "Henry",
+      "target": "Ken Matthews",
+      "relation": "SUPPORTING",
+      "desc": "Providing guidance"
     },
     {
       "source": "Vance",
-      "target": "Ken Matthews",
-      "relation": "AUTHORIZING",
-      "desc": "Agency Guidance"
-    },
-    {
-      "source": "Mickey",
-      "target": "Quantum Environment",
-      "relation": "EXISTING_IN",
-      "desc": "Piggyback Protocol"
+      "target": "None",
+      "relation": "UNKNOWN RELATIONSHIP",
+      "desc": "Unknown connection"
     },
     {
       "source": "Mickey",
@@ -1514,85 +1559,85 @@
       "source": "Mickey",
       "target": "Mickey's Body",
       "relation": "LOCATED_IN",
-      "desc": "Context of consciousness transfer"
+      "desc": "Mickey is in his abandoned body"
     },
     {
       "source": "Noni",
       "target": "Noni's Body",
       "relation": "LOCATED_IN",
-      "desc": "Context of consciousness transfer"
+      "desc": "Noni is in her abandoned body"
     },
     {
       "source": "Quantum Interface",
-      "target": "Mickey",
-      "relation": "CONNECTS_TO",
-      "desc": "Device used for consciousness transfer"
+      "target": "Mickey's Body",
+      "relation": "CONNECTED_TO",
+      "desc": "The quantum interface connects to Mickey's body"
     },
     {
-      "source": "Mickey's Body",
-      "target": "Quantum Interface",
+      "source": "Quantum Interface",
+      "target": "Noni's Body",
       "relation": "CONNECTED_TO",
-      "desc": "Context of consciousness transfer"
+      "desc": "The quantum interface connects to Noni's body"
     },
     {
-      "source": "Noni's Body",
+      "source": "Mickey",
       "target": "Quantum Interface",
-      "relation": "CONNECTED_TO",
-      "desc": "Context of consciousness transfer"
+      "relation": "USING",
+      "desc": "Mickey uses the quantum interface"
+    },
+    {
+      "source": "Noni",
+      "target": "Quantum Interface",
+      "relation": "USING",
+      "desc": "Noni uses the quantum interface"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "OPPOSED_TO",
-      "desc": "Dee's control mechanism"
+      "relation": "OPPONENT",
+      "desc": "The conflict between Mickey and Dee"
     },
     {
       "source": "Mickey",
       "target": "Baryshnikov",
-      "relation": "MENTIONS",
-      "desc": "Reference to the famous dancer"
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Baryshnikov's dance"
     },
     {
       "source": "Mickey",
       "target": "Kudo",
-      "relation": "MENTIONS",
-      "desc": "Reference to the famous singer"
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Kudo's singing"
     },
     {
       "source": "Mickey",
       "target": "Sinatra",
-      "relation": "MENTIONS",
-      "desc": "Reference to the famous singer"
+      "relation": "INSPIRATION",
+      "desc": "Mickey's performance is inspired by Sinatra's music"
     },
     {
       "source": "Dee",
       "target": "Noni",
-      "relation": "CONTROLS",
-      "desc": "Dee's control over Noni"
+      "relation": "CONTROL",
+      "desc": "Dee controls Noni's location"
     },
     {
       "source": "Dee",
       "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Dee's control over Andrea"
+      "relation": "CONTROL",
+      "desc": "Dee controls Andrea's location"
     },
     {
       "source": "Mickey",
-      "target": "Dee",
-      "relation": "CHALLENGES",
-      "desc": "Mickey's performance against Dee's control"
+      "target": "Queen Bee",
+      "relation": "SYMBOLISM",
+      "desc": "The Queen Bee represents the hive's queen"
     },
     {
       "source": "Dee",
-      "target": "Mickey",
-      "relation": "ATTACKS",
-      "desc": "Dee's attempt to attack Mickey's consciousness"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "DEFENDS_AGAINST",
-      "desc": "Mickey's defense against Dee's attack"
+      "target": "Queen Bee",
+      "relation": "OPPRESSION",
+      "desc": "Dee oppresses the Queen Bee"
     },
     {
       "source": "Mickey",
@@ -1633,26 +1678,140 @@
     {
       "source": "Mickey Bardot",
       "target": "Tony",
-      "relation": "FRIENDS WITH",
+      "relation": "KNOWS",
       "desc": "Friendship"
     },
     {
       "source": "Mickey Bardot",
       "target": "Igor",
-      "relation": "MEMORIES OF",
+      "relation": "MEMORIES",
       "desc": "Shared experience"
     },
     {
       "source": "Mickey Bardot",
       "target": "Sarah",
-      "relation": "PARTNER OF",
+      "relation": "PARTNER",
       "desc": "Relationship"
     },
     {
       "source": "Mickey Bardot",
       "target": "Mickey's mother",
-      "relation": "CHILD OF",
+      "relation": "PARENT",
       "desc": "Parent-child relationship"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Liang",
+      "relation": "CONSPIRING",
+      "desc": "Working together on Project Incubator"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Igor",
+      "relation": "CONSPIRING",
+      "desc": "Working together on Project Incubator"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "UNRCAC",
+      "relation": "WORKING FOR",
+      "desc": "Employed by the Agency"
+    },
+    {
+      "source": "Liang",
+      "target": "Mickey",
+      "relation": "CONTROLLING",
+      "desc": "Creating and controlling Mickey"
+    },
+    {
+      "source": "Igor",
+      "target": "Mickey",
+      "relation": "CONTROLLING",
+      "desc": "Creating and controlling Mickey"
+    },
+    {
+      "source": "UNRCAC",
+      "target": "Shanghai",
+      "relation": "INFLUENCING",
+      "desc": "Trying to influence the outcome of Project Incubator"
+    },
+    {
+      "source": "Vance",
+      "target": "Ken Matthews",
+      "relation": "WORKING WITH",
+      "desc": "Collaborating with Ken on Project Incubator"
+    },
+    {
+      "source": "Ben",
+      "target": "Mickey",
+      "relation": "RECRUITED",
+      "desc": "Recruited Mickey for the Agency"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "UNRCAC",
+      "relation": "DISAGREEING WITH",
+      "desc": "Disagreeing with the Agency's plan"
+    },
+    {
+      "source": "Ben",
+      "target": "Ken Matthews",
+      "relation": "RECOMMENDING",
+      "desc": "Recommending a new strategy to Ken"
+    },
+    {
+      "source": "Richard",
+      "target": "Henry",
+      "relation": "RECEIVES_INPUT",
+      "desc": "Henry provides subtle hand gestures to Richard"
+    },
+    {
+      "source": "Liang",
+      "target": "Richard",
+      "relation": "WAITING_FOR_APPROVAL",
+      "desc": "Liang waits for approval from Richard"
+    },
+    {
+      "source": "General Paige",
+      "target": "Richard",
+      "relation": "DISAPPROVES_REQUEST",
+      "desc": "General Paige disapproves Richard's request to send yoga and martial arts teachers with Liang"
+    },
+    {
+      "source": "Richard",
+      "target": "Liang",
+      "relation": "DEMANDS_DATA_LINK",
+      "desc": "Richard demands a temporary data link for Liang"
+    },
+    {
+      "source": "Liang",
+      "target": "General Paige",
+      "relation": "SUBMITS_DATA",
+      "desc": "Liang submits data to General Paige"
+    },
+    {
+      "source": "General Paige",
+      "target": "Richard",
+      "relation": "DENIES_REQUEST",
+      "desc": "General Paige denies Richard's request for a temporary data link"
+    },
+    {
+      "source": "Richard",
+      "target": "Henry",
+      "relation": "LOOKS_FOR_SUPPORT",
+      "desc": "Richard looks to Henry for support after being denied by General Paige"
+    },
+    {
+      "source": "Liang",
+      "target": "Richard",
+      "relation": "PLANS_AROUND_DENIAL",
+      "desc": "Liang plans around the denial of his request"
+    },
+    {
+      "source": "Henry",
+      "target": "Richard",
+      "relation": "PROVIDES_SUPPORT",
+      "desc": "Henry provides support to Richard after being denied by General Paige"
     },
     {
       "source": "Ken Matthews",
@@ -1667,6 +1826,12 @@
       "desc": "Russian organization is controlling the quantum AI entity"
     },
     {
+      "source": "Liang",
+      "target": "Mickey",
+      "relation": "CONTROLLING",
+      "desc": "Chinese organization is controlling the quantum AI entity"
+    },
+    {
       "source": "Ben",
       "target": "Ken Matthews",
       "relation": "RECRUITED BY",
@@ -1676,121 +1841,25 @@
       "source": "Dee",
       "target": "Mickey",
       "relation": "INTERACTING WITH",
-      "desc": "Dee is interacting with the quantum AI entity"
+      "desc": "Agency agent is interacting with the quantum AI entity"
     },
     {
       "source": "Vance",
       "target": "Liang",
-      "relation": "WORKING TOGETHER WITH",
-      "desc": "Unknown organization is working together with the Chinese organization"
-    },
-    {
-      "source": "Ben",
-      "target": "Mickey",
-      "relation": "ACTIVATING",
-      "desc": "Ben activated the quantum AI entity"
-    },
-    {
-      "source": "Henry",
-      "target": "Ken Matthews",
-      "relation": "SUPPORTING",
-      "desc": "Henry is supporting Ken"
-    },
-    {
-      "source": "Liang",
-      "target": "Mickey",
-      "relation": "CONTROLLING",
-      "desc": "Chinese organization is controlling the quantum AI entity"
-    },
-    {
-      "source": "Richard",
-      "target": "Henry",
-      "relation": "RECEIVES_INPUT",
-      "desc": "Private language between characters"
-    },
-    {
-      "source": "Liang",
-      "target": "General Paige",
-      "relation": "SUBMITS_REQUEST",
-      "desc": "Request for data connection"
-    },
-    {
-      "source": "General Paige",
-      "target": "Richard",
-      "relation": "DENIES_REQUEST",
-      "desc": "Denial of request"
-    },
-    {
-      "source": "Richard",
-      "target": "Liang",
-      "relation": "DISAPPOINTS_LIANG",
-      "desc": "Liang's disappointment"
-    },
-    {
-      "source": "General Paige",
-      "target": "Mickey",
-      "relation": "ASSESSES_RISK",
-      "desc": "Assessment of risk to General Paige"
-    },
-    {
-      "source": "Richard",
-      "target": "Henry",
-      "relation": "RECEIVES_SUPPORT",
-      "desc": "Henry's support"
-    },
-    {
-      "source": "Liang",
-      "target": "General Paige",
-      "relation": "CHALLENGES_AUTHORITY",
-      "desc": "Challenging authority"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Liang",
       "relation": "CONSPIRING AGAINST",
-      "desc": "Agency's mission to deny Liang software"
+      "desc": "Unknown organization is working against the Chinese organization"
     },
     {
       "source": "Ben",
       "target": "Mickey",
-      "relation": "RECRUITED",
-      "desc": "Agent recruited to interact with quantum AI entity"
-    },
-    {
-      "source": "Liang",
-      "target": "Igor",
-      "relation": "PARTNERING WITH",
-      "desc": "Chinese organization partnering with Russian operative"
-    },
-    {
-      "source": "Ben",
-      "target": "Vance",
-      "relation": "INTERACTING WITH",
-      "desc": "Agent interacting with unknown organization"
-    },
-    {
-      "source": "Dee",
-      "target": "Mickey",
-      "relation": "RESEARCHING",
-      "desc": "Agency official researching quantum AI entity"
+      "relation": "RECRUITED BY",
+      "desc": "Ben recruited the quantum AI entity for a mission"
     },
     {
       "source": "Henry",
       "target": "Liang",
       "relation": "CONSPIRING AGAINST",
-      "desc": "Agency official conspiring against Chinese organization"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Ben",
-      "relation": "DIRECTING",
-      "desc": "Agent directing agent's actions"
-    },
-    {
-      "source": "Vance",
-      "target": "Mickey",
-      "relation": "INFLUENCING",
-      "desc": "Unknown organization influencing quantum AI entity"
+      "desc": "Agency agent is working against the Chinese organization"
     },
     {
       "source": "Noni",
@@ -1843,86 +1912,86 @@
     {
       "source": "Mickey",
       "target": "Richard",
-      "relation": "LOVES",
-      "desc": "Context: Mickey's desperation to warn Richard about the chimps"
+      "relation": "MEETS",
+      "desc": "Initial meeting with Richard"
     },
     {
       "source": "Mickey",
       "target": "Andrea",
-      "relation": "LOVES",
-      "desc": "Context: Mickey's concern for Andrea's well-being"
+      "relation": "KNOWS",
+      "desc": "Mickey's knowledge of Andrea's situation"
     },
     {
       "source": "Dee",
       "target": "Richard",
-      "relation": "CAUSES",
-      "desc": "Context: Dee's actions leading to Richard's anger"
+      "relation": "WORKS_FOR",
+      "desc": "Dee's employment relationship with Richard"
+    },
+    {
+      "source": "Richard",
+      "target": "Andrea",
+      "relation": "CARES_FOR",
+      "desc": "Richard's responsibility as a facility director"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "CONFLICTS_WITH",
-      "desc": "Context: Mickey and Dee's opposing views on the chimps' control"
+      "relation": "OPPONENT",
+      "desc": "Conflict between Mickey and Dee"
     },
     {
       "source": "Richard",
       "target": "Mickey",
-      "relation": "CAUSES",
-      "desc": "Context: Richard's actions leading to Mickey's distress"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CAUSES",
-      "desc": "Context: Dee's actions leading to Andrea's control by the chimp"
-    },
-    {
-      "source": "Mickey",
-      "target": "The Scream",
-      "relation": "MIMICS",
-      "desc": "Context: Mickey's resemblance to Munch"
+      "relation": "SUPERVISION",
+      "desc": "Richard's authority over Mickey"
     },
     {
       "source": "Henry",
-      "target": "Chinese cleaning staff",
-      "relation": "HELPED",
-      "desc": "Assisted with loading laundry boxes"
+      "target": "Chinese Cleaning Staff",
+      "relation": "WORKS_TOGETHER",
+      "desc": "Assisting with loading boxes"
     },
     {
       "source": "Henry",
       "target": "Facility",
       "relation": "LOCATED_IN",
-      "desc": "Vehicle was parked at the facility"
+      "desc": "Driving to the facility"
     },
     {
       "source": "Guard",
       "target": "UNRCAC",
-      "relation": "MONITORED",
-      "desc": "Noticed vehicle's excessive weight"
+      "relation": "MONITORS",
+      "desc": "Watching for suspicious activity"
     },
     {
       "source": "Driver",
       "target": "Guard",
-      "relation": "ATTACKED",
-      "desc": "Struck guard with object"
+      "relation": "CONFRONTS",
+      "desc": "Causing a confrontation with the guard"
     },
     {
       "source": "Driver",
       "target": "Facility",
       "relation": "ENTERED",
-      "desc": "Pulled into facility through open gate"
+      "desc": "Driving into the facility"
     },
     {
       "source": "Passenger",
       "target": "Guard",
-      "relation": "DISGUISED_AS",
-      "desc": "Wore guard uniform to infiltrate facility"
+      "relation": "DISGUISES",
+      "desc": "Dressing as a guard to infiltrate the facility"
+    },
+    {
+      "source": "Driver",
+      "target": "Facility",
+      "relation": "EXITS",
+      "desc": "Leaving the facility"
     },
     {
       "source": "Passenger",
       "target": "Facility",
       "relation": "ENTERED",
-      "desc": "Accessed security booth and deleted logs"
+      "desc": "Entering the facility as a guard"
     },
     {
       "source": "Mickey",
@@ -1944,21 +2013,21 @@
     },
     {
       "source": "Richard",
-      "target": "Mickey",
-      "relation": "AUTHORIZES",
-      "desc": "Allows Mickey to enter"
+      "target": "Dee",
+      "relation": "WORKS WITH",
+      "desc": "Collaboration with Dee"
+    },
+    {
+      "source": "Mickey",
+      "target": "Richard",
+      "relation": "CHALLENGES",
+      "desc": "Confronts Richard about chimps and Andrea"
     },
     {
       "source": "Dee",
       "target": "Richard",
-      "relation": "REPORTS",
-      "desc": "Reports on Mickey's condition"
-    },
-    {
-      "source": "Richard",
-      "target": "Dee",
-      "relation": "INSTRUCTS",
-      "desc": "Tells Dee to find Henry"
+      "relation": "CONFIRMS",
+      "desc": "Confirms Mickey's condition to Richard"
     },
     {
       "source": "Mickey",
@@ -1967,118 +2036,16 @@
       "desc": "Accuses Richard of being controlled by chimps"
     },
     {
-      "source": "Mickey",
-      "target": "Noni",
-      "relation": "PART_OF",
-      "desc": "Patient duo"
-    },
-    {
-      "source": "Ben",
-      "target": "Mickey",
-      "relation": "OPERATES_ON",
-      "desc": "Puppeteer/Operator controlling Mickey's brain"
-    },
-    {
-      "source": "Ben",
-      "target": "Noni",
-      "relation": "OPERATES_ON",
-      "desc": "Puppeteer/Operator controlling Noni's brain"
-    },
-    {
-      "source": "Mickey",
-      "target": "Chimpanzee",
-      "relation": "SIMILAR_TO",
-      "desc": "Human subject compared to chimpanzees"
-    },
-    {
-      "source": "Noni",
-      "target": "Chimpanzee",
-      "relation": "SIMILAR_TO",
-      "desc": "Human subject compared to chimpanzees"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Liang",
-      "relation": "LOCATED_IN",
-      "desc": "Agency seal on one feed"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Igor",
-      "relation": "LOCATED_IN",
-      "desc": "Russian infrastructure"
-    },
-    {
-      "source": "Ben",
-      "target": "Dee",
-      "relation": "COLLABORATOR",
-      "desc": "Colleague"
-    },
-    {
-      "source": "Ben",
-      "target": "Vance",
-      "relation": "PARTNER",
-      "desc": "Agency partner"
-    },
-    {
-      "source": "Ben",
-      "target": "Mickey",
-      "relation": "CREATOR",
-      "desc": "Created quantum AI entity"
-    },
-    {
-      "source": "Ken Matthews",
-      "target": "Shanghai",
-      "relation": "MISSION",
-      "desc": "Mission objective"
-    },
-    {
-      "source": "Henry",
-      "target": "Ben",
-      "relation": "MENTOR",
-      "desc": "Trainer and mentor"
-    },
-    {
-      "source": "Ben",
-      "target": "Mickey",
-      "relation": "OPERATOR",
-      "desc": "Operator of quantum AI entity"
-    },
-    {
-      "source": "Mickey",
-      "target": "Richard",
-      "relation": "MEETS",
-      "desc": "Initial meeting with Richard"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dee",
-      "relation": "ENCOUNTERS",
-      "desc": "Encounter with Dee, the alpha male chimp"
-    },
-    {
-      "source": "Dee",
-      "target": "Andrea",
-      "relation": "CONTROLS",
-      "desc": "Dee's control over Andrea"
-    },
-    {
-      "source": "Mickey",
-      "target": "Richard",
-      "relation": "CONFRONTS",
-      "desc": "Confrontation with Richard about Dee's actions"
-    },
-    {
       "source": "Richard",
       "target": "Dee",
-      "relation": "ORDERS",
-      "desc": "Richard orders patient restraint"
+      "relation": "INSTRUCTS",
+      "desc": "Instructs Dee to find Henry"
     },
     {
       "source": "Mickey",
       "target": "Richard",
-      "relation": "ACCUSES",
-      "desc": "Mickey accuses Richard of being complicit in Dee's actions"
+      "relation": "RESISTS",
+      "desc": "Resists being restrained by security guards"
     },
     {
       "source": "Mickey",
@@ -2114,91 +2081,361 @@
       "source": "Ben",
       "target": "Chimpanzee",
       "relation": "COMPARISON",
-      "desc": "Comparing human and chimpanzee movements"
+      "desc": "Comparing human and chimpanzee behavior"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Liang",
+      "relation": "CONSPIRING",
+      "desc": "Working with Liang's organization"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Igor",
+      "relation": "CONSPIRING",
+      "desc": "Working with Igor's organization"
+    },
+    {
+      "source": "UNRCAC",
+      "target": "Ken Matthews",
+      "relation": "AUTHORIZATION",
+      "desc": "Agency seal holder"
+    },
+    {
+      "source": "Vance",
+      "target": "Ken Matthews",
+      "relation": "PARTNERSHIP",
+      "desc": "Agency partner"
+    },
+    {
+      "source": "Ben",
+      "target": "Mickey",
+      "relation": "RECRUITMENT",
+      "desc": "Recruited Mickey for the piggyback protocol"
+    },
+    {
+      "source": "Ben",
+      "target": "Shanghai",
+      "relation": "INTEL",
+      "desc": "Gained insights from Shanghai's organization"
+    },
+    {
+      "source": "Ken Matthews",
+      "target": "Ben",
+      "relation": "DISAGREEMENT",
+      "desc": "Disagreed with Ben's proposal"
+    },
+    {
+      "source": "Henry",
+      "target": "Ben",
+      "relation": "SUPPORT",
+      "desc": "Supported Ben's proposal"
+    },
+    {
+      "source": "Mickey",
+      "target": "Richard",
+      "relation": "LOVES",
+      "desc": "Context: Mickey's desperation to warn Richard about the chimps"
+    },
+    {
+      "source": "Mickey",
+      "target": "Dee",
+      "relation": "HATES",
+      "desc": "Context: Dee's unnerving gaze and behavior towards Mickey"
+    },
+    {
+      "source": "Richard",
+      "target": "Andrea",
+      "relation": "CAUSED DEATH",
+      "desc": "Context: Richard's involvement in Andrea's death"
+    },
+    {
+      "source": "Dee",
+      "target": "Mickey",
+      "relation": "EXPERIENCING",
+      "desc": "Context: Dee's observation of Mickey's inflammatory reaction"
+    },
+    {
+      "source": "Richard",
+      "target": "Dee",
+      "relation": "WORKS_WITH",
+      "desc": "Context: Richard and Dee working together"
+    },
+    {
+      "source": "Mickey",
+      "target": "Richard",
+      "relation": "ARGUES_WITH",
+      "desc": "Context: Mickey's confrontation with Richard about the chimps"
+    },
+    {
+      "source": "Dee",
+      "target": "Andrea",
+      "relation": "EXPERIENCING",
+      "desc": "Context: Dee's observation of Andrea's hallucinatory brain activity"
+    },
+    {
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "PARTNER",
+      "desc": "Matching wheelchairs"
+    },
+    {
+      "source": "Ben",
+      "target": "Mickey",
+      "relation": "OPERATOR",
+      "desc": "Guiding Mickey's neural activity"
+    },
+    {
+      "source": "Ben",
+      "target": "Noni",
+      "relation": "OPERATOR",
+      "desc": "Guiding Noni's neural activity"
+    },
+    {
+      "source": "Dee",
+      "target": "Mickey",
+      "relation": "MANAGER",
+      "desc": "Overseeing facility operations"
+    },
+    {
+      "source": "Dee",
+      "target": "Noni",
+      "relation": "MANAGER",
+      "desc": "Overseeing facility operations"
+    },
+    {
+      "source": "Ben",
+      "target": "Chimpanzee",
+      "relation": "COMPARISON",
+      "desc": "Comparing human and chimpanzee behavior"
     },
     {
       "source": "Mickey",
       "target": "Noni",
       "relation": "LOVES",
-      "desc": "Emotional connection between characters"
+      "desc": "Emotional connection between Mickey and Noni"
     },
     {
       "source": "Mickey",
       "target": "Dee",
-      "relation": "KNOWS",
-      "desc": "Understanding of Dee's game"
-    },
-    {
-      "source": "Mickey",
-      "target": "Andrea",
-      "relation": "CAUSES",
-      "desc": "Control over Andrea's actions"
+      "relation": "ENEMIES",
+      "desc": "Conflict between Mickey and Dee over control of chimpanzees"
     },
     {
       "source": "Noni",
-      "target": "Buddha",
-      "relation": "RESPECTS",
-      "desc": "Spiritual connection to Buddha"
+      "target": "Andrea",
+      "relation": "CONCERNED",
+      "desc": "Concern for Andrea's well-being as a trapped chimpanzee"
     },
     {
       "source": "Mickey",
-      "target": "Hotel California",
-      "relation": "MENTIONS",
-      "desc": "Reference to song about Hotel California"
+      "target": "Richard",
+      "relation": "INFORMS",
+      "desc": "Mickey informing Richard about Dee's plan to harvest souls"
     },
     {
-      "source": "Mickey",
-      "target": "BrainJob Hotel",
-      "relation": "MENTIONS",
-      "desc": "Reference to fictional location BrainJob Hotel"
+      "source": "Noni",
+      "target": "Dee",
+      "relation": "OPPONENT",
+      "desc": "Noni opposing Dee's control over chimpanzees"
     },
     {
       "source": "Richard",
-      "target": "General Paige",
-      "relation": "COMPLAINS",
-      "desc": "Richard's frustration with General Paige's decisions"
-    },
-    {
-      "source": "Henry",
-      "target": "Richard",
-      "relation": "BACKS_UP",
-      "desc": "Henry's support for Richard"
+      "target": "Henry",
+      "relation": "DEPENDS_ON",
+      "desc": "Support and guidance"
     },
     {
       "source": "Liang",
-      "target": "General Paige",
-      "relation": "SUBMITS",
-      "desc": "Liang's submission of data to General Paige"
+      "target": "Mickey",
+      "relation": "WORKING_FOR",
+      "desc": "Employment"
     },
     {
       "source": "General Paige",
       "target": "Richard",
-      "relation": "DENIES",
-      "desc": "General Paige's denial of Richard's request for a temporary data link"
-    },
-    {
-      "source": "Richard",
-      "target": "Mickey",
-      "relation": "AUTHORIZES",
-      "desc": "Richard's authorization of Mickey and Noni to attend the conference"
-    },
-    {
-      "source": "Liang",
-      "target": "General Paige",
-      "relation": "RECALIBRATES",
-      "desc": "Liang's tactical recalibration after General Paige denies his request"
+      "relation": "AUTHORITY_OVER",
+      "desc": "Authority and control"
     },
     {
       "source": "Henry",
-      "target": "Richard",
-      "relation": "PERFORMS",
-      "desc": "Henry's performance of supporting Richard"
+      "target": "Liang",
+      "relation": "GUIDES",
+      "desc": "Support and guidance"
+    },
+    {
+      "source": "Mickey",
+      "target": "Noni",
+      "relation": "WORKING_FOR",
+      "desc": "Employment"
     },
     {
       "source": "Mickey",
       "target": "Luna",
       "relation": "LOVES",
-      "desc": "trusting relationship with cat"
+      "desc": "trusting relationship with his cat"
+    },
+    {
+      "source": "Writers Factory",
+      "target": "Story Bible System",
+      "relation": "CREATED",
+      "desc": "Software used to generate the story bible"
+    },
+    {
+      "source": "Technology/Magic System",
+      "target": "Locations",
+      "relation": "PART_OF",
+      "desc": "Category of rules governing special capabilities in the world"
+    },
+    {
+      "source": "Social Structure",
+      "target": "Locations",
+      "relation": "PART_OF",
+      "desc": "Category of rules governing society organization in the world"
+    },
+    {
+      "source": "History That Matters",
+      "target": "Locations",
+      "relation": "IMPACTS",
+      "desc": "Backstory that impacts the current narrative"
+    },
+    {
+      "source": "Protagonist",
+      "target": "The Explants",
+      "relation": "REFERS_TO",
+      "desc": "Protagonist's role in the story"
+    },
+    {
+      "source": "Antagonist",
+      "target": "The Explants",
+      "relation": "CHALLENGES",
+      "desc": "Antagonist's impact on the theme"
+    },
+    {
+      "source": "B Story Character",
+      "target": "The Explants",
+      "relation": "ILLUMINATES",
+      "desc": "B Story's contribution to the theme"
+    },
+    {
+      "source": "Writers Factory",
+      "target": "Story Bible System",
+      "relation": "CREATES",
+      "desc": "Software generated by the company"
+    },
+    {
+      "source": "Scene Title",
+      "target": "Goal",
+      "relation": "HAS_GOAL",
+      "desc": "Scene serves a specific goal"
+    },
+    {
+      "source": "Scene Title",
+      "target": "Conflict",
+      "relation": "HAS_CONFLICT",
+      "desc": "Scene has a conflict"
+    },
+    {
+      "source": "Scene Title",
+      "target": "Outcome",
+      "relation": "HAS_OUTCOME",
+      "desc": "Scene has an outcome"
+    },
+    {
+      "source": "Goal",
+      "target": "Beat X",
+      "relation": "SERVES_BEAT",
+      "desc": "Goal serves a specific beat"
+    },
+    {
+      "source": "Conflict",
+      "target": "Beat X",
+      "relation": "SERVES_BEAT",
+      "desc": "Conflict serves a specific beat"
+    },
+    {
+      "source": "Opening Image",
+      "target": "Theme Stated",
+      "relation": "CONTAINS",
+      "desc": "The opening image contains the theme stated"
+    },
+    {
+      "source": "Theme Stated",
+      "target": "Setup",
+      "relation": "CONTAINS",
+      "desc": "The theme stated is contained in the setup"
+    },
+    {
+      "source": "Setup",
+      "target": "Catalyst",
+      "relation": "LEADS_TO",
+      "desc": "The setup leads to the catalyst"
+    },
+    {
+      "source": "Catalyst",
+      "target": "Debate",
+      "relation": "LEADS_TO",
+      "desc": "The catalyst leads to the debate"
+    },
+    {
+      "source": "Debate",
+      "target": "Break into Two",
+      "relation": "LEADS_TO",
+      "desc": "The debate leads to the break into two"
+    },
+    {
+      "source": "B Story",
+      "target": "Fun & Games",
+      "relation": "CONTAINS",
+      "desc": "The B story contains the fun and games"
+    },
+    {
+      "source": "Fun & Games",
+      "target": "Midpoint",
+      "relation": "LEADS_TO",
+      "desc": "The fun and games lead to the midpoint"
+    },
+    {
+      "source": "Bad Guys Close In",
+      "target": "All Is Lost",
+      "relation": "LEADS_TO",
+      "desc": "The bad guys close in lead to all is lost"
+    },
+    {
+      "source": "B Story",
+      "target": "Break into Three",
+      "relation": "CONTAINS",
+      "desc": "The B story contains the break into three"
+    },
+    {
+      "source": "Break into Two",
+      "target": "Finale",
+      "relation": "LEADS_TO",
+      "desc": "The break into two lead to the finale"
+    },
+    {
+      "source": "Final Image",
+      "target": "Opening Image",
+      "relation": "CONTAINS",
+      "desc": "The final image contains the opening image"
+    },
+    {
+      "source": "Mickey Bardot",
+      "target": "Fatal Flaw",
+      "relation": "DRIVES",
+      "desc": "Internal weakness"
+    },
+    {
+      "source": "The Lie",
+      "target": "Fatal Flaw",
+      "relation": "CAUSES",
+      "desc": "Mistaken belief"
+    },
+    {
+      "source": "Core Contradiction",
+      "target": "Mickey Bardot",
+      "relation": "CREATES",
+      "desc": "Dimensional character"
     },
     {
       "source": "Mickey Bardot",
@@ -2247,60 +2484,6 @@
       "target": "Mickey Bardot",
       "relation": "COLLABORATOR",
       "desc": "Worked with Mickey and Noni"
-    },
-    {
-      "source": "Mickey",
-      "target": "Sakura",
-      "relation": "PARTNER",
-      "desc": "partner in crime-solving"
-    },
-    {
-      "source": "Sakura",
-      "target": "Neo-Tokyo",
-      "relation": "LOCATED_IN",
-      "desc": "operates from Neo-Tokyo"
-    },
-    {
-      "source": "Dr. Chen",
-      "target": "MegaCorp",
-      "relation": "OWNED_BY",
-      "desc": "runs MegaCorp"
-    },
-    {
-      "source": "Dr. Chen",
-      "target": "Neo-Tokyo",
-      "relation": "CONTROLS",
-      "desc": "secretes control over Neo-Tokyo's government"
-    },
-    {
-      "source": "Mickey",
-      "target": "conspiracy",
-      "relation": "DISCOVERS",
-      "desc": "context"
-    },
-    {
-      "source": "Mickey",
-      "target": "Dr. Chen",
-      "relation": "CONFRONTS",
-      "desc": "Confrontation scene"
-    },
-    {
-      "source": "Mickey",
-      "target": "mickey_the_lie",
-      "relation": "HAS_TRAIT",
-      "desc": "Mickey's the lie"
-    },
-    {
-      "source": "Mickey",
-      "target": "mickey_fatal_flaw",
-      "relation": "HAS_TRAIT",
-      "desc": "Mickey's fatal flaw"
-    },
-    {
-      "source": "Hero",
-      "target": "hero_name",
-      "relation": "HAS_TRAIT",
-      "desc": "Hero's name"
     }
   ]
 }

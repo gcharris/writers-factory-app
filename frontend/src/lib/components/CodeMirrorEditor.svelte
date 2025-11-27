@@ -14,7 +14,7 @@
 <script>
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { EditorState, Compartment } from '@codemirror/state';
-  import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, rectangularSelection, highlightActiveLineGutter } from '@codemirror/view';
+  import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, rectangularSelection, highlightActiveLineGutter, lineWrapping } from '@codemirror/view';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
   import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
@@ -183,6 +183,9 @@
         rectangularSelection(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
+
+        // Line wrapping - essential for prose editing
+        lineWrapping,
 
         // Line numbers (optional - can be toggled)
         lineNumbers(),
