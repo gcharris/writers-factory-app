@@ -25,6 +25,7 @@
   import StudioToolsPanel from '$lib/components/StudioToolsPanel.svelte';
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
+  import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
   import { activeFile, activeModal } from '$lib/stores';
 
   // Breadcrumb from active file
@@ -37,6 +38,10 @@
   $: studioOpen = $activeModal === 'studio-tools';
   $: graphOpen = $activeModal === 'graph-viewer';
   $: notebookOpen = $activeModal === 'notebooklm';
+  $: sessionsOpen = $activeModal === 'session-manager';
+
+  // Reference to ForemanPanel for loading sessions
+  let foremanPanelRef;
 
   function closeModal() {
     activeModal.set(null);
@@ -81,7 +86,7 @@
 
   <!-- THE FOREMAN Panel: Chat with header buttons -->
   <svelte:fragment slot="foreman">
-    <ForemanPanel />
+    <ForemanPanel bind:this={foremanPanelRef} />
   </svelte:fragment>
 </MainLayout>
 
@@ -103,6 +108,16 @@
 <!-- NotebookLM Modal -->
 <Modal bind:open={notebookOpen} title="NotebookLM Research" size="large" on:close={closeModal}>
   <NotebookLMPanel />
+</Modal>
+
+<!-- Session Manager Modal -->
+<Modal bind:open={sessionsOpen} title="Chat Sessions" size="large" on:close={closeModal}>
+  <SessionManagerModal
+    on:load-session={(e) => {
+      foremanPanelRef?.loadSession(e.detail.sessionId, e.detail.history);
+    }}
+    on:close={closeModal}
+  />
 </Modal>
 
 <style>

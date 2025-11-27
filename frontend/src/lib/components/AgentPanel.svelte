@@ -42,10 +42,10 @@
     agents = agents.map(a => ({ ...a, status: selectedNames.has(a.name) ? 'working' : 'ready' }));
 
     try {
-      const res = await fetch(`${API_URL}/tournament`, {
+      const res = await fetch(`${API_URL}/tournament/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, selected_agents: Array.from(selectedNames) })
+        body: JSON.stringify({ scaffold: topic, selected_agents: Array.from(selectedNames) })
       });
 
       if (!res.ok) throw new Error("Tournament failed");

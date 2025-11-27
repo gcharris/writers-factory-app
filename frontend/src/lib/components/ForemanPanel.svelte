@@ -199,6 +199,22 @@
     activeModal.set('settings');
   }
 
+  function openSessions() {
+    activeModal.set('session-manager');
+  }
+
+  // Handle loading a session from session manager
+  export function loadSession(sessionId, history) {
+    // Convert session history to our message format
+    messages = history
+      .filter(e => e.role !== 'system')
+      .map(e => ({
+        role: e.role,
+        text: e.content
+      }));
+    foremanChatHistory.set(messages);
+  }
+
   // ============================================
   // Message Action Functions
   // ============================================
@@ -308,6 +324,14 @@
             <line x1="18" y1="18" x2="14.5" y2="14"></line>
           </svg>
           <span class="btn-label">Graph</span>
+        </button>
+
+        <!-- Sessions Button -->
+        <button class="header-btn" on:click={openSessions} title="Chat Sessions">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="btn-label">Sessions</span>
         </button>
 
         <!-- Settings Button -->
