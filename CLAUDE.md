@@ -10,6 +10,41 @@ Writers Factory is a **professional novel-writing IDE** built as a desktop-first
 
 ---
 
+## Agent Workflow (IMPORTANT)
+
+Agents work in git worktrees. Follow this workflow strictly:
+
+### Starting Work
+1. Check `docs/tasks/` for relevant task specs
+2. Read any existing documentation for the feature area
+3. Understand scope before coding
+
+### During Work
+- Keep responses **concise and meaningful** - no fluff
+- Run `npm run check` (frontend) before considering work done
+- Test your changes work as expected
+
+### Completing Work
+1. **Always commit to your branch** before ending session
+2. Include clear commit message describing what was done
+3. **Report branch name and commit hash** so user can tell IDE agent to pull/merge
+4. **Update documentation** - if you started with a task doc, update it with completion status
+
+### Example Handoff Message
+```
+Work complete on branch `xenodochial-borg` (commit a1b2c3d).
+- Implemented X, Y, Z
+- Updated docs/FEATURE_NAME.md
+- All type checks pass
+
+Tell your IDE agent: `git fetch && git merge xenodochial-borg`
+```
+
+### If Session Ends Unexpectedly
+Agents should commit frequently so work isn't lost if the session freezes or errors out.
+
+---
+
 ## Quick Reference
 
 ### Tech Stack
@@ -380,6 +415,7 @@ allow_origins=["http://localhost:1420", "http://127.0.0.1:1420"]
 
 ## Notes for AI Assistants
 
+### Technical Context
 1. **The Graph is Truth**: NetworkX/SQLite graph is source of truth, not text files
 2. **Hybrid AI Strategy**: Cloud models for reasoning, Ollama for utility/NER tasks
 3. **Invisible Complexity**: Users see "Project Knowledge", not "Cognee" or "Knowledge Graph"
@@ -387,6 +423,17 @@ allow_origins=["http://localhost:1420", "http://127.0.0.1:1420"]
 5. **Backend-First Development**: Backend is mature; UI is the bottleneck
 6. **Multi-Provider Support**: 9+ LLM providers with configurable routing
 
+### User Preferences
+- **Communication**: Concise, meaningful responses. No fluff or over-explanation.
+- **Editor reference**: User uses Typora for markdown - expect Typora-style shortcuts (Cmd+B, Cmd+I)
+- **Handoffs**: User coordinates between Claude Code agents and Cursor IDE. Always provide branch/commit info.
+- **Reliability**: Sessions often end unexpectedly (freezes, errors). Commit frequently to preserve work.
+
+### Task Documentation Pattern
+- Tasks typically start with a spec in `docs/tasks/`
+- Work is documented in `docs/` (e.g., `ASSISTANT_PANEL_REDESIGN.md`)
+- Update docs when work completes - future agents will reference them
+
 ---
 
-*Last updated: November 2025 | Version: 2.1*
+*Last updated: November 2025 | Version: 2.2*
