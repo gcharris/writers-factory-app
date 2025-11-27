@@ -4,14 +4,20 @@
   Wraps CodeMirrorEditor with:
   - File toolbar (filename, save status)
   - Preview toggle (Edit / Split / Preview modes)
+  - Font size controls (+/-)
+  - Expand/fullscreen mode
   - Empty state when no file selected
   - Cmd/Ctrl+S save handling
   - Integration with Svelte stores
 -->
 <script>
+  import { createEventDispatcher } from 'svelte';
   import { editorContent, activeFile, isSaving } from '$lib/stores';
   import CodeMirrorEditor from './CodeMirrorEditor.svelte';
+  import EditorHelp from './EditorHelp.svelte';
   import { marked } from 'marked';
+
+  const dispatch = createEventDispatcher();
 
   let editorRef;
   let lastSaved = '';
@@ -19,6 +25,17 @@
 
   // View modes: 'edit' | 'split' | 'preview'
   let viewMode = 'edit';
+
+  // Font size (14-24px range)
+  let fontSize = 18;
+  const MIN_FONT_SIZE = 14;
+  const MAX_FONT_SIZE = 24;
+
+  // Fullscreen/expanded mode
+  let isExpanded = false;
+
+  // Help overlay
+  let showHelp = false;
 
   $: currentFile = $activeFile;
 
@@ -86,6 +103,46 @@
       else if (viewMode === 'split') viewMode = 'preview';
       else viewMode = 'edit';
     }
+    // Escape to exit fullscreen
+    if (e.key === 'Escape' && isExpanded) {
+      e.preventDefault();
+      isExpanded = false;
+    }
+  }
+
+  // ============================================
+  // FONT SIZE CONTROLS
+  // ============================================
+
+  function increaseFontSize() {
+    if (fontSize < MAX_FONT_SIZE) {
+      fontSize = Math.min(fontSize + 1, MAX_FONT_SIZE);
+    }
+  }
+
+  function decreaseFontSize() {
+    if (fontSize > MIN_FONT_SIZE) {
+      fontSize = Math.max(fontSize - 1, MIN_FONT_SIZE);
+    }
+  }
+
+  // Handle font size event from CodeMirror keyboard shortcuts
+  function handleFontSize(event) {
+    const delta = event.detail.delta;
+    if (delta > 0) {
+      increaseFontSize();
+    } else {
+      decreaseFontSize();
+    }
+  }
+
+  // ============================================
+  // EXPAND/FULLSCREEN MODE
+  // ============================================
+
+  function toggleExpand() {
+    isExpanded = !isExpanded;
+    dispatch('expand', { expanded: isExpanded });
   }
 
   // ============================================
@@ -114,7 +171,7 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="editor-wrapper">
+<div class="editor-wrapper" class:expanded={isExpanded}>
   <!-- Editor Toolbar -->
   <div class="editor-toolbar">
     <div class="toolbar-left">
@@ -168,6 +225,35 @@
             </svg>
           </button>
         </div>
+
+        <!-- Separator -->
+        <span class="toolbar-sep"></span>
+
+        <!-- Font Size Controls -->
+        <div class="font-size-controls">
+          <button
+            class="font-btn"
+            on:click={decreaseFontSize}
+            disabled={fontSize <= MIN_FONT_SIZE}
+            title="Decrease font size (Cmd+-)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <span class="font-size-label" title="Font size">{fontSize}px</span>
+          <button
+            class="font-btn"
+            on:click={increaseFontSize}
+            disabled={fontSize >= MAX_FONT_SIZE}
+            title="Increase font size (Cmd++)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
       {/if}
     </div>
 
@@ -204,6 +290,15 @@
           <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
       </button>
+
+      <!-- Help Button -->
+      <button class="toolbar-btn help-btn" on:click={() => showHelp = true} title="Editor Help">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -216,8 +311,10 @@
           <CodeMirrorEditor
             bind:this={editorRef}
             content={$editorContent}
+            {fontSize}
             on:save={handleSave}
             on:change={handleChange}
+            on:fontsize={handleFontSize}
           />
         </div>
       {/if}
@@ -262,7 +359,37 @@
       </div>
     {/if}
   </div>
+
+  <!-- Expand Button (bottom right corner) -->
+  {#if currentFile}
+    <button
+      class="expand-btn"
+      on:click={toggleExpand}
+      title={isExpanded ? 'Exit fullscreen (Esc)' : 'Expand editor'}
+    >
+      {#if isExpanded}
+        <!-- Collapse icon -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 14 10 14 10 20"></polyline>
+          <polyline points="20 10 14 10 14 4"></polyline>
+          <line x1="14" y1="10" x2="21" y2="3"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      {:else}
+        <!-- Expand icon -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      {/if}
+    </button>
+  {/if}
 </div>
+
+<!-- Help Overlay -->
+<EditorHelp bind:open={showHelp} />
 
 <style>
   .editor-wrapper {
@@ -270,6 +397,18 @@
     flex-direction: column;
     height: 100%;
     background: var(--bg-primary, #0f1419);
+    position: relative;
+  }
+
+  /* Expanded/Fullscreen Mode */
+  .editor-wrapper.expanded {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    border-radius: 0;
   }
 
   /* Toolbar */
@@ -293,6 +432,7 @@
   .toolbar-center {
     display: flex;
     align-items: center;
+    gap: var(--space-1, 4px);
   }
 
   .file-icon {
@@ -347,6 +487,56 @@
   .toggle-btn.active {
     background: var(--bg-primary, #0f1419);
     color: var(--accent-cyan, #58a6ff);
+  }
+
+  /* Toolbar Separator */
+  .toolbar-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border, #2d3a47);
+    margin: 0 var(--space-2, 8px);
+  }
+
+  /* Font Size Controls */
+  .font-size-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-tertiary, #252d38);
+    border-radius: var(--radius-md, 6px);
+    padding: 2px 4px;
+  }
+
+  .font-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #8b949e);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .font-btn:hover:not(:disabled) {
+    color: var(--text-secondary, #c9d1d9);
+    background: var(--bg-secondary, #1a2027);
+  }
+
+  .font-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .font-size-label {
+    font-size: var(--text-xs, 11px);
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    color: var(--text-muted, #8b949e);
+    min-width: 32px;
+    text-align: center;
   }
 
   .toolbar-right {
@@ -407,6 +597,16 @@
   .toolbar-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .toolbar-btn.help-btn {
+    color: var(--accent-gold, #d4a574);
+  }
+
+  .toolbar-btn.help-btn:hover {
+    color: var(--accent-gold, #d4a574);
+    background: rgba(212, 165, 116, 0.15);
+    border-color: var(--accent-gold, #d4a574);
   }
 
   /* Writing Area */
@@ -691,5 +891,43 @@
     font-family: var(--font-mono, 'SF Mono', monospace);
     font-size: 10px;
     color: var(--text-secondary, #c9d1d9);
+  }
+
+  /* Expand Button */
+  .expand-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--bg-secondary, #1a2027);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-muted, #8b949e);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    z-index: 10;
+    opacity: 0.7;
+  }
+
+  .expand-btn:hover {
+    opacity: 1;
+    background: var(--bg-tertiary, #252d38);
+    color: var(--text-primary, #e6edf3);
+    border-color: var(--accent-cyan, #58a6ff);
+  }
+
+  .editor-wrapper.expanded .expand-btn {
+    opacity: 1;
+    background: var(--accent-cyan, #58a6ff);
+    color: var(--bg-primary, #0f1419);
+    border-color: var(--accent-cyan, #58a6ff);
+  }
+
+  .editor-wrapper.expanded .expand-btn:hover {
+    background: var(--accent-cyan-hover, #79b8ff);
   }
 </style>

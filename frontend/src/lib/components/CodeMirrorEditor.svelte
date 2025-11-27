@@ -4,15 +4,16 @@
   A distraction-free writing environment built on CodeMirror 6:
   - Native Markdown editing (no conversion)
   - Serif font (Georgia) for comfortable prose reading
+  - Adjustable font size (14-24px)
   - Subtle syntax highlighting for headings, bold, italic
   - Dark theme matching Cyber-Noir aesthetic
   - Word count, line count, cursor position
-  - Keyboard shortcuts (Cmd/Ctrl+S to save)
+  - Keyboard shortcuts (Cmd/Ctrl+S to save, Cmd/Ctrl++/- for font size)
   - Spell checking enabled
 -->
 <script>
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-  import { EditorState } from '@codemirror/state';
+  import { EditorState, Compartment } from '@codemirror/state';
   import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, rectangularSelection, highlightActiveLineGutter } from '@codemirror/view';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -24,6 +25,7 @@
   // Props
   export let content = '';
   export let readonly = false;
+  export let fontSize = 18; // Default font size in pixels
 
   // Internal state
   let editorContainer;
@@ -32,6 +34,9 @@
   let lineCount = 0;
   let cursorLine = 1;
   let cursorCol = 1;
+
+  // Compartment for dynamic font size changes
+  let fontSizeCompartment = new Compartment();
 
   // ============================================
   // CUSTOM THEME - Cyber-Noir Prose
@@ -54,73 +59,75 @@
     activeLine: 'rgba(255, 255, 255, 0.03)',
   };
 
-  // Editor theme (visual styling)
-  const cyberNoirTheme = EditorView.theme({
-    '&': {
-      color: colors.text,
-      backgroundColor: colors.bg,
-      fontSize: '18px',
-      fontFamily: "'Georgia', 'Times New Roman', serif",
-    },
-    '.cm-content': {
-      caretColor: colors.accentCyan,
-      padding: '24px 32px',
-      lineHeight: '1.8',
-      maxWidth: '800px',
-      margin: '0 auto',
-    },
-    '.cm-cursor, .cm-dropCursor': {
-      borderLeftColor: colors.accentCyan,
-      borderLeftWidth: '2px',
-    },
-    '.cm-selectionBackground, .cm-content ::selection': {
-      backgroundColor: colors.selection,
-    },
-    '&.cm-focused .cm-selectionBackground': {
-      backgroundColor: colors.selection,
-    },
-    '.cm-activeLine': {
-      backgroundColor: colors.activeLine,
-    },
-    '.cm-activeLineGutter': {
-      backgroundColor: colors.activeLine,
-    },
-    '.cm-gutters': {
-      backgroundColor: colors.bgSecondary,
-      color: colors.textMuted,
-      border: 'none',
-      borderRight: `1px solid ${colors.border}`,
-      fontFamily: "'SF Mono', 'Menlo', monospace",
-      fontSize: '12px',
-    },
-    '.cm-lineNumbers .cm-gutterElement': {
-      padding: '0 12px 0 8px',
-      minWidth: '40px',
-    },
-    '.cm-scroller': {
-      overflow: 'auto',
-    },
-    // Scrollbar styling
-    '.cm-scroller::-webkit-scrollbar': {
-      width: '8px',
-      height: '8px',
-    },
-    '.cm-scroller::-webkit-scrollbar-track': {
-      background: 'transparent',
-    },
-    '.cm-scroller::-webkit-scrollbar-thumb': {
-      background: colors.border,
-      borderRadius: '4px',
-    },
-    '.cm-scroller::-webkit-scrollbar-thumb:hover': {
-      background: colors.textMuted,
-    },
-    // Placeholder
-    '.cm-placeholder': {
-      color: colors.textMuted,
-      fontStyle: 'italic',
-    },
-  }, { dark: true });
+  // Create theme with dynamic font size
+  function createTheme(size) {
+    return EditorView.theme({
+      '&': {
+        color: colors.text,
+        backgroundColor: colors.bg,
+        fontSize: `${size}px`,
+        fontFamily: "'Georgia', 'Times New Roman', serif",
+      },
+      '.cm-content': {
+        caretColor: colors.accentCyan,
+        padding: '24px 32px',
+        lineHeight: '1.8',
+        maxWidth: '800px',
+        margin: '0 auto',
+      },
+      '.cm-cursor, .cm-dropCursor': {
+        borderLeftColor: colors.accentCyan,
+        borderLeftWidth: '2px',
+      },
+      '.cm-selectionBackground, .cm-content ::selection': {
+        backgroundColor: colors.selection,
+      },
+      '&.cm-focused .cm-selectionBackground': {
+        backgroundColor: colors.selection,
+      },
+      '.cm-activeLine': {
+        backgroundColor: colors.activeLine,
+      },
+      '.cm-activeLineGutter': {
+        backgroundColor: colors.activeLine,
+      },
+      '.cm-gutters': {
+        backgroundColor: colors.bgSecondary,
+        color: colors.textMuted,
+        border: 'none',
+        borderRight: `1px solid ${colors.border}`,
+        fontFamily: "'SF Mono', 'Menlo', monospace",
+        fontSize: '12px',
+      },
+      '.cm-lineNumbers .cm-gutterElement': {
+        padding: '0 12px 0 8px',
+        minWidth: '40px',
+      },
+      '.cm-scroller': {
+        overflow: 'auto',
+      },
+      // Scrollbar styling
+      '.cm-scroller::-webkit-scrollbar': {
+        width: '8px',
+        height: '8px',
+      },
+      '.cm-scroller::-webkit-scrollbar-track': {
+        background: 'transparent',
+      },
+      '.cm-scroller::-webkit-scrollbar-thumb': {
+        background: colors.border,
+        borderRadius: '4px',
+      },
+      '.cm-scroller::-webkit-scrollbar-thumb:hover': {
+        background: colors.textMuted,
+      },
+      // Placeholder
+      '.cm-placeholder': {
+        color: colors.textMuted,
+        fontStyle: 'italic',
+      },
+    }, { dark: true });
+  }
 
   // Syntax highlighting for Markdown prose
   const proseHighlighting = HighlightStyle.define([
@@ -193,6 +200,21 @@
               return true;
             },
           },
+          // Font size shortcuts
+          {
+            key: 'Mod-=',
+            run: () => {
+              dispatch('fontsize', { delta: 1 });
+              return true;
+            },
+          },
+          {
+            key: 'Mod--',
+            run: () => {
+              dispatch('fontsize', { delta: -1 });
+              return true;
+            },
+          },
         ]),
 
         // Markdown language support
@@ -201,8 +223,8 @@
         // Syntax highlighting
         syntaxHighlighting(proseHighlighting),
 
-        // Theme
-        cyberNoirTheme,
+        // Dynamic theme (in compartment for updates)
+        fontSizeCompartment.of(createTheme(fontSize)),
 
         // Read-only mode
         EditorState.readOnly.of(readonly),
@@ -280,6 +302,13 @@
     });
   }
 
+  // Update font size dynamically
+  $: if (editorView) {
+    editorView.dispatch({
+      effects: fontSizeCompartment.reconfigure(createTheme(fontSize))
+    });
+  }
+
   // ============================================
   // PUBLIC API
   // ============================================
@@ -326,6 +355,8 @@
       <span class="stat">{wordCount.toLocaleString()} words</span>
       <span class="stat-divider">|</span>
       <span class="stat">{lineCount.toLocaleString()} lines</span>
+      <span class="stat-divider">|</span>
+      <span class="stat">{fontSize}px</span>
     </div>
   </div>
 </div>
