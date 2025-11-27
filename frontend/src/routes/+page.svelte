@@ -26,7 +26,7 @@
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
   import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
-  import { activeFile, activeModal, foremanChatHistory } from '$lib/stores';
+  import { activeFile, activeModal } from '$lib/stores';
 
   // Breadcrumb from active file
   $: breadcrumb = $activeFile
@@ -40,22 +40,11 @@
   $: notebookOpen = $activeModal === 'notebooklm';
   $: sessionsOpen = $activeModal === 'session-manager';
 
+  // Reference to ForemanPanel for loading sessions
+  let foremanPanelRef;
+
   function closeModal() {
     activeModal.set(null);
-  }
-
-  // Handle loading a session from session manager
-  function handleLoadSession(event) {
-    const { sessionId, history } = event.detail;
-    // Convert session history to chat format and load
-    const messages = history
-      .filter(e => e.role !== 'system')
-      .map(e => ({
-        role: e.role,
-        text: e.content
-      }));
-    foremanChatHistory.set(messages);
-    closeModal();
   }
 </script>
 
@@ -97,7 +86,7 @@
 
   <!-- THE FOREMAN Panel: Chat with header buttons -->
   <svelte:fragment slot="foreman">
-    <ForemanPanel />
+    <ForemanPanel bind:this={foremanPanelRef} />
   </svelte:fragment>
 </MainLayout>
 
@@ -122,12 +111,14 @@
 </Modal>
 
 <!-- Session Manager Modal -->
-{#if sessionsOpen}
+<Modal bind:open={sessionsOpen} title="Chat Sessions" size="large" on:close={closeModal}>
   <SessionManagerModal
-    on:load-session={handleLoadSession}
+    on:load-session={(e) => {
+      foremanPanelRef?.loadSession(e.detail.sessionId, e.detail.history);
+    }}
     on:close={closeModal}
   />
-{/if}
+</Modal>
 
 <style>
   /* Canvas Container */

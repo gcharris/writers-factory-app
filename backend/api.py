@@ -295,6 +295,231 @@ async def view_knowledge_graph():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read graph: {str(e)}")
 
+@app.get("/graph/stats", summary="Get knowledge graph statistics")
+async def get_graph_stats():
+    """
+    Returns statistics about the knowledge graph.
+    Used by GraphModal.svelte for header display.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        return {
+            "node_count": 0,
+            "edge_count": 0,
+            "node_types": []
+        }
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        nodes = graph_data.get("nodes", [])
+        edges = graph_data.get("edges", [])
+
+        # Get unique node types
+        node_types = list(set(n.get("type", "UNKNOWN") for n in nodes))
+
+        return {
+            "node_count": len(nodes),
+            "edge_count": len(edges),
+            "node_types": sorted(node_types)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read graph stats: {str(e)}")
+
+@app.get("/graph/export", summary="Export full knowledge graph")
+async def export_knowledge_graph():
+    """
+    Returns the full knowledge graph for visualization.
+    Used by GraphExplorer.svelte for canvas rendering.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        return {
+            "nodes": [],
+            "edges": []
+        }
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+        return {
+            "nodes": graph_data.get("nodes", []),
+            "edges": graph_data.get("edges", [])
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export graph: {str(e)}")
+
+@app.get("/graph/nodes/{node_id}", summary="Get single node details")
+async def get_graph_node(node_id: str):
+    """
+    Returns details for a single node.
+    Used by GraphNodeDetails.svelte.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        raise HTTPException(status_code=404, detail="Knowledge graph not found")
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        nodes = graph_data.get("nodes", [])
+        node = next((n for n in nodes if n.get("id") == node_id), None)
+
+        if not node:
+            raise HTTPException(status_code=404, detail=f"Node {node_id} not found")
+
+        return node
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get node: {str(e)}")
+
+@app.put("/graph/nodes/{node_id}", summary="Update node properties")
+async def update_graph_node(node_id: str, request: dict):
+    """
+    Update properties of a node in the knowledge graph.
+    Used by GraphNodeDetails.svelte for editing.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        raise HTTPException(status_code=404, detail="Knowledge graph not found")
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        nodes = graph_data.get("nodes", [])
+        node_index = next((i for i, n in enumerate(nodes) if n.get("id") == node_id), None)
+
+        if node_index is None:
+            raise HTTPException(status_code=404, detail=f"Node {node_id} not found")
+
+        # Update node properties (preserve id)
+        updated_node = {**nodes[node_index], **request, "id": node_id}
+        nodes[node_index] = updated_node
+        graph_data["nodes"] = nodes
+
+        with open(graph_path, "w", encoding="utf-8") as f:
+            json.dump(graph_data, f, indent=2)
+
+        return updated_node
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update node: {str(e)}")
+
+@app.post("/graph/relationships", summary="Create a new relationship")
+async def create_graph_relationship(request: dict):
+    """
+    Create a new edge/relationship between nodes.
+    Used by GraphRelationshipEditor.svelte.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        raise HTTPException(status_code=404, detail="Knowledge graph not found")
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        edges = graph_data.get("edges", [])
+
+        # Generate edge ID
+        edge_id = f"edge_{len(edges) + 1}_{int(time.time())}"
+
+        new_edge = {
+            "id": edge_id,
+            "source": request.get("source"),
+            "target": request.get("target"),
+            "type": request.get("type", "RELATES_TO"),
+            "properties": request.get("properties", {})
+        }
+
+        edges.append(new_edge)
+        graph_data["edges"] = edges
+
+        with open(graph_path, "w", encoding="utf-8") as f:
+            json.dump(graph_data, f, indent=2)
+
+        return new_edge
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create relationship: {str(e)}")
+
+@app.put("/graph/relationships/{edge_id}", summary="Update a relationship")
+async def update_graph_relationship(edge_id: str, request: dict):
+    """
+    Update an existing edge/relationship.
+    Used by GraphRelationshipEditor.svelte.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        raise HTTPException(status_code=404, detail="Knowledge graph not found")
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        edges = graph_data.get("edges", [])
+        edge_index = next((i for i, e in enumerate(edges) if e.get("id") == edge_id), None)
+
+        if edge_index is None:
+            raise HTTPException(status_code=404, detail=f"Edge {edge_id} not found")
+
+        # Update edge (preserve id)
+        updated_edge = {**edges[edge_index], **request, "id": edge_id}
+        edges[edge_index] = updated_edge
+        graph_data["edges"] = edges
+
+        with open(graph_path, "w", encoding="utf-8") as f:
+            json.dump(graph_data, f, indent=2)
+
+        return updated_edge
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update relationship: {str(e)}")
+
+@app.delete("/graph/relationships/{edge_id}", summary="Delete a relationship")
+async def delete_graph_relationship(edge_id: str):
+    """
+    Delete an edge/relationship from the knowledge graph.
+    Used by GraphRelationshipEditor.svelte.
+    """
+    graph_path = os.path.join(os.path.dirname(__file__), "knowledge_graph.json")
+
+    if not os.path.exists(graph_path):
+        raise HTTPException(status_code=404, detail="Knowledge graph not found")
+
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            graph_data = json.load(f)
+
+        edges = graph_data.get("edges", [])
+        original_count = len(edges)
+        edges = [e for e in edges if e.get("id") != edge_id]
+
+        if len(edges) == original_count:
+            raise HTTPException(status_code=404, detail=f"Edge {edge_id} not found")
+
+        graph_data["edges"] = edges
+
+        with open(graph_path, "w", encoding="utf-8") as f:
+            json.dump(graph_data, f, indent=2)
+
+        return {"status": "deleted", "edge_id": edge_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete relationship: {str(e)}")
+
 # --- Session Management (The Workbench) ---
 @app.post("/session/new", summary="Create a new chat session")
 async def create_session(request: SessionCreateRequest = None):
