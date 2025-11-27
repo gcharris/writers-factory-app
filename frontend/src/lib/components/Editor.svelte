@@ -91,7 +91,12 @@
   // ============================================
 
   function setViewMode(mode) {
-    viewMode = mode;
+    // Toggle behavior: clicking same mode returns to 'edit'
+    if (viewMode === mode) {
+      viewMode = 'edit';
+    } else {
+      viewMode = mode;
+    }
   }
 
   // Keyboard shortcut for preview toggle (Cmd+Shift+P)
@@ -181,25 +186,25 @@
           <polyline points="14 2 14 8 20 8"></polyline>
         </svg>
       </span>
-      <span class="filename">{currentFile ? currentFile.split('/').pop() : 'No file selected'}</span>
+      <span class="filename">{currentFile ? '/content/' + currentFile.split('/content/')[1] : 'No file selected'}</span>
       {#if currentFile && currentFile.endsWith('.md')}
-        <span class="file-type">Markdown</span>
+        <span class="file-type" class:preview-mode={viewMode === 'preview'}>{viewMode === 'preview' ? 'PREVIEW' : 'MARKDOWN'}</span>
       {/if}
     </div>
 
     <div class="toolbar-center">
       {#if currentFile && currentFile.endsWith('.md')}
-        <!-- View Mode Toggle -->
+        <!-- View Mode Toggle (eye=preview, split=side-by-side) -->
         <div class="view-toggle">
           <button
             class="toggle-btn"
-            class:active={viewMode === 'edit'}
-            on:click={() => setViewMode('edit')}
-            title="Edit only"
+            class:active={viewMode === 'preview'}
+            on:click={() => setViewMode('preview')}
+            title="Toggle preview (click again to return to edit)"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
             </svg>
           </button>
           <button
@@ -211,17 +216,6 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="12" y1="3" x2="12" y2="21"></line>
-            </svg>
-          </button>
-          <button
-            class="toggle-btn"
-            class:active={viewMode === 'preview'}
-            on:click={() => setViewMode('preview')}
-            title="Preview only"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
             </svg>
           </button>
         </div>
@@ -454,6 +448,14 @@
     background: var(--bg-tertiary, #252d38);
     padding: 2px 6px;
     border-radius: var(--radius-sm, 4px);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .file-type.preview-mode {
+    color: var(--accent-cyan, #58a6ff);
+    background: rgba(88, 166, 255, 0.15);
   }
 
   /* View Toggle */

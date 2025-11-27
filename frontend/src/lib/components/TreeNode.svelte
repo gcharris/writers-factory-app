@@ -16,7 +16,7 @@
   export let openFile;
   export let toggleFolder;
 
-  $: isExpanded = expandedFolders.has(node.path);
+  $: isExpanded = !!expandedFolders[node.path];
   $: isActive = $activeFile === node.path;
 
   // Get file extension for icon styling

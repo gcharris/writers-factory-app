@@ -20,8 +20,8 @@
   let errorMsg = "";
   const STORAGE_KEY = "last_project_path";
 
-  // Track expanded folders by path
-  let expandedFolders = new Set();
+  // Track expanded folders by path (use object for Svelte reactivity)
+  let expandedFolders = {};
 
   $: selectedFile = $activeFile;
 
@@ -52,8 +52,7 @@
       const entries = await readDir(path, { recursive: true });
       fileTree = buildTree(entries, path);
       // Auto-expand root
-      expandedFolders.add(path);
-      expandedFolders = expandedFolders;
+      expandedFolders = { ...expandedFolders, [path]: true };
     } catch (e) {
       console.error(e);
       errorMsg = "Cannot read folder. Check permissions.";
@@ -108,12 +107,12 @@
   function toggleFolder(node) {
     if (!node.isDirectory) return;
 
-    if (expandedFolders.has(node.path)) {
-      expandedFolders.delete(node.path);
+    if (expandedFolders[node.path]) {
+      const { [node.path]: _, ...rest } = expandedFolders;
+      expandedFolders = rest;
     } else {
-      expandedFolders.add(node.path);
+      expandedFolders = { ...expandedFolders, [node.path]: true };
     }
-    expandedFolders = expandedFolders; // Trigger reactivity
   }
 
   async function openFile(node) {

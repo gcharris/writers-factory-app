@@ -26,12 +26,7 @@
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
   import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
-  import { activeFile, activeModal } from '$lib/stores';
-
-  // Breadcrumb from active file
-  $: breadcrumb = $activeFile
-    ? $activeFile.split('/').slice(-3).join(' / ')
-    : 'No file selected';
+  import { activeModal } from '$lib/stores';
 
   // Modal open state derived from store
   $: settingsOpen = $activeModal === 'settings';
@@ -54,34 +49,9 @@
     <FileTree />
   </svelte:fragment>
 
-  <!-- CANVAS Panel: Editor with file breadcrumb -->
+  <!-- CANVAS Panel: Editor -->
   <svelte:fragment slot="canvas">
-    <div class="canvas-container">
-      <!-- Breadcrumb bar -->
-      <div class="breadcrumb-bar">
-        <span class="breadcrumb-path">{breadcrumb}</span>
-        <div class="breadcrumb-actions">
-          <button class="breadcrumb-btn" title="Split view">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="3" x2="12" y2="21"></line>
-            </svg>
-          </button>
-          <button class="breadcrumb-btn" title="More options">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Editor area -->
-      <div class="editor-container">
-        <Editor />
-      </div>
-    </div>
+    <Editor />
   </svelte:fragment>
 
   <!-- THE FOREMAN Panel: Chat with header buttons -->
@@ -121,64 +91,5 @@
 </Modal>
 
 <style>
-  /* Canvas Container */
-  .canvas-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    background: var(--bg-primary, #0f1419);
-  }
-
-  /* Breadcrumb Bar */
-  .breadcrumb-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 32px;
-    padding: 0 var(--space-3, 12px);
-    background: var(--bg-secondary, #1a2027);
-    border-bottom: 1px solid var(--border, #2d3a47);
-  }
-
-  .breadcrumb-path {
-    font-size: var(--text-xs, 11px);
-    color: var(--text-muted, #8b949e);
-    font-family: var(--font-mono, 'SF Mono', monospace);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .breadcrumb-actions {
-    display: flex;
-    gap: var(--space-1, 4px);
-  }
-
-  .breadcrumb-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm, 4px);
-    color: var(--text-muted, #8b949e);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .breadcrumb-btn:hover {
-    background: var(--bg-tertiary, #252d38);
-    color: var(--text-secondary, #c9d1d9);
-  }
-
-  /* Editor Container */
-  .editor-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
+  /* Page styles are handled by MainLayout and child components */
 </style>
