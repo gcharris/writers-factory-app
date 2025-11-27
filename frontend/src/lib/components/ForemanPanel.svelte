@@ -122,6 +122,7 @@
     if (!input.trim() || isLoading) return;
 
     isLoading = true;
+    status = "Thinking...";
     const currentInput = input;
     input = "";
 
@@ -129,9 +130,21 @@
     messages = [...messages, userMsg];
 
     try {
+      console.log('[ForemanPanel] Sending message:', currentInput);
       const data = await apiClient.foremanChat(currentInput);
-      const assistantMsg = { role: 'assistant', text: data.response };
-      messages = [...messages, assistantMsg];
+      console.log('[ForemanPanel] Response:', data);
+
+      if (data.response) {
+        const assistantMsg = { role: 'assistant', text: data.response };
+        messages = [...messages, assistantMsg];
+      } else if (data.error) {
+        const errorMsg = { role: 'system', text: `Backend error: ${data.error}` };
+        messages = [...messages, errorMsg];
+      } else {
+        // Response exists but has unexpected format
+        const infoMsg = { role: 'system', text: `Unexpected response format: ${JSON.stringify(data)}` };
+        messages = [...messages, infoMsg];
+      }
 
       if (data.work_order_status) {
         foremanWorkOrder.set(data.work_order_status);
@@ -146,9 +159,21 @@
       }
 
       await checkForemanStatus();
+      status = "Ready";
     } catch (e) {
-      const errorMsg = { role: 'system', text: `Error: ${e.message}` };
+      console.error('[ForemanPanel] Error:', e);
+      let errorText = e.message || 'Unknown error';
+
+      // Provide helpful hints for common errors
+      if (errorText.includes('fetch') || errorText.includes('NetworkError')) {
+        errorText = 'Cannot reach backend. Is the server running on port 8000?';
+      } else if (errorText.includes('500')) {
+        errorText = 'Backend error. Check if Ollama is running: `ollama serve`';
+      }
+
+      const errorMsg = { role: 'system', text: `Error: ${errorText}` };
       messages = [...messages, errorMsg];
+      status = "Error";
     } finally {
       isLoading = false;
       foremanChatHistory.set(messages);
@@ -370,16 +395,14 @@
       </div>
 
       <div class="header-right">
-        <!-- Notebook Button -->
-        <button class="header-btn notebook" on:click={openNotebook} title="NotebookLM Research">
+        <!-- Icon-only buttons with hover tooltips -->
+        <button class="header-btn" on:click={openNotebook} title="NotebookLM Research">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
-          <span class="btn-label">Notebook</span>
         </button>
 
-        <!-- Studio Button -->
         <button class="header-btn" on:click={openStudio} title="Studio Tools">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"></rect>
@@ -387,10 +410,8 @@
             <rect x="3" y="14" width="7" height="7"></rect>
             <rect x="14" y="14" width="7" height="7"></rect>
           </svg>
-          <span class="btn-label">Studio</span>
         </button>
 
-        <!-- Graph Button -->
         <button class="header-btn" on:click={openGraph} title="Knowledge Graph">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
@@ -403,18 +424,14 @@
             <line x1="6" y1="18" x2="9.5" y2="14"></line>
             <line x1="18" y1="18" x2="14.5" y2="14"></line>
           </svg>
-          <span class="btn-label">Graph</span>
         </button>
 
-        <!-- Sessions Button -->
         <button class="header-btn" on:click={openSessions} title="Chat Sessions">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span class="btn-label">Sessions</span>
         </button>
 
-        <!-- Settings Button -->
         <button class="header-btn settings" on:click={openSettings} title="Settings">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
@@ -734,16 +751,6 @@
 
   .header-btn.settings {
     padding: var(--space-1);
-  }
-
-  .btn-label {
-    display: none;
-  }
-
-  @media (min-width: 1400px) {
-    .btn-label {
-      display: inline;
-    }
   }
 
   /* Project Info */

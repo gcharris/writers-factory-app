@@ -437,19 +437,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition-fast);
   }
 
   .panel-toggle:hover {
     background: var(--bg-elevated);
-    color: var(--text-secondary);
+    border-color: var(--border-strong);
+    color: var(--accent-cyan);
   }
 
   .panel-content {
