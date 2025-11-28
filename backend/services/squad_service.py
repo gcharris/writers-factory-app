@@ -40,6 +40,48 @@ class SquadCostEstimate:
     monthly_usd: float
 
 
+@dataclass
+class HardwareScore:
+    """Hardware capability scores for squad recommendation."""
+    gpu_score: int  # 0=none, 1=integrated, 2+=discrete (higher for more VRAM)
+    ram_score: int  # 1=budget (4GB), 2=balanced (8GB), 3=premium (16GB+)
+    cpu_score: int  # 1=low (<4), 2=medium (4-7), 3=high (8+)
+    total_score: int  # Combined score for ranking
+    tier: str  # "budget", "balanced", or "premium"
+
+    def to_dict(self) -> dict:
+        return {
+            "gpu_score": self.gpu_score,
+            "ram_score": self.ram_score,
+            "cpu_score": self.cpu_score,
+            "total_score": self.total_score,
+            "tier": self.tier
+        }
+
+
+@dataclass
+class SquadRecommendation:
+    """A squad recommendation with score and reasoning."""
+    squad_id: str
+    squad_name: str
+    score: float  # 0-100 score based on hardware fit
+    recommended: bool  # Is this the top recommendation?
+    reason: str  # Why this squad is recommended
+    warnings: List[str]  # Any potential issues
+    hardware_fit: str  # "excellent", "good", "marginal", "poor"
+
+    def to_dict(self) -> dict:
+        return {
+            "squad_id": self.squad_id,
+            "squad_name": self.squad_name,
+            "score": self.score,
+            "recommended": self.recommended,
+            "reason": self.reason,
+            "warnings": self.warnings,
+            "hardware_fit": self.hardware_fit
+        }
+
+
 class SquadService:
     """
     Manages squad presets and intelligent model selection.
@@ -670,6 +712,273 @@ class SquadService:
             "reason": "Hybrid Squad offers excellent general-purpose performance",
             "key_models": ["deepseek-chat", "qwen-plus"]
         }
+
+    def analyze_hardware(
+        self,
+        gpu: Optional[str] = None,
+        gpu_vram_gb: Optional[int] = None,
+        ram_gb: int = 8,
+        cpu_cores: int = 4
+    ) -> HardwareScore:
+        """
+        Analyze hardware capabilities and return scores.
+
+        Scoring logic:
+        - GPU: none=0, integrated=1, discrete=2+ (bonus for high VRAM)
+        - RAM: 4GB=1 (budget), 8GB=2 (balanced), 16GB+=3 (premium)
+        - CPU: <4 cores=1, 4-7 cores=2, 8+ cores=3
+
+        Args:
+            gpu: GPU type/name (None, "integrated", or discrete GPU name)
+            gpu_vram_gb: GPU VRAM in GB (for discrete GPUs)
+            ram_gb: System RAM in GB
+            cpu_cores: Number of CPU cores
+
+        Returns:
+            HardwareScore with individual and total scores
+        """
+        # Score GPU capability
+        if gpu is None or gpu.lower() == "none":
+            gpu_score = 0
+        elif "integrated" in gpu.lower() or "intel" in gpu.lower() and "arc" not in gpu.lower():
+            gpu_score = 1
+        else:
+            # Discrete GPU - base score of 2, plus bonus for VRAM
+            gpu_score = 2
+            if gpu_vram_gb:
+                if gpu_vram_gb >= 16:
+                    gpu_score = 4  # High-end GPU
+                elif gpu_vram_gb >= 8:
+                    gpu_score = 3  # Mid-range GPU
+            # Apple Silicon gets bonus for unified memory efficiency
+            if gpu and "apple" in gpu.lower():
+                gpu_score = max(gpu_score, 3)
+
+        # Score RAM
+        if ram_gb < 8:
+            ram_score = 1  # Budget
+        elif ram_gb < 16:
+            ram_score = 2  # Balanced
+        else:
+            ram_score = 3  # Premium
+
+        # Score CPU
+        if cpu_cores < 4:
+            cpu_score = 1
+        elif cpu_cores < 8:
+            cpu_score = 2
+        else:
+            cpu_score = 3
+
+        # Calculate total score (weighted: GPU=40%, RAM=40%, CPU=20%)
+        total_score = int(gpu_score * 0.4 + ram_score * 0.4 + cpu_score * 0.2) * 10
+
+        # Determine tier based on scores
+        avg_score = (gpu_score + ram_score + cpu_score) / 3
+        if avg_score >= 2.5:
+            tier = "premium"
+        elif avg_score >= 1.5:
+            tier = "balanced"
+        else:
+            tier = "budget"
+
+        return HardwareScore(
+            gpu_score=gpu_score,
+            ram_score=ram_score,
+            cpu_score=cpu_score,
+            total_score=total_score,
+            tier=tier
+        )
+
+    def recommend_squads(
+        self,
+        gpu: Optional[str] = None,
+        gpu_vram_gb: Optional[int] = None,
+        ram_gb: int = 8,
+        cpu_cores: int = 4,
+        check_api_keys: bool = True
+    ) -> List[SquadRecommendation]:
+        """
+        Generate ranked squad recommendations based on hardware.
+
+        Analyzes hardware capabilities and scores each squad on how well
+        it fits the user's system. Returns a ranked list with the best
+        match first.
+
+        Args:
+            gpu: GPU type/name (None, "integrated", or discrete GPU name)
+            gpu_vram_gb: GPU VRAM in GB
+            ram_gb: System RAM in GB
+            cpu_cores: Number of CPU cores
+            check_api_keys: Whether to check for API key availability
+
+        Returns:
+            List of SquadRecommendation sorted by score (highest first)
+        """
+        # Analyze hardware
+        hw_score = self.analyze_hardware(gpu, gpu_vram_gb, ram_gb, cpu_cores)
+
+        recommendations = []
+        hardware_info = {
+            "ram_gb": ram_gb,
+            "ollama_installed": self.hardware.is_ollama_running() if self.hardware else False,
+            "gpu_available": gpu is not None and gpu.lower() != "none",
+            "gpu_vram_gb": gpu_vram_gb
+        }
+
+        for squad_id, preset in self.presets.items():
+            # Calculate base score for this squad
+            score, reason, warnings, fit = self._score_squad_for_hardware(
+                squad_id, preset, hw_score, hardware_info, check_api_keys
+            )
+
+            recommendations.append(SquadRecommendation(
+                squad_id=squad_id,
+                squad_name=preset.get("name", squad_id),
+                score=score,
+                recommended=False,  # Will set top one to True later
+                reason=reason,
+                warnings=warnings,
+                hardware_fit=fit
+            ))
+
+        # Sort by score (highest first)
+        recommendations.sort(key=lambda r: r.score, reverse=True)
+
+        # Mark the top recommendation
+        if recommendations:
+            recommendations[0].recommended = True
+
+        return recommendations
+
+    def _score_squad_for_hardware(
+        self,
+        squad_id: str,
+        preset: dict,
+        hw_score: HardwareScore,
+        hardware_info: dict,
+        check_api_keys: bool
+    ) -> tuple:
+        """
+        Score how well a squad fits the hardware.
+
+        Returns:
+            Tuple of (score, reason, warnings, fit_level)
+        """
+        base_score = 50.0
+        warnings = []
+        reasons = []
+
+        tier = preset.get("tier", "budget")
+        reqs = preset.get("requirements", {})
+
+        # === Hardware Fit Scoring ===
+
+        # RAM check
+        min_ram = reqs.get("min_ram_gb", 0)
+        if hardware_info.get("ram_gb", 0) < min_ram:
+            base_score -= 30
+            warnings.append(f"Requires {min_ram}GB RAM")
+        elif hardware_info.get("ram_gb", 0) >= min_ram + 8:
+            base_score += 10  # Plenty of headroom
+            reasons.append("Ample RAM available")
+
+        # Ollama requirement check
+        if reqs.get("ollama_required"):
+            if hardware_info.get("ollama_installed"):
+                base_score += 10
+                reasons.append("Ollama available for local models")
+            else:
+                base_score -= 20
+                warnings.append("Requires Ollama (not detected)")
+
+        # GPU considerations for local-heavy squads
+        if squad_id == "local":
+            if hw_score.gpu_score >= 2:
+                base_score += 15
+                reasons.append("GPU acceleration available")
+            elif hw_score.gpu_score == 0:
+                base_score -= 10
+                warnings.append("No GPU - local models will be slower")
+
+        # === Tier Matching ===
+
+        # Match squad tier to hardware tier
+        tier_scores = {"free": 1, "budget": 2, "premium": 3, "opus": 4}
+        squad_tier_score = tier_scores.get(tier, 2)
+
+        hw_tier_scores = {"budget": 1, "balanced": 2, "premium": 3}
+        hw_tier_score = hw_tier_scores.get(hw_score.tier, 2)
+
+        # Bonus for matching tiers
+        tier_diff = abs(squad_tier_score - hw_tier_score)
+        if tier_diff == 0:
+            base_score += 15
+            reasons.append(f"Optimized for {hw_score.tier} hardware")
+        elif tier_diff == 1:
+            base_score += 5
+        else:
+            base_score -= 5
+
+        # === API Key Availability ===
+
+        if check_api_keys:
+            required_keys = reqs.get("api_keys", [])
+            missing_keys = [k for k in required_keys if not os.environ.get(k)]
+
+            if missing_keys:
+                base_score -= 20
+                key_names = [k.replace("_API_KEY", "") for k in missing_keys]
+                warnings.append(f"Missing API keys: {', '.join(key_names)}")
+            elif required_keys:
+                base_score += 10
+                reasons.append("All required API keys available")
+
+        # === Special Squad Bonuses ===
+
+        # Hybrid gets bonus for balanced hardware
+        if squad_id == "hybrid" and hw_score.tier == "balanced":
+            base_score += 10
+            reasons.append("Best value for your hardware")
+
+        # Local gets bonus for good GPU
+        if squad_id == "local" and hw_score.gpu_score >= 2:
+            base_score += 10
+            reasons.append("Great for offline privacy")
+
+        # Pro squad bonus for premium hardware
+        if squad_id == "pro" and hw_score.tier == "premium":
+            base_score += 10
+            reasons.append("Leverage your powerful hardware")
+
+        # Heavyweight only for premium hardware
+        if squad_id == "heavyweight":
+            if hw_score.tier != "premium":
+                base_score -= 15
+                warnings.append("Best suited for high-end systems")
+            else:
+                base_score += 5
+
+        # Clamp score to 0-100
+        final_score = max(0, min(100, base_score))
+
+        # Determine fit level
+        if final_score >= 80:
+            fit = "excellent"
+        elif final_score >= 60:
+            fit = "good"
+        elif final_score >= 40:
+            fit = "marginal"
+        else:
+            fit = "poor"
+
+        # Build reason string
+        if reasons:
+            reason = ". ".join(reasons[:2])  # Top 2 reasons
+        else:
+            reason = preset.get("description", "Standard configuration")
+
+        return final_score, reason, warnings, fit
 
 
 # Lazy initialization - will be properly initialized when settings and hardware services are available
