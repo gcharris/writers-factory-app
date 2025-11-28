@@ -27,7 +27,7 @@
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
   import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
-  import SquadWizard from '$lib/components/Squads/SquadWizard.svelte';
+  import OnboardingWizard from '$lib/components/Onboarding/OnboardingWizard.svelte';
   import { activeModal, hasCompletedOnboarding } from '$lib/stores';
 
   // Modal open state derived from store
@@ -107,11 +107,11 @@
   />
 </Modal>
 
-<!-- First-Time Onboarding: Squad Wizard -->
+<!-- First-Time Onboarding Wizard -->
 {#if showOnboardingWizard}
   <div class="onboarding-overlay">
     <div class="onboarding-container">
-      <SquadWizard on:close={completeOnboarding} />
+      <OnboardingWizard on:complete={completeOnboarding} on:close={completeOnboarding} />
     </div>
   </div>
 {/if}
