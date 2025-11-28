@@ -55,6 +55,10 @@ function persistentWritable(key, initialValue) {
     return store;
 }
 
+// --- Onboarding State ---
+// Track whether user has completed first-time Squad setup
+export const hasCompletedOnboarding = persistentWritable('wf_onboarding_complete', false);
+
 // Session ID - persists across refreshes
 export const sessionId = persistentWritable('wf_session_id', null);
 
