@@ -16,6 +16,7 @@
   - Settings: Configuration panels
 -->
 <script>
+  import { onMount } from 'svelte';
   import MainLayout from '$lib/components/MainLayout.svelte';
   import FileTree from '$lib/components/FileTree.svelte';
   import Editor from '$lib/components/Editor.svelte';
@@ -26,7 +27,8 @@
   import GraphModal from '$lib/components/GraphModal.svelte';
   import NotebookLMPanel from '$lib/components/NotebookLMPanel.svelte';
   import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
-  import { activeModal } from '$lib/stores';
+  import SquadWizard from '$lib/components/Squads/SquadWizard.svelte';
+  import { activeModal, hasCompletedOnboarding } from '$lib/stores';
 
   // Modal open state derived from store
   $: settingsOpen = $activeModal === 'settings';
@@ -35,11 +37,26 @@
   $: notebookOpen = $activeModal === 'notebooklm';
   $: sessionsOpen = $activeModal === 'session-manager';
 
+  // First-time onboarding wizard
+  let showOnboardingWizard = false;
+
   // Reference to ForemanPanel for loading sessions
   let foremanPanelRef;
 
   function closeModal() {
     activeModal.set(null);
+  }
+
+  // Check if first-time user on mount
+  onMount(() => {
+    if (!$hasCompletedOnboarding) {
+      showOnboardingWizard = true;
+    }
+  });
+
+  function completeOnboarding() {
+    hasCompletedOnboarding.set(true);
+    showOnboardingWizard = false;
   }
 </script>
 
@@ -90,6 +107,40 @@
   />
 </Modal>
 
+<!-- First-Time Onboarding: Squad Wizard -->
+{#if showOnboardingWizard}
+  <div class="onboarding-overlay">
+    <div class="onboarding-container">
+      <SquadWizard on:close={completeOnboarding} />
+    </div>
+  </div>
+{/if}
+
 <style>
   /* Page styles are handled by MainLayout and child components */
+
+  /* Onboarding wizard overlay - high z-index to be above everything */
+  .onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .onboarding-container {
+    background: var(--bg-secondary, #1a2027);
+    border-radius: var(--radius-lg, 12px);
+    border: 1px solid var(--border, #2d3a47);
+    max-width: 900px;
+    max-height: 90vh;
+    width: 90%;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  }
 </style>
