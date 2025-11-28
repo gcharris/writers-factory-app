@@ -58,11 +58,17 @@ Agents should commit frequently so work isn't lost if the session freezes or err
 - Backend API: `http://localhost:8000`
 - Ollama: `http://localhost:11434`
 
-### Required Ollama Model
-**IMPORTANT**: The Foreman (main AI assistant) uses **`mistral:7b`**, NOT llama.
-- To install: `ollama pull mistral:7b`
-- The Foreman defaults to `mistral:7b` in `backend/agents/foreman.py`
-- Do NOT tell users llama is sufficient - they need Mistral
+### Required Ollama Models
+**Two models are used:**
+1. **`llama3.2:3b`** - Fast local backup agent for onboarding/casual chat
+   - Install: `ollama pull llama3.2:3b`
+   - Used in `_casual_chat_with_writers_factory_knowledge()` in api.py
+
+2. **`mistral:7b`** - The Foreman (main creative AI partner)
+   - Install: `ollama pull mistral:7b`
+   - Used in `backend/agents/foreman.py`
+
+Both should be installed for full functionality.
 
 ### Essential Commands
 
