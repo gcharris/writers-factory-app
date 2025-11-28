@@ -38,6 +38,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 # --- Logging & Constants ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 PROJECT_ROOT = "workspace"
 PROJECT_NAME = "student_project"
 PROJECT_PATH = os.path.join(PROJECT_ROOT, PROJECT_NAME)
