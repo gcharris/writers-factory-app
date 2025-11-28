@@ -1252,25 +1252,30 @@ Be encouraging, knowledgeable about story craft, and help users get the most out
 async def _casual_chat_with_writers_factory_knowledge(message: str) -> str:
     """
     Handle chat when no project is active.
-    Uses Ollama for a helpful response with Writers Factory knowledge.
+    Uses Ollama (Mistral) for a helpful response with Writers Factory knowledge.
     """
-    from services.llm_service import LLMService
+    import httpx
 
     try:
-        llm_service = LLMService()
-        response = await llm_service.chat_with_model(
-            model="ollama/llama3.2:3b",
-            messages=[
-                {"role": "system", "content": WRITERS_FACTORY_SYSTEM_PROMPT},
-                {"role": "user", "content": message}
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-        return response.get("content", "I'm here to help with your writing! Try asking about the Narrative Protocol or how to get started with your novel.")
+        # Call Ollama directly for casual chat (no project active)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "http://localhost:11434/api/chat",
+                json={
+                    "model": "mistral:7b",
+                    "messages": [
+                        {"role": "system", "content": WRITERS_FACTORY_SYSTEM_PROMPT},
+                        {"role": "user", "content": message}
+                    ],
+                    "stream": False
+                }
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("message", {}).get("content", "I'm here to help with your writing!")
     except Exception as e:
         logger.error(f"Casual chat failed: {e}")
-        return f"Hello! I'm Muse, your writing assistant. I'd love to help, but I'm having trouble connecting to my AI backend. Please check that Ollama is running (`ollama serve`). In the meantime, feel free to explore the app - open a folder in the Explorer panel to get started!"
+        return f"I'm having trouble connecting to Ollama. Please ensure Ollama is running (`ollama serve`) and that mistral:7b is installed (`ollama pull mistral:7b`)."
 
 
 @app.post("/foreman/chat", summary="Chat with the Foreman")
