@@ -4127,6 +4127,351 @@ async def get_theme_overrides(project_id: str):
 
 
 # =============================================================================
+# Key Provisioning API (Phase 3A - Client Side)
+# =============================================================================
+
+from backend.services.key_provisioning_service import key_provisioning_service
+
+
+class ProvisionKeysRequest(BaseModel):
+    """Request to provision API keys from server."""
+    license_id: Optional[str] = None
+    force_refresh: bool = False
+
+
+@app.post("/keys/provision", summary="Provision API keys from key server")
+async def provision_keys(request: ProvisionKeysRequest):
+    """
+    Request provisioned API keys from the key server.
+
+    This endpoint contacts the external key server to obtain
+    baked-in API keys for cheap providers (DeepSeek, Qwen, etc.).
+
+    Users with a valid license get access to these keys without
+    needing to provide their own.
+
+    Args:
+        license_id: Optional license ID for validation
+        force_refresh: Force refresh even if keys are valid
+
+    Returns:
+        - Provisioning status
+        - List of provisioned providers
+        - Next refresh time
+
+    Example:
+        POST /keys/provision
+        {"license_id": "abc123"}
+    """
+    try:
+        result = await key_provisioning_service.provision_keys(
+            license_id=request.license_id,
+            force_refresh=request.force_refresh,
+        )
+
+        return {
+            "status": "ok",
+            "result": result.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to provision keys: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to provision keys: {str(e)}")
+
+
+@app.get("/keys/status", summary="Get key provisioning status")
+async def get_keys_status():
+    """
+    Get current status of provisioned API keys.
+
+    Returns:
+        - Overall provisioning status (active, needs_refresh, expired, etc.)
+        - List of provisioned providers
+        - List of missing providers
+        - Last provisioning time
+        - Next refresh time
+        - Offline grace period remaining (if applicable)
+
+    Example:
+        GET /keys/status
+    """
+    try:
+        status = key_provisioning_service.get_provisioning_status()
+
+        return {
+            "status": "ok",
+            "provisioning": status.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get key status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get key status: {str(e)}")
+
+
+@app.get("/keys/providers", summary="Get available providers and key sources")
+async def get_key_providers():
+    """
+    Get all available AI providers and where their keys come from.
+
+    Returns a dict of provider -> source where source is:
+    - "provisioned": Key from provisioning server
+    - "env": Key from environment variable
+    - "none": No key available
+
+    Example:
+        GET /keys/providers
+    """
+    try:
+        providers = key_provisioning_service.get_available_providers()
+
+        # Categorize
+        baked_in = ["deepseek", "qwen", "mistral", "zhipu", "kimi", "yandex"]
+        user_provided = ["anthropic", "openai", "google", "xai"]
+
+        return {
+            "status": "ok",
+            "providers": providers,
+            "categories": {
+                "baked_in": {p: providers.get(p, "none") for p in baked_in},
+                "user_provided": {p: providers.get(p, "none") for p in user_provided},
+            },
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get providers: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get providers: {str(e)}")
+
+
+@app.delete("/keys/clear", summary="Clear all provisioned keys")
+async def clear_provisioned_keys():
+    """
+    Clear all provisioned API keys.
+
+    This is primarily for testing and troubleshooting.
+    After clearing, user will need to re-provision.
+
+    Example:
+        DELETE /keys/clear
+    """
+    try:
+        success = key_provisioning_service.clear_provisioned_keys()
+
+        return {
+            "status": "ok" if success else "error",
+            "cleared": success,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to clear keys: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear keys: {str(e)}")
+
+
+# =============================================================================
+# Usage Tracking API (MVP Critical - Phase 4)
+# =============================================================================
+
+from backend.services.usage_tracking_service import usage_tracking_service
+
+
+class RecordUsageRequest(BaseModel):
+    """Request to record API usage."""
+    provider: str
+    model: str
+    input_tokens: int
+    output_tokens: int
+    task_type: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+@app.post("/usage/record", summary="Record API usage")
+async def record_usage(request: RecordUsageRequest):
+    """
+    Record a single API usage event.
+
+    This should be called after each LLM API call to track costs.
+    Used for MVP cost visibility and post-MVP pricing decisions.
+
+    Example:
+        POST /usage/record
+        {
+            "provider": "deepseek",
+            "model": "deepseek-chat",
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "task_type": "chat"
+        }
+    """
+    try:
+        record = usage_tracking_service.record_usage(
+            provider=request.provider,
+            model=request.model,
+            input_tokens=request.input_tokens,
+            output_tokens=request.output_tokens,
+            task_type=request.task_type,
+            session_id=request.session_id,
+        )
+
+        return {
+            "status": "recorded",
+            "record_id": record.id,
+            "estimated_cost": record.estimated_cost,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to record usage: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to record usage: {str(e)}")
+
+
+@app.get("/usage/summary", summary="Get monthly usage summary")
+async def get_usage_summary(month: Optional[str] = None):
+    """
+    Get usage summary for a given month.
+
+    Args:
+        month: Optional month in "YYYY-MM" format. Defaults to current month.
+
+    Returns:
+        - Total tokens (input + output)
+        - Total estimated cost
+        - Breakdown by provider and model
+
+    Example:
+        GET /usage/summary
+        GET /usage/summary?month=2025-11
+    """
+    try:
+        summary = usage_tracking_service.get_monthly_summary(month)
+
+        return {
+            "status": "ok",
+            "summary": summary.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get usage summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get usage summary: {str(e)}")
+
+
+@app.get("/usage/thresholds", summary="Check cost thresholds")
+async def check_usage_thresholds(month: Optional[str] = None):
+    """
+    Check if any cost thresholds have been exceeded.
+
+    Returns the highest exceeded threshold that hasn't been dismissed.
+    Used to show notifications to users about their spending.
+
+    Thresholds:
+    - $5 - Gentle info
+    - $10 - Warning
+    - $25 - Strong warning
+    - $50 - Critical (soft limit for MVP)
+
+    Example:
+        GET /usage/thresholds
+    """
+    try:
+        alert = usage_tracking_service.check_thresholds(month)
+
+        if alert:
+            return {
+                "status": "threshold_exceeded",
+                "alert": alert.to_dict(),
+            }
+        else:
+            return {
+                "status": "ok",
+                "alert": None,
+            }
+
+    except Exception as e:
+        logging.error(f"Failed to check thresholds: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to check thresholds: {str(e)}")
+
+
+class DismissThresholdRequest(BaseModel):
+    """Request to dismiss a threshold notification."""
+    month: str
+    threshold_amount: float
+
+
+@app.post("/usage/thresholds/dismiss", summary="Dismiss a threshold notification")
+async def dismiss_threshold(request: DismissThresholdRequest):
+    """
+    Mark a threshold notification as dismissed.
+
+    Prevents showing the same threshold notification repeatedly.
+
+    Example:
+        POST /usage/thresholds/dismiss
+        {"month": "2025-11", "threshold_amount": 10.0}
+    """
+    try:
+        success = usage_tracking_service.dismiss_threshold(
+            month=request.month,
+            threshold_amount=request.threshold_amount,
+        )
+
+        return {
+            "status": "ok" if success else "not_found",
+            "dismissed": success,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to dismiss threshold: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to dismiss threshold: {str(e)}")
+
+
+@app.get("/usage/recent", summary="Get recent usage records")
+async def get_recent_usage(limit: int = 50):
+    """
+    Get recent usage records for debugging/display.
+
+    Args:
+        limit: Maximum number of records to return (default 50)
+
+    Example:
+        GET /usage/recent
+        GET /usage/recent?limit=100
+    """
+    try:
+        records = usage_tracking_service.get_recent_usage(limit)
+
+        return {
+            "status": "ok",
+            "records": records,
+            "count": len(records),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get recent usage: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get recent usage: {str(e)}")
+
+
+@app.get("/usage/daily", summary="Get daily cost breakdown")
+async def get_daily_breakdown(month: Optional[str] = None):
+    """
+    Get daily cost breakdown for charts.
+
+    Returns cost per day for the specified month.
+
+    Example:
+        GET /usage/daily
+        GET /usage/daily?month=2025-11
+    """
+    try:
+        breakdown = usage_tracking_service.get_daily_breakdown(month)
+
+        return {
+            "status": "ok",
+            "breakdown": breakdown,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get daily breakdown: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get daily breakdown: {str(e)}")
+
+
+# =============================================================================
 # Phase 4: Multi-Model Tournament Endpoints
 # =============================================================================
 

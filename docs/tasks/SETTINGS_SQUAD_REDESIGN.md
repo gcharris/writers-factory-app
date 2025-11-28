@@ -168,30 +168,38 @@ async def provision_keys(license: LicenseInfo):
 
 ### Implementation Phases
 
-**Phase 1: Squad Wizard UI**
-- [ ] Create SquadWizard.svelte
-- [ ] Create HardwareScanner.svelte
-- [ ] Add first-time detection logic
-- [ ] Wire up to Settings
+**Phase 1: Squad Wizard UI** ✅ COMPLETE (pre-existing)
+- [x] Create SquadWizard.svelte - `frontend/src/lib/components/Squads/SquadWizard.svelte`
+- [x] Create HardwareScanner.svelte - `frontend/src/lib/components/Squads/HardwareStatusPanel.svelte`
+- [x] Add first-time detection logic - in SquadWizard
+- [x] Wire up to Settings - `frontend/src/lib/components/Settings/SettingsSquad.svelte`
 
-**Phase 2: Backend Support**
+**Phase 2: Backend Support** (partial - needs /squad/recommend endpoint)
 - [ ] Add /squad/recommend endpoint
-- [ ] Add hardware analysis logic
-- [ ] Store Squad selection in settings
+- [x] Add hardware analysis logic - exists in `/system/hardware`
+- [x] Store Squad selection in settings - via settings_service
 
-**Phase 3: Key Provisioning (requires server)**
-- [ ] Set up key provisioning server
-- [ ] Create /keys/provision endpoint
-- [ ] Implement secure key storage
-- [ ] Add key rotation logic
+**Phase 3A: Key Provisioning Client** ✅ COMPLETE
+- [x] Create `key_provisioning_service.py` - `backend/services/key_provisioning_service.py`
+- [x] Machine-specific encryption using PBKDF2 + Fernet
+- [x] SQLite storage for encrypted keys
+- [x] Offline grace period (30 days)
+- [x] Add client API endpoints - `/keys/provision`, `/keys/status`, `/keys/providers`
+- [x] Create `SettingsKeyProvisioning.svelte` - UI for key status and provisioning
 
-**Phase 4: Usage Tracking (MVP Critical)**
-- [ ] Create `usage_tracking_service.py`
-- [ ] Add token counting to LLM service responses
-- [ ] Create cost estimation logic per provider
-- [ ] Add `/usage/summary` and `/usage/record` endpoints
-- [ ] Create `UsageIndicator.svelte` component
-- [ ] Add threshold notification system
+**Phase 3B: Key Provisioning Server** (separate task - see `KEY_SERVER_TASK.md`)
+- [ ] Set up key provisioning server (AWS Lambda/Cloudflare Workers)
+- [ ] Create server-side `/keys/provision` endpoint
+- [ ] License validation logic
+- [ ] Key rotation and revocation
+
+**Phase 4: Usage Tracking (MVP Critical)** ✅ COMPLETE
+- [x] Create `usage_tracking_service.py` - `backend/services/usage_tracking_service.py`
+- [x] Add token counting to LLM service responses - pricing in service
+- [x] Create cost estimation logic per provider - 10+ providers with pricing
+- [x] Add `/usage/summary` and `/usage/record` endpoints - 6 endpoints added
+- [x] Create `UsageIndicator.svelte` component - `frontend/src/lib/components/UsageIndicator.svelte`
+- [x] Add threshold notification system - $5, $10, $25, $50 thresholds
 
 **Phase 5: Polish**
 - [ ] Add animations to wizard
