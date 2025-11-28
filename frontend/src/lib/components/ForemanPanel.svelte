@@ -200,24 +200,31 @@
     }
   }
 
-  // Use beforeinput for better IME/dictation compatibility
-  // beforeinput respects composition and dictation events better than keydown
-  function handleBeforeInput(e) {
-    // insertLineBreak is sent when Enter is pressed (without Shift)
-    if (e.inputType === 'insertLineBreak') {
-      e.preventDefault();
-      sendMessage();
-    }
+  // Handle input from contenteditable div
+  function handleContentEditableInput(e) {
+    // Get text content from contenteditable div
+    input = e.target.textContent || '';
   }
 
-  // Fallback keydown for browsers that don't support beforeinput properly
+  // Handle paste in contenteditable - strip formatting
+  function handlePaste(e) {
+    e.preventDefault();
+    const text = e.clipboardData?.getData('text/plain') || '';
+    document.execCommand('insertText', false, text);
+  }
+
+  // Handle keydown for Enter to send
   function handleKeydown(e) {
-    // Skip if composing (IME) or if beforeinput will handle it
+    // Skip if composing (IME/dictation)
     if (e.isComposing) return;
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+      // Clear the contenteditable div
+      if (inputRef) {
+        inputRef.textContent = '';
+      }
     }
   }
 
@@ -356,8 +363,19 @@
       path: mention.path,
       removable: true
     }];
-    // Also insert into input
-    input = input + `@${mention.name} `;
+    // Also insert into input (contenteditable)
+    const mentionText = `@${mention.name} `;
+    input = input + mentionText;
+    if (inputRef) {
+      inputRef.textContent = input;
+      // Move cursor to end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(inputRef);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
     inputRef?.focus();
   }
 
@@ -381,6 +399,10 @@
     if (transcript) {
       // Append to existing input with a space
       input = input ? `${input} ${transcript}` : transcript;
+      // Update contenteditable div
+      if (inputRef) {
+        inputRef.textContent = input;
+      }
       inputRef?.focus();
     }
   }
@@ -602,20 +624,20 @@
           </div>
 
           <div class="input-field-wrapper">
-            <textarea
+            <!-- Using contenteditable div for better Mac dictation support in WKWebView -->
+            <div
               bind:this={inputRef}
-              bind:value={input}
-              on:beforeinput={handleBeforeInput}
+              class="chat-input-editable"
+              contenteditable={!isLoading}
+              role="textbox"
+              aria-multiline="false"
+              aria-label="Message input"
+              data-placeholder="Ask {$assistantName}..."
+              on:input={handleContentEditableInput}
               on:keydown={handleKeydown}
-              placeholder="Ask {$assistantName}..."
-              disabled={isLoading}
-              rows="1"
-              autocomplete="off"
-              autocorrect="on"
-              autocapitalize="sentences"
+              on:paste={handlePaste}
               spellcheck="true"
-              inputmode="text"
-            ></textarea>
+            ></div>
 
             <!-- Mention Picker (positioned above input) -->
             <MentionPicker
@@ -1042,8 +1064,9 @@
     color: var(--accent-cyan);
   }
 
-  .chat-input-enhanced textarea {
-    width: 100%;
+  /* Contenteditable div for better Mac dictation support */
+  .chat-input-editable {
+    flex: 1;
     padding: var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border);
@@ -1051,18 +1074,31 @@
     color: var(--text-primary);
     font-size: var(--text-sm);
     font-family: var(--font-ui);
-    resize: none;
     min-height: 36px;
     max-height: 100px;
-    /* Enable text services (dictation, autocorrect) in WKWebView */
+    overflow-y: auto;
+    outline: none;
+    /* Critical for dictation support */
     -webkit-user-select: text;
     user-select: text;
-    -webkit-appearance: textarea;
-    appearance: auto;
-    /* Explicitly enable touch and pointer events */
-    pointer-events: auto;
-    touch-action: manipulation;
-    -webkit-touch-callout: default;
+    -webkit-user-modify: read-write;
+    cursor: text;
+  }
+
+  .chat-input-editable:focus {
+    border-color: var(--accent-cyan);
+  }
+
+  /* Placeholder via data attribute */
+  .chat-input-editable:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .chat-input-editable[contenteditable="false"] {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .chat-input-enhanced textarea:focus {
