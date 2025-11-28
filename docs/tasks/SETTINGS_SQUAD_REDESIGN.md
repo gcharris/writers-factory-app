@@ -185,7 +185,15 @@ async def provision_keys(license: LicenseInfo):
 - [ ] Implement secure key storage
 - [ ] Add key rotation logic
 
-**Phase 4: Polish**
+**Phase 4: Usage Tracking (MVP Critical)**
+- [ ] Create `usage_tracking_service.py`
+- [ ] Add token counting to LLM service responses
+- [ ] Create cost estimation logic per provider
+- [ ] Add `/usage/summary` and `/usage/record` endpoints
+- [ ] Create `UsageIndicator.svelte` component
+- [ ] Add threshold notification system
+
+**Phase 5: Polish**
 - [ ] Add animations to wizard
 - [ ] Add progress indicators
 - [ ] Add "Why this recommendation?" explanations
@@ -193,15 +201,70 @@ async def provision_keys(license: LicenseInfo):
 
 ---
 
+## MVP Strategy (Writers Course)
+
+The MVP will be tested with a writers course cohort. This provides real-world validation before public release.
+
+### Business Model: Subscription
+- Monthly subscription likely (to be validated during MVP)
+- MVP users get free access in exchange for feedback
+- Cost visibility is critical even when user isn't paying
+
+### Token Usage Tracking
+
+**Required Features:**
+1. **Usage Counter** - Track tokens consumed per provider
+2. **Cost Estimator** - Convert tokens to estimated $ spent
+3. **Threshold Notifications** - Alert user when they pass configurable cost thresholds
+4. **Dashboard Display** - Show running total in Settings or status bar
+
+**Implementation:**
+
+```python
+# New service: usage_tracking_service.py
+class UsageTrackingService:
+    def record_usage(self, user_id: str, provider: str, tokens: int, cost: float):
+        """Record API usage for a user."""
+        pass
+
+    def get_usage_summary(self, user_id: str) -> UsageSummary:
+        """Get total usage and estimated cost."""
+        pass
+
+    def check_threshold(self, user_id: str) -> Optional[ThresholdAlert]:
+        """Check if user has passed any cost thresholds."""
+        pass
+```
+
+**Cost Thresholds (configurable):**
+- $5 - Gentle reminder
+- $10 - "You're using this a lot!"
+- $25 - "Consider upgrading to your own API keys"
+- $50 - Soft limit for MVP (may be enforced later)
+
+**UI Component: `UsageIndicator.svelte`**
+- Small badge in status bar or header
+- Shows: "~$3.42 this month"
+- Click to see breakdown by provider
+- Color changes as thresholds approach (green → yellow → orange → red)
+
+### MVP Relaxed Enforcement
+- During MVP course, thresholds are advisory only
+- No hard cutoffs (you're paying, so you see real costs)
+- Data collected informs post-MVP pricing decisions
+
+---
+
 ## Open Questions
 
-1. **Pricing model**: Does user pay monthly subscription, or one-time purchase with usage limits?
-2. **Usage limits**: How much can a user use baked-in keys before we cut them off?
+1. ~~**Pricing model**: Does user pay monthly subscription, or one-time purchase with usage limits?~~ → **Subscription (likely)**
+2. ~~**Usage limits**: How much can a user use baked-in keys before we cut them off?~~ → **Soft limits with notifications; hard limits TBD post-MVP**
 3. **Offline grace period**: How long can app work offline before requiring key refresh?
 4. **Key server hosting**: AWS Lambda? Cloudflare Workers? Self-hosted?
 
 ---
 
 *Created: November 2025*
+*Updated: November 2025 - Added MVP strategy and usage tracking*
 *Status: Planning*
 *Priority: High - Critical for user onboarding*
