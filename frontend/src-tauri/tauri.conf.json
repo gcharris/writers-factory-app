@@ -32,6 +32,7 @@
       "icons/icon.ico"
     ],
     "macOS": {
+      "entitlements": "Entitlements.plist",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Writers Factory uses speech recognition for voice-to-text input in the chat interface.",
         "NSMicrophoneUsageDescription": "Writers Factory uses the microphone for voice input and dictation features."
