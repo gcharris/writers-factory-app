@@ -4127,6 +4127,146 @@ async def get_theme_overrides(project_id: str):
 
 
 # =============================================================================
+# Key Provisioning API (Phase 3A - Client Side)
+# =============================================================================
+
+from backend.services.key_provisioning_service import key_provisioning_service
+
+
+class ProvisionKeysRequest(BaseModel):
+    """Request to provision API keys from server."""
+    license_id: Optional[str] = None
+    force_refresh: bool = False
+
+
+@app.post("/keys/provision", summary="Provision API keys from key server")
+async def provision_keys(request: ProvisionKeysRequest):
+    """
+    Request provisioned API keys from the key server.
+
+    This endpoint contacts the external key server to obtain
+    baked-in API keys for cheap providers (DeepSeek, Qwen, etc.).
+
+    Users with a valid license get access to these keys without
+    needing to provide their own.
+
+    Args:
+        license_id: Optional license ID for validation
+        force_refresh: Force refresh even if keys are valid
+
+    Returns:
+        - Provisioning status
+        - List of provisioned providers
+        - Next refresh time
+
+    Example:
+        POST /keys/provision
+        {"license_id": "abc123"}
+    """
+    try:
+        result = await key_provisioning_service.provision_keys(
+            license_id=request.license_id,
+            force_refresh=request.force_refresh,
+        )
+
+        return {
+            "status": "ok",
+            "result": result.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to provision keys: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to provision keys: {str(e)}")
+
+
+@app.get("/keys/status", summary="Get key provisioning status")
+async def get_keys_status():
+    """
+    Get current status of provisioned API keys.
+
+    Returns:
+        - Overall provisioning status (active, needs_refresh, expired, etc.)
+        - List of provisioned providers
+        - List of missing providers
+        - Last provisioning time
+        - Next refresh time
+        - Offline grace period remaining (if applicable)
+
+    Example:
+        GET /keys/status
+    """
+    try:
+        status = key_provisioning_service.get_provisioning_status()
+
+        return {
+            "status": "ok",
+            "provisioning": status.to_dict(),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get key status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get key status: {str(e)}")
+
+
+@app.get("/keys/providers", summary="Get available providers and key sources")
+async def get_key_providers():
+    """
+    Get all available AI providers and where their keys come from.
+
+    Returns a dict of provider -> source where source is:
+    - "provisioned": Key from provisioning server
+    - "env": Key from environment variable
+    - "none": No key available
+
+    Example:
+        GET /keys/providers
+    """
+    try:
+        providers = key_provisioning_service.get_available_providers()
+
+        # Categorize
+        baked_in = ["deepseek", "qwen", "mistral", "zhipu", "kimi", "yandex"]
+        user_provided = ["anthropic", "openai", "google", "xai"]
+
+        return {
+            "status": "ok",
+            "providers": providers,
+            "categories": {
+                "baked_in": {p: providers.get(p, "none") for p in baked_in},
+                "user_provided": {p: providers.get(p, "none") for p in user_provided},
+            },
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to get providers: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get providers: {str(e)}")
+
+
+@app.delete("/keys/clear", summary="Clear all provisioned keys")
+async def clear_provisioned_keys():
+    """
+    Clear all provisioned API keys.
+
+    This is primarily for testing and troubleshooting.
+    After clearing, user will need to re-provision.
+
+    Example:
+        DELETE /keys/clear
+    """
+    try:
+        success = key_provisioning_service.clear_provisioned_keys()
+
+        return {
+            "status": "ok" if success else "error",
+            "cleared": success,
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to clear keys: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear keys: {str(e)}")
+
+
+# =============================================================================
 # Usage Tracking API (MVP Critical - Phase 4)
 # =============================================================================
 

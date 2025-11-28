@@ -179,11 +179,19 @@ async def provision_keys(license: LicenseInfo):
 - [x] Add hardware analysis logic - exists in `/system/hardware`
 - [x] Store Squad selection in settings - via settings_service
 
-**Phase 3: Key Provisioning (requires server)**
-- [ ] Set up key provisioning server
-- [ ] Create /keys/provision endpoint
-- [ ] Implement secure key storage
-- [ ] Add key rotation logic
+**Phase 3A: Key Provisioning Client** ✅ COMPLETE
+- [x] Create `key_provisioning_service.py` - `backend/services/key_provisioning_service.py`
+- [x] Machine-specific encryption using PBKDF2 + Fernet
+- [x] SQLite storage for encrypted keys
+- [x] Offline grace period (30 days)
+- [x] Add client API endpoints - `/keys/provision`, `/keys/status`, `/keys/providers`
+- [x] Create `SettingsKeyProvisioning.svelte` - UI for key status and provisioning
+
+**Phase 3B: Key Provisioning Server** (separate task - see `KEY_SERVER_TASK.md`)
+- [ ] Set up key provisioning server (AWS Lambda/Cloudflare Workers)
+- [ ] Create server-side `/keys/provision` endpoint
+- [ ] License validation logic
+- [ ] Key rotation and revocation
 
 **Phase 4: Usage Tracking (MVP Critical)** ✅ COMPLETE
 - [x] Create `usage_tracking_service.py` - `backend/services/usage_tracking_service.py`
