@@ -4614,6 +4614,14 @@ class GenreRecommendationRequest(BaseModel):
     genre: str
 
 
+class HardwareInfoRequest(BaseModel):
+    """Hardware information for squad recommendations."""
+    gpu: Optional[str] = None  # GPU name/type: None, "integrated", or discrete GPU name
+    gpu_vram_gb: Optional[int] = None  # GPU VRAM in GB
+    ram_gb: int = 8  # System RAM in GB
+    cpu_cores: int = 4  # Number of CPU cores
+
+
 # --- Squad Service Initialization ---
 def get_squad_service():
     """Get or create the squad service singleton."""
@@ -4688,6 +4696,67 @@ async def get_available_squads():
     except Exception as e:
         logging.error(f"Squad availability check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Squad availability check failed: {str(e)}")
+
+
+@app.post("/squad/recommend", summary="Get squad recommendations based on hardware")
+async def recommend_squad(request: HardwareInfoRequest):
+    """
+    Analyze hardware and return ranked squad recommendations.
+
+    Takes hardware information (GPU, RAM, CPU cores) and scores each squad
+    based on how well it fits the user's system. Returns a ranked list with
+    the best match first.
+
+    Scoring considers:
+    - Hardware capability tier (budget/balanced/premium)
+    - RAM requirements for local models
+    - GPU availability for acceleration
+    - API key availability
+    - Special optimizations per squad type
+
+    Args:
+        gpu: GPU name/type (None, "integrated", or discrete GPU name like "NVIDIA RTX 4090")
+        gpu_vram_gb: GPU VRAM in GB (for discrete GPUs)
+        ram_gb: System RAM in GB (default: 8)
+        cpu_cores: Number of CPU cores (default: 4)
+
+    Returns:
+        recommendations: Ranked list of squad recommendations with scores
+        hardware_analysis: Breakdown of hardware capability scores
+        top_recommendation: The best squad for this hardware
+    """
+    try:
+        squad_service = get_squad_service()
+
+        # Get hardware analysis
+        hardware_score = squad_service.analyze_hardware(
+            gpu=request.gpu,
+            gpu_vram_gb=request.gpu_vram_gb,
+            ram_gb=request.ram_gb,
+            cpu_cores=request.cpu_cores
+        )
+
+        # Get ranked recommendations
+        recommendations = squad_service.recommend_squads(
+            gpu=request.gpu,
+            gpu_vram_gb=request.gpu_vram_gb,
+            ram_gb=request.ram_gb,
+            cpu_cores=request.cpu_cores,
+            check_api_keys=True
+        )
+
+        # Find top recommendation
+        top_rec = next((r for r in recommendations if r.recommended), None)
+
+        return {
+            "recommendations": [r.to_dict() for r in recommendations],
+            "hardware_analysis": hardware_score.to_dict(),
+            "top_recommendation": top_rec.to_dict() if top_rec else None,
+            "count": len(recommendations)
+        }
+    except Exception as e:
+        logging.error(f"Squad recommendation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Squad recommendation failed: {str(e)}")
 
 
 @app.post("/squad/apply", summary="Apply a squad configuration")
