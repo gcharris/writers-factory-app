@@ -40,6 +40,7 @@
   let selectedAgent = 'default';
   let contextItems = []; // Array of { type, name, id?, path?, content? }
   let inputRef;
+  let interimTranscript = ""; // Live voice preview
 
   // Sync messages with Foreman chat history
   $: {
@@ -125,6 +126,10 @@
     status = "Thinking...";
     const currentInput = input;
     input = "";
+    // Clear the contenteditable div
+    if (inputRef) {
+      inputRef.textContent = '';
+    }
 
     const userMsg = { role: 'user', text: currentInput };
     messages = [...messages, userMsg];
@@ -399,7 +404,8 @@
     if (transcript) {
       // Append to existing input with a space
       input = input ? `${input} ${transcript}` : transcript;
-      // Update contenteditable div
+      // Clear interim and update contenteditable div
+      interimTranscript = "";
       if (inputRef) {
         inputRef.textContent = input;
       }
@@ -408,8 +414,12 @@
   }
 
   function handleVoiceInterim(e) {
-    // Could show live preview - for now just log
-    // console.log('Interim:', e.detail.transcript);
+    // Show live preview of what's being spoken
+    interimTranscript = e.detail.transcript;
+    // Update contenteditable with current input + interim
+    if (inputRef) {
+      inputRef.textContent = input + (interimTranscript ? ' ' + interimTranscript : '');
+    }
   }
 
   function handleVoiceError(e) {
