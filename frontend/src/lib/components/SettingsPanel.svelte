@@ -1,57 +1,43 @@
 <!--
   SettingsPanel.svelte - Main settings modal with tabbed navigation
 
-  Contains all settings sub-components organized by category:
-  - Squad (AI Model Squad) - P0 Critical
-  - Agents (API Keys) - P0 Critical
-  - Orchestrator (Quality Tiers) - P0 Critical
-  - Scoring (Rubric Weights) - P2
-  - Voice (Strictness) - P2
-  - Enhancement (Thresholds) - P2
-  - Foreman (Behavior) - P2
-  - Health Checks (Validation) - P2
-  - Advanced - P3
+  Tab order (simplified for writers):
+  - Assistant (personalization)
+  - AI Model (quality tier selection)
+  - API Keys (advanced - for power users)
+  - Voice (style settings)
+  - Advanced (power user options)
+
+  Squad is accessed via wizard button, not a tab (per Squad-first onboarding design)
 -->
 <script>
   import { createEventDispatcher } from 'svelte';
-  import SettingsSquad from './Settings/SettingsSquad.svelte';
   import SettingsAgents from './Settings/SettingsAgents.svelte';
   import SettingsOrchestrator from './Settings/SettingsOrchestrator.svelte';
-  import SettingsScoring from './Settings/SettingsScoring.svelte';
   import SettingsVoice from './Settings/SettingsVoice.svelte';
-  import SettingsEnhancement from './Settings/SettingsEnhancement.svelte';
-  import SettingsForeman from './Settings/SettingsForeman.svelte';
-  import SettingsHealth from './Settings/SettingsHealth.svelte';
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
   import SettingsAssistant from './Settings/SettingsAssistant.svelte';
+  import SquadWizard from './Squads/SquadWizard.svelte';
 
   export let activeTab = 'assistant';
 
   const dispatch = createEventDispatcher();
 
+  let showSquadWizard = false;
+
+  // Simplified tab order for writers (Squad accessed via button, not tab)
   const tabs = [
-    { id: 'assistant', label: 'Assistant', icon: 'sparkles', priority: 'P1' },
-    { id: 'squad', label: 'Squad', icon: 'users', priority: 'P0' },
-    { id: 'agents', label: 'API Keys', icon: 'key', priority: 'P0' },
-    { id: 'orchestrator', label: 'AI Model', icon: 'cpu', priority: 'P0' },
-    { id: 'scoring', label: 'Scoring', icon: 'chart', priority: 'P2' },
-    { id: 'voice', label: 'Voice', icon: 'mic', priority: 'P2' },
-    { id: 'enhancement', label: 'Enhancement', icon: 'wand', priority: 'P2' },
-    { id: 'foreman', label: 'Foreman', icon: 'bot', priority: 'P2' },
-    { id: 'health', label: 'Health Checks', icon: 'heart', priority: 'P2' },
-    { id: 'advanced', label: 'Advanced', icon: 'settings', priority: 'P3' },
+    { id: 'assistant', label: 'Assistant', icon: 'sparkles' },
+    { id: 'orchestrator', label: 'AI Model', icon: 'cpu' },
+    { id: 'agents', label: 'API Keys', icon: 'key', sublabel: 'Advanced' },
+    { id: 'voice', label: 'Voice', icon: 'mic' },
+    { id: 'advanced', label: 'Advanced', icon: 'settings' },
   ];
 
-  // Icons for each tab
+  // Icons for each tab (only icons used in simplified tabs)
   const tabIcons = {
     sparkles: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-    </svg>`,
-    users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-      <circle cx="9" cy="7" r="4"></circle>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
     </svg>`,
     key: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
@@ -68,43 +54,31 @@
       <line x1="1" y1="9" x2="4" y2="9"></line>
       <line x1="1" y1="14" x2="4" y2="14"></line>
     </svg>`,
-    chart: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="18" y1="20" x2="18" y2="10"></line>
-      <line x1="12" y1="20" x2="12" y2="4"></line>
-      <line x1="6" y1="20" x2="6" y2="14"></line>
-    </svg>`,
     mic: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
       <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
       <line x1="12" y1="19" x2="12" y2="23"></line>
       <line x1="8" y1="23" x2="16" y2="23"></line>
     </svg>`,
-    wand: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M15 4V2"></path>
-      <path d="M15 16v-2"></path>
-      <path d="M8 9h2"></path>
-      <path d="M20 9h2"></path>
-      <path d="M17.8 11.8 19 13"></path>
-      <path d="M15 9h0"></path>
-      <path d="M17.8 6.2 19 5"></path>
-      <path d="m3 21 9-9"></path>
-      <path d="M12.2 6.2 11 5"></path>
-    </svg>`,
-    bot: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="11" width="18" height="10" rx="2"></rect>
-      <circle cx="12" cy="5" r="2"></circle>
-      <path d="M12 7v4"></path>
-      <line x1="8" y1="16" x2="8" y2="16"></line>
-      <line x1="16" y1="16" x2="16" y2="16"></line>
-    </svg>`,
-    heart: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-    </svg>`,
     settings: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3"></circle>
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>`,
+    users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
     </svg>`
   };
+
+  function openSquadWizard() {
+    showSquadWizard = true;
+  }
+
+  function closeSquadWizard() {
+    showSquadWizard = false;
+  }
 </script>
 
 <div class="settings-panel">
@@ -113,6 +87,15 @@
     <div class="nav-header">
       <h3>Settings</h3>
     </div>
+
+    <!-- Change Squad Button (wizard-based, not a tab) -->
+    <div class="squad-button-container">
+      <button class="squad-button" on:click={openSquadWizard}>
+        <span class="nav-icon">{@html tabIcons.users}</span>
+        <span class="nav-label">Change Squad</span>
+      </button>
+    </div>
+
     <ul class="nav-list">
       {#each tabs as tab}
         <li>
@@ -122,8 +105,8 @@
           >
             <span class="nav-icon">{@html tabIcons[tab.icon]}</span>
             <span class="nav-label">{tab.label}</span>
-            {#if tab.priority === 'P0'}
-              <span class="priority-badge critical">Required</span>
+            {#if tab.sublabel}
+              <span class="sublabel">{tab.sublabel}</span>
             {/if}
           </button>
         </li>
@@ -135,27 +118,26 @@
   <div class="settings-content">
     {#if activeTab === 'assistant'}
       <SettingsAssistant />
-    {:else if activeTab === 'squad'}
-      <SettingsSquad />
-    {:else if activeTab === 'agents'}
-      <SettingsAgents />
     {:else if activeTab === 'orchestrator'}
       <SettingsOrchestrator />
-    {:else if activeTab === 'scoring'}
-      <SettingsScoring />
+    {:else if activeTab === 'agents'}
+      <SettingsAgents />
     {:else if activeTab === 'voice'}
       <SettingsVoice />
-    {:else if activeTab === 'enhancement'}
-      <SettingsEnhancement />
-    {:else if activeTab === 'foreman'}
-      <SettingsForeman />
-    {:else if activeTab === 'health'}
-      <SettingsHealth />
     {:else if activeTab === 'advanced'}
       <SettingsAdvanced />
     {/if}
   </div>
 </div>
+
+<!-- Squad Wizard Modal -->
+{#if showSquadWizard}
+  <div class="wizard-overlay" on:click={closeSquadWizard} on:keydown={(e) => e.key === 'Escape' && closeSquadWizard()} role="button" tabindex="0">
+    <div class="wizard-container" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
+      <SquadWizard on:close={closeSquadWizard} />
+    </div>
+  </div>
+{/if}
 
 <style>
   .settings-panel {
@@ -236,17 +218,40 @@
     flex: 1;
   }
 
-  .priority-badge {
+  .sublabel {
     padding: 2px 6px;
     border-radius: var(--radius-sm, 4px);
     font-size: 9px;
-    font-weight: var(--font-semibold, 600);
-    text-transform: uppercase;
+    font-weight: var(--font-medium, 500);
+    color: var(--text-muted, #6e7681);
   }
 
-  .priority-badge.critical {
-    background: var(--error-muted, rgba(248, 81, 73, 0.2));
-    color: var(--error, #f85149);
+  /* Squad Button (separate from tabs) */
+  .squad-button-container {
+    padding: var(--space-2, 8px);
+    border-bottom: 1px solid var(--border, #2d3a47);
+  }
+
+  .squad-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+    width: 100%;
+    padding: var(--space-3, 12px);
+    background: var(--accent-purple-muted, rgba(163, 113, 247, 0.15));
+    border: 1px solid var(--accent-purple, #a371f7);
+    border-radius: var(--radius-md, 6px);
+    color: var(--accent-purple, #a371f7);
+    font-size: var(--text-sm, 12px);
+    font-weight: var(--font-semibold, 600);
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-fast, 100ms ease);
+  }
+
+  .squad-button:hover {
+    background: var(--accent-purple-muted, rgba(163, 113, 247, 0.25));
+    transform: translateY(-1px);
   }
 
   /* Content Area */
@@ -254,6 +259,31 @@
     flex: 1;
     padding: var(--space-6, 24px);
     overflow-y: auto;
+  }
+
+  /* Wizard Overlay */
+  .wizard-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .wizard-container {
+    background: var(--bg-secondary, #1a2027);
+    border-radius: var(--radius-lg, 12px);
+    border: 1px solid var(--border, #2d3a47);
+    max-width: 900px;
+    max-height: 90vh;
+    width: 90%;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   }
 
 </style>
