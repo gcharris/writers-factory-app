@@ -131,6 +131,32 @@
     </div>
 
     <div class="toolbar-right">
+      <!-- Panel Toggle Buttons -->
+      <div class="panel-toggles">
+        <button
+          class="panel-toggle-btn"
+          class:active={!binderCollapsed}
+          on:click={toggleBinder}
+          title={binderCollapsed ? 'Show Explorer' : 'Hide Explorer'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="18" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="18" rx="1" opacity="0.3"></rect>
+          </svg>
+        </button>
+        <button
+          class="panel-toggle-btn"
+          class:active={!foremanCollapsed}
+          on:click={toggleForeman}
+          title={foremanCollapsed ? 'Show Chat' : 'Hide Chat'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="18" rx="1" opacity="0.3"></rect>
+            <rect x="14" y="3" width="7" height="18" rx="1"></rect>
+          </svg>
+        </button>
+      </div>
+
       <!-- Window controls placeholder -->
       <div class="window-controls">
         <button class="window-btn" title="Minimize">
@@ -155,29 +181,17 @@
 
   <!-- Main Panel Area -->
   <div class="panel-container">
-    <!-- BINDER Panel (Left) -->
+    <!-- EXPLORER Panel (Left) -->
     <aside class="panel panel-binder {binderCollapsed ? 'collapsed' : ''}">
-      <div class="panel-header">
-        <button class="panel-toggle" on:click={toggleBinder} title={binderCollapsed ? 'Expand' : 'Collapse'}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            {#if binderCollapsed}
-              <polyline points="9 18 15 12 9 6"></polyline>
-            {:else}
-              <polyline points="15 18 9 12 15 6"></polyline>
-            {/if}
-          </svg>
-        </button>
-        {#if !binderCollapsed}
-          <span class="panel-title">BINDER</span>
+      {#if !binderCollapsed}
+        <div class="panel-header">
+          <span class="panel-title">EXPLORER</span>
           <span class="panel-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
           </span>
-        {/if}
-      </div>
-      {#if !binderCollapsed}
+        </div>
         <div class="panel-content">
           <slot name="binder" />
         </div>
@@ -189,37 +203,8 @@
       <slot name="canvas" />
     </main>
 
-    <!-- THE FOREMAN Panel -->
+    <!-- Chat Panel (Right) -->
     <aside class="panel panel-foreman {foremanCollapsed ? 'collapsed' : ''}">
-      <div class="panel-header" style="--mode-color: {modeColors[$foremanMode] || modeColors.ARCHITECT}">
-        <button class="panel-toggle" on:click={toggleForeman} title={foremanCollapsed ? 'Expand' : 'Collapse'}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            {#if foremanCollapsed}
-              <polyline points="15 18 9 12 15 6"></polyline>
-            {:else}
-              <polyline points="9 18 15 12 9 6"></polyline>
-            {/if}
-          </svg>
-        </button>
-        {#if !foremanCollapsed}
-          <span class="panel-title">THE FOREMAN</span>
-          {#if $foremanMode}
-            <span class="mode-badge" style="background: {modeColors[$foremanMode]}20; color: {modeColors[$foremanMode]}">
-              {$foremanMode === 'VOICE_CALIBRATION' ? 'VOICE' : $foremanMode}
-            </span>
-          {/if}
-          <span class="panel-actions">
-            <button class="panel-action-btn" title="Expand">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <polyline points="9 21 3 21 3 15"></polyline>
-                <line x1="21" y1="3" x2="14" y2="10"></line>
-                <line x1="3" y1="21" x2="10" y2="14"></line>
-              </svg>
-            </button>
-          </span>
-        {/if}
-      </div>
       {#if !foremanCollapsed}
         <div class="panel-content">
           <slot name="foreman" />
@@ -361,6 +346,39 @@
     align-items: center;
     gap: var(--space-2);
     -webkit-app-region: no-drag;
+  }
+
+  /* Panel Toggle Buttons in Toolbar */
+  .panel-toggles {
+    display: flex;
+    gap: var(--space-1);
+    margin-right: var(--space-3);
+    padding-right: var(--space-3);
+    border-right: 1px solid var(--border);
+  }
+
+  .panel-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    -webkit-app-region: no-drag;
+  }
+
+  .panel-toggle-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .panel-toggle-btn.active {
+    color: var(--accent-cyan);
   }
 
   .window-controls {

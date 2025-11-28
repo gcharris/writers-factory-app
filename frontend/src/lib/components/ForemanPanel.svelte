@@ -239,6 +239,14 @@
     activeModal.set('session-manager');
   }
 
+  function clearChat() {
+    messages = [{
+      role: 'system',
+      text: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
+    }];
+    foremanChatHistory.set(messages);
+  }
+
   // Handle loading a session from session manager
   export function loadSession(sessionId, history) {
     // Convert session history to our message format
@@ -399,63 +407,26 @@
 <div class="foreman-panel">
   <!-- Chat Section (Full Height) -->
   <div class="chat-section">
-    <!-- Assistant Header -->
+    <!-- Minimal Chat Header -->
     <div class="foreman-header">
       <div class="header-left">
-        <span class="foreman-avatar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-          </svg>
-        </span>
         <span class="header-title">{$assistantName}</span>
-        <div class="header-status">
-          <span class="status-dot {status === 'Online' ? 'online' : 'ready'}"></span>
-          <span class="status-text">{status}</span>
-        </div>
       </div>
 
       <div class="header-right">
-        <!-- Icon-only buttons with hover tooltips -->
-        <button class="header-btn" on:click={openNotebook} title="NotebookLM Research">
+        <!-- New Chat Button -->
+        <button class="header-btn" on:click={clearChat} title="New Chat">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </button>
 
-        <button class="header-btn" on:click={openStudio} title="Studio Tools">
+        <!-- Chat History Button -->
+        <button class="header-btn" on:click={openSessions} title="Chat History">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-          </svg>
-        </button>
-
-        <button class="header-btn" on:click={openGraph} title="Knowledge Graph">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <circle cx="4" cy="6" r="2"></circle>
-            <circle cx="20" cy="6" r="2"></circle>
-            <circle cx="4" cy="18" r="2"></circle>
-            <circle cx="20" cy="18" r="2"></circle>
-            <line x1="6" y1="6" x2="9.5" y2="10"></line>
-            <line x1="18" y1="6" x2="14.5" y2="10"></line>
-            <line x1="6" y1="18" x2="9.5" y2="14"></line>
-            <line x1="18" y1="18" x2="14.5" y2="14"></line>
-          </svg>
-        </button>
-
-        <button class="header-btn" on:click={openSessions} title="Chat Sessions">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </button>
-
-        <button class="header-btn settings" on:click={openSettings} title="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
         </button>
       </div>

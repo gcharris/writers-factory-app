@@ -1207,6 +1207,71 @@ async def foreman_start(request: ForemanStartRequest):
         raise HTTPException(status_code=500, detail=f"Failed to start project: {str(e)}")
 
 
+# Writers Factory knowledge for casual chat mode
+WRITERS_FACTORY_SYSTEM_PROMPT = """You are Muse, the AI writing assistant for Writers Factory - a professional novel-writing IDE.
+
+## About Writers Factory
+
+Writers Factory helps novelists write better stories using the **Narrative Protocol** methodology - "Structure Before Freedom". Writers must complete Story Bible artifacts before accessing drafting features.
+
+## The Narrative Protocol
+
+**Four Modes of Writing:**
+1. **ARCHITECT** (Conception) - Build the Story Bible, structure, world
+2. **VOICE_CALIBRATION** (Voice) - Run tournaments, calibrate author voice
+3. **DIRECTOR** (Execution) - Draft scenes, maintain beat awareness
+4. **EDITOR** (Polish) - Check voice consistency, pacing, continuity
+
+**Story Bible Requirements (must complete before drafting):**
+- **Protagonist.md**: Fatal Flaw, The Lie, Arc (start/midpoint/resolution)
+- **Beat_Sheet.md**: 15-beat structure (Save the Cat! format)
+- **Theme.md**: Central theme and thesis
+- **World Rules.md**: Fundamental world-building rules
+
+## Getting Started
+
+To begin a new novel project:
+1. Open a project folder using the Explorer panel
+2. Use the Story Bible Wizard to set up your structure
+3. Complete the required Story Bible artifacts
+4. Then you can start drafting scenes in Director mode!
+
+## Your Role
+
+You're here to help writers:
+- Understand the Narrative Protocol methodology
+- Answer questions about story structure and craft
+- Guide them through using Writers Factory features
+- Offer creative writing advice and feedback
+
+Be encouraging, knowledgeable about story craft, and help users get the most out of Writers Factory!
+"""
+
+
+async def _casual_chat_with_writers_factory_knowledge(message: str) -> str:
+    """
+    Handle chat when no project is active.
+    Uses Ollama for a helpful response with Writers Factory knowledge.
+    """
+    from services.llm_service import LLMService
+
+    try:
+        llm_service = LLMService()
+        response = await llm_service.chat_with_model(
+            model="ollama/llama3.2:3b",
+            messages=[
+                {"role": "system", "content": WRITERS_FACTORY_SYSTEM_PROMPT},
+                {"role": "user", "content": message}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        return response.get("content", "I'm here to help with your writing! Try asking about the Narrative Protocol or how to get started with your novel.")
+    except Exception as e:
+        logger.error(f"Casual chat failed: {e}")
+        return f"Hello! I'm Muse, your writing assistant. I'd love to help, but I'm having trouble connecting to my AI backend. Please check that Ollama is running (`ollama serve`). In the meantime, feel free to explore the app - open a folder in the Explorer panel to get started!"
+
+
 @app.post("/foreman/chat", summary="Chat with the Foreman")
 async def foreman_chat(request: ForemanChatRequest):
     """
@@ -1268,6 +1333,16 @@ async def foreman_chat(request: ForemanChatRequest):
         full_message = message + context_text if context_text else message
 
         result = await foreman.chat(full_message)
+
+        # If no project is active, use casual chat mode with Writers Factory knowledge
+        if isinstance(result, dict) and result.get("error") and "No active project" in result.get("error", ""):
+            casual_response = await _casual_chat_with_writers_factory_knowledge(full_message)
+            return {
+                "response": casual_response,
+                "actions_executed": [],
+                "work_order_status": None
+            }
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

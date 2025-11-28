@@ -186,7 +186,7 @@
           <polyline points="14 2 14 8 20 8"></polyline>
         </svg>
       </span>
-      <span class="filename">{currentFile ? '/content/' + currentFile.split('/content/')[1] : 'No file selected'}</span>
+      <span class="filename">{currentFile ? currentFile.split('/').pop() : 'No file selected'}</span>
       {#if currentFile && currentFile.endsWith('.md')}
         <span class="file-type" class:preview-mode={viewMode === 'preview'}>{viewMode === 'preview' ? 'PREVIEW' : 'MARKDOWN'}</span>
       {/if}
@@ -354,32 +354,6 @@
     {/if}
   </div>
 
-  <!-- Expand Button (bottom right corner) -->
-  {#if currentFile}
-    <button
-      class="expand-btn"
-      on:click={toggleExpand}
-      title={isExpanded ? 'Exit fullscreen (Esc)' : 'Expand editor'}
-    >
-      {#if isExpanded}
-        <!-- Collapse icon -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 14 10 14 10 20"></polyline>
-          <polyline points="20 10 14 10 14 4"></polyline>
-          <line x1="14" y1="10" x2="21" y2="3"></line>
-          <line x1="3" y1="21" x2="10" y2="14"></line>
-        </svg>
-      {:else}
-        <!-- Expand icon -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <polyline points="9 21 3 21 3 15"></polyline>
-          <line x1="21" y1="3" x2="14" y2="10"></line>
-          <line x1="3" y1="21" x2="10" y2="14"></line>
-        </svg>
-      {/if}
-    </button>
-  {/if}
 </div>
 
 <!-- Help Overlay -->
