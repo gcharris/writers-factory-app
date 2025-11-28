@@ -58,6 +58,12 @@ Agents should commit frequently so work isn't lost if the session freezes or err
 - Backend API: `http://localhost:8000`
 - Ollama: `http://localhost:11434`
 
+### Required Ollama Model
+**IMPORTANT**: The Foreman (main AI assistant) uses **`mistral:7b`**, NOT llama.
+- To install: `ollama pull mistral:7b`
+- The Foreman defaults to `mistral:7b` in `backend/agents/foreman.py`
+- Do NOT tell users llama is sufficient - they need Mistral
+
 ### Essential Commands
 
 ```bash
