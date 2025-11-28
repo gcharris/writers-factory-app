@@ -200,7 +200,21 @@
     }
   }
 
+  // Use beforeinput for better IME/dictation compatibility
+  // beforeinput respects composition and dictation events better than keydown
+  function handleBeforeInput(e) {
+    // insertLineBreak is sent when Enter is pressed (without Shift)
+    if (e.inputType === 'insertLineBreak') {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // Fallback keydown for browsers that don't support beforeinput properly
   function handleKeydown(e) {
+    // Skip if composing (IME) or if beforeinput will handle it
+    if (e.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -591,10 +605,16 @@
             <textarea
               bind:this={inputRef}
               bind:value={input}
+              on:beforeinput={handleBeforeInput}
               on:keydown={handleKeydown}
               placeholder="Ask {$assistantName}..."
               disabled={isLoading}
               rows="1"
+              autocomplete="off"
+              autocorrect="on"
+              autocapitalize="sentences"
+              spellcheck="true"
+              inputmode="text"
             ></textarea>
 
             <!-- Mention Picker (positioned above input) -->
@@ -1034,6 +1054,15 @@
     resize: none;
     min-height: 36px;
     max-height: 100px;
+    /* Enable text services (dictation, autocorrect) in WKWebView */
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-appearance: textarea;
+    appearance: auto;
+    /* Explicitly enable touch and pointer events */
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-touch-callout: default;
   }
 
   .chat-input-enhanced textarea:focus {

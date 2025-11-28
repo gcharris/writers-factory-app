@@ -10,7 +10,7 @@
   Triggered by @ button or typing @ in input.
 -->
 <script>
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { apiClient } from '$lib/api_client';
 
   const dispatch = createEventDispatcher();
@@ -29,13 +29,20 @@
   let isLoading = false;
   let expandedCategories = ['characters', 'files'];
 
-  onMount(() => {
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('keydown', handleKeydown);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleKeydown);
-    };
+  // Only add event listeners when picker is open to avoid interfering with
+  // WKWebView dictation and other text input services
+  $: if (open) {
+    document.addEventListener('click', handleClickOutside, true);
+    document.addEventListener('keydown', handleKeydown, true);
+  } else {
+    document.removeEventListener('click', handleClickOutside, true);
+    document.removeEventListener('keydown', handleKeydown, true);
+  }
+
+  // Cleanup on unmount
+  onDestroy(() => {
+    document.removeEventListener('click', handleClickOutside, true);
+    document.removeEventListener('keydown', handleKeydown, true);
   });
 
   $: if (open && searchInput) {
