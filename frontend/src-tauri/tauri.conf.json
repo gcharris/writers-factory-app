@@ -30,6 +30,12 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Writers Factory uses speech recognition for voice-to-text input in the chat interface.",
+        "NSMicrophoneUsageDescription": "Writers Factory uses the microphone for voice input and dictation features."
+      }
+    }
   }
 }
