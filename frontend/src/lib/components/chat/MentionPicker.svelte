@@ -11,6 +11,7 @@
 -->
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
+  import { apiClient } from '$lib/api_client';
 
   const dispatch = createEventDispatcher();
 
@@ -62,23 +63,27 @@
   async function searchMentions(query) {
     isLoading = true;
     try {
-      // Search Knowledge Graph for entities
-      const graphResponse = await fetch(`http://localhost:8000/graph/nodes?search=${encodeURIComponent(query || '')}`);
-      if (graphResponse.ok) {
-        const nodes = await graphResponse.json();
-        results.characters = nodes.filter(n => n.node_type === 'CHARACTER').slice(0, 5);
-        results.locations = nodes.filter(n => n.node_type === 'LOCATION').slice(0, 5);
-        results.themes = nodes.filter(n => n.node_type === 'THEME').slice(0, 5);
-      }
+      // Use the new unified mentions search endpoint
+      const response = await apiClient.searchMentions(query || '', 20);
 
-      // Search files
-      const filesResponse = await fetch(`http://localhost:8000/files/list?search=${encodeURIComponent(query || '')}`);
-      if (filesResponse.ok) {
-        const files = await filesResponse.json();
-        results.files = files.slice(0, 8);
-      }
+      // Group results by type
+      results.characters = response.results
+        .filter(r => r.type === 'character')
+        .map(r => ({ id: r.id, label: r.name, name: r.name, path: r.file || r.path }));
+      results.locations = response.results
+        .filter(r => r.type === 'location')
+        .map(r => ({ id: r.id, label: r.name, name: r.name, path: r.file || r.path }));
+      results.themes = response.results
+        .filter(r => r.type === 'theme')
+        .map(r => ({ id: r.id, label: r.name, name: r.name, path: r.file || r.path }));
+      results.files = response.results
+        .filter(r => r.type === 'file')
+        .map(r => ({ id: r.id, name: r.name, path: r.path || r.file }));
+
     } catch (e) {
       console.warn('Failed to search mentions:', e);
+      // Reset results on error
+      results = { characters: [], files: [], locations: [], themes: [] };
     } finally {
       isLoading = false;
     }

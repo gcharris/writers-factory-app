@@ -131,8 +131,28 @@
 
     try {
       console.log('[ForemanPanel] Sending message:', currentInput);
-      const data = await apiClient.foremanChat(currentInput);
+
+      // Convert contextItems to backend format
+      const context = contextItems.map(item => {
+        if (item.type === 'active-file' || item.type === 'file') {
+          return { type: 'file', path: item.path };
+        } else if (item.type === 'mention') {
+          return { type: 'mention', id: item.id };
+        } else if (item.type === 'attachment') {
+          return { type: 'attachment', content: item.content, filename: item.name };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Use context-aware chat if we have context items
+      const data = context.length > 0
+        ? await apiClient.foremanChatWithContext(currentInput, context, selectedAgent)
+        : await apiClient.foremanChat(currentInput);
+
       console.log('[ForemanPanel] Response:', data);
+
+      // Clear context items after successful send
+      contextItems = [];
 
       if (data.response) {
         const assistantMsg = { role: 'assistant', text: data.response };

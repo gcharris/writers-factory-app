@@ -146,6 +146,56 @@ export interface ForemanStatusResponse {
     kb_entries_pending: number;
 }
 
+// --- Stage Detection Interfaces ---
+export interface StageProgress {
+    conception: number;
+    voice: number;
+    execution: number;
+    polish: number;
+}
+
+export interface StageDetectionResponse {
+    current: string;
+    completed: string[];
+    progress: StageProgress;
+    can_change: boolean;
+}
+
+export interface StageChangeResponse {
+    success: boolean;
+    message: string;
+    current: string;
+}
+
+// --- Mentions Search Interfaces ---
+export interface MentionResult {
+    type: 'character' | 'location' | 'theme' | 'file';
+    name: string;
+    id: string;
+    file?: string;
+    path?: string;
+}
+
+export interface MentionSearchResponse {
+    results: MentionResult[];
+}
+
+// --- Context Item Interface ---
+export interface ContextItem {
+    type: 'file' | 'mention' | 'attachment';
+    path?: string;
+    id?: string;
+    content?: string;
+    filename?: string;
+}
+
+export interface ForemanChatWithContextRequest {
+    message: string;
+    context?: ContextItem[];
+    agent?: string;
+    include_open_file?: boolean;
+}
+
 /**
  * A TypeScript client for interacting with the Writers Factory Python backend.
  */
@@ -336,6 +386,93 @@ export class WritersFactoryAPI {
     async foremanReset(): Promise<{ message: string }> {
         return this._request('/foreman/reset', {
             method: 'POST',
+        });
+    }
+
+    // ==========================================
+    // Stage Detection (Assistant Panel Integration)
+    // ==========================================
+
+    /**
+     * Detect current writing stage based on project state.
+     * Uses Story Bible completion, voice reference, and draft files.
+     */
+    async detectWritingStage(): Promise<{
+        stage: string;
+        completed: string[];
+        progress: StageProgress;
+        can_advance: boolean;
+        next_steps: string[];
+    }> {
+        const response = await this._request('/foreman/stage') as StageDetectionResponse;
+        // Transform to match frontend expectations
+        return {
+            stage: response.current,
+            completed: response.completed,
+            progress: response.progress,
+            can_advance: response.can_change,
+            next_steps: [] // Backend doesn't provide this yet
+        };
+    }
+
+    /**
+     * Manually change writing stage focus.
+     * @param stage The stage to switch to: 'conception', 'voice', 'execution', 'polish'
+     */
+    async changeWritingStage(stage: string): Promise<StageChangeResponse> {
+        return this._request('/foreman/stage', {
+            method: 'POST',
+            body: JSON.stringify({ stage }),
+        });
+    }
+
+    /**
+     * Reset stage to auto-detection mode.
+     */
+    async resetWritingStage(): Promise<{ message: string; current: string }> {
+        return this._request('/foreman/stage', {
+            method: 'DELETE',
+        });
+    }
+
+    // ==========================================
+    // Mentions Search (Assistant Panel Integration)
+    // ==========================================
+
+    /**
+     * Search Knowledge Graph and content files for @mentionable entities.
+     * @param query Search query
+     * @param limit Max results (default 10)
+     */
+    async searchMentions(query: string, limit: number = 10): Promise<MentionSearchResponse> {
+        return this._request(`/mentions/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    }
+
+    // ==========================================
+    // Enhanced Chat with Context
+    // ==========================================
+
+    /**
+     * Chat with the Foreman, including optional context items.
+     * @param message The user's message
+     * @param context Optional array of context items (files, mentions, attachments)
+     * @param agent Optional agent ID to route to
+     * @param includeOpenFile Whether to auto-include the active file
+     */
+    async foremanChatWithContext(
+        message: string,
+        context?: ContextItem[],
+        agent?: string,
+        includeOpenFile?: boolean
+    ): Promise<ForemanChatResponse> {
+        const body: ForemanChatWithContextRequest = { message };
+        if (context && context.length > 0) body.context = context;
+        if (agent) body.agent = agent;
+        if (includeOpenFile !== undefined) body.include_open_file = includeOpenFile;
+
+        return this._request('/foreman/chat', {
+            method: 'POST',
+            body: JSON.stringify(body),
         });
     }
 
