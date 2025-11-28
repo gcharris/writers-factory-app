@@ -11,4 +11,4 @@ aiohttp
 networkx
 sqlalchemy
 ollama
-
+cryptography>=42.0.0
