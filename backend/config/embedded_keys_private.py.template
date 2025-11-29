@@ -1,0 +1,30 @@
+"""
+PRIVATE Embedded Keys - DO NOT COMMIT TO GIT
+
+Copy this file to embedded_keys_private.py and fill in your actual API keys.
+The keys should be base64 encoded.
+
+To encode a key:
+    import base64
+    base64.b64encode("sk-your-actual-key".encode()).decode()
+
+Example:
+    "sk-abc123" encodes to "c2stYWJjMTIz"
+"""
+
+# To generate encoded keys, run:
+# python -c "import base64; print(base64.b64encode(input('Key: ').encode()).decode())"
+
+PRIVATE_KEYS = {
+    # DeepSeek - Get from https://platform.deepseek.com/api_keys
+    "deepseek": "PASTE_BASE64_ENCODED_KEY_HERE",
+
+    # Qwen - Get from https://dashscope.console.aliyun.com/apiKey
+    "qwen": "PASTE_BASE64_ENCODED_KEY_HERE",
+
+    # Mistral - Get from https://console.mistral.ai/api-keys
+    "mistral": "PASTE_BASE64_ENCODED_KEY_HERE",
+
+    # Google Gemini - Get from https://aistudio.google.com/apikey
+    "gemini": "PASTE_BASE64_ENCODED_KEY_HERE",
+}

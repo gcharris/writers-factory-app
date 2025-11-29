@@ -49,6 +49,7 @@
 
   // Check if first-time user on mount
   onMount(() => {
+    // Show onboarding wizard only if user hasn't completed it
     if (!$hasCompletedOnboarding) {
       showOnboardingWizard = true;
     }

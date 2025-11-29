@@ -59,9 +59,6 @@ function persistentWritable(key, initialValue) {
 // Track whether user has completed first-time Squad setup
 export const hasCompletedOnboarding = persistentWritable('wf_onboarding_complete', false);
 
-// Workspace location - where user's writing projects are stored
-export const workspacePath = persistentWritable('wf_workspace_path', null);
-
 // Session ID - persists across refreshes
 export const sessionId = persistentWritable('wf_session_id', null);
 
@@ -200,13 +197,8 @@ export const manuscriptProgress = writable(0); // 0-100 percentage through manus
 // Configurable assistant name (default: "Muse")
 export const assistantName = persistentWritable('wf_assistant_name', 'Muse');
 
-// --- Chat Model Selection ---
-
-// Default model set during onboarding (e.g., 'deepseek-chat')
+// Default chat model (set during onboarding, default: deepseek-chat)
 export const defaultChatModel = persistentWritable('wf_default_chat_model', 'deepseek-chat');
-
-// Currently selected model for next message (session only, not persisted)
-export const selectedChatModel = writable(null); // null means use defaultChatModel
 
 // Writing stage (auto-detected, manually overridable)
 export const currentStage = persistentWritable('wf_current_stage', 'conception');

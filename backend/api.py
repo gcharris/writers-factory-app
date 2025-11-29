@@ -1717,12 +1717,13 @@ async def search_mentions(q: str, limit: int = 10):
                 graph_data = json.load(f)
 
             for node in graph_data.get("nodes", []):
-                label = node.get("label", "")
-                if query_lower in label.lower():
+                # Node name is in "id" field, not "label" (knowledge_graph.json format)
+                node_name = node.get("label") or node.get("id", "")
+                if query_lower in node_name.lower():
                     node_type = node.get("type", "unknown").lower()
                     results.append({
                         "type": node_type,
-                        "name": label,
+                        "name": node_name,
                         "id": f"{node_type}_{node.get('id', '')}",
                         "file": node.get("file_path", "")
                     })
@@ -3366,12 +3367,14 @@ async def get_defaults():
 
 class ApiKeyTestRequest(BaseModel):
     provider: str
-    api_key: str
+    api_key: Optional[str] = None  # Optional - if not provided, uses configured key
 
 @app.post("/api-keys/test", summary="Test an API key")
 async def test_api_key(request: ApiKeyTestRequest):
     """
     Test if an API key is valid by making a minimal API call.
+
+    If api_key is not provided, tests the configured key from environment/embedded.
 
     Supports: deepseek, openai, anthropic, google (gemini), qwen, xai (grok), mistral
     """
@@ -3379,10 +3382,39 @@ async def test_api_key(request: ApiKeyTestRequest):
         provider = request.provider.lower()
         api_key = request.api_key
 
+        # If no key provided, get from configured sources
         if not api_key or api_key.strip() == '':
+            try:
+                from backend.config.embedded_keys import get_embedded_key
+                # Check env first, then embedded
+                env_var = f"{provider.upper()}_API_KEY"
+                if provider == 'gemini':
+                    env_var = "GOOGLE_API_KEY"
+                elif provider == 'moonshot':
+                    # Check KIMI_API_KEY first, then MOONSHOT_API_KEY
+                    api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+                elif provider == 'hunyuan':
+                    # Check TENCENT_API_KEY first, then HUNYUAN_API_KEY
+                    api_key = os.getenv("TENCENT_API_KEY") or os.getenv("HUNYUAN_API_KEY")
+                if provider not in ['moonshot', 'hunyuan']:
+                    api_key = os.getenv(env_var)
+                if not api_key or api_key in ["missing-key", f"your_{provider}_key_here"]:
+                    api_key = get_embedded_key(provider)
+            except ImportError:
+                env_var = f"{provider.upper()}_API_KEY"
+                if provider == 'gemini':
+                    env_var = "GOOGLE_API_KEY"
+                elif provider == 'moonshot':
+                    api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+                elif provider == 'hunyuan':
+                    api_key = os.getenv("TENCENT_API_KEY") or os.getenv("HUNYUAN_API_KEY")
+                if provider not in ['moonshot', 'hunyuan']:
+                    api_key = os.getenv(env_var)
+
+        if not api_key or api_key.strip() == '' or api_key == "missing-key":
             return {
                 "valid": False,
-                "error": "API key is empty"
+                "error": "No API key configured for this provider"
             }
 
         # Test each provider with a minimal API call
@@ -3446,16 +3478,17 @@ async def test_api_key(request: ApiKeyTestRequest):
 
         elif provider == 'qwen':
             import requests
-            url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
+            # Use International (Singapore) endpoint - note the -intl in URL
+            url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             }
-            # Minimal test request
+            # OpenAI-compatible format for international endpoint
             data = {
-                "model": "qwen-plus",
-                "input": {"messages": [{"role": "user", "content": "Hi"}]},
-                "parameters": {"max_tokens": 1}
+                "model": "qwen-turbo",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1
             }
             response = requests.post(url, headers=headers, json=data, timeout=10)
 
@@ -3494,6 +3527,92 @@ async def test_api_key(request: ApiKeyTestRequest):
                 return {"valid": True, "provider": "mistral"}
             else:
                 return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'moonshot' or provider == 'kimi':
+            import requests
+            # Use api.moonshot.ai for international accounts
+            url = "https://api.moonshot.ai/v1/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "moonshot"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'zhipu':
+            import requests
+            url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "glm-4-flash",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "zhipu"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'hunyuan' or provider == 'tencent':
+            import requests
+            # Use LKEAP OpenAI-compatible endpoint (simple bearer token)
+            url = "https://api.lkeap.tencentcloud.com/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "hunyuan-turbo",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=15)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "hunyuan"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'yandex':
+            import requests
+            folder_id = os.getenv("YANDEX_FOLDER_ID")
+            if not folder_id:
+                return {"valid": False, "error": "Missing YANDEX_FOLDER_ID"}
+            url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+            headers = {
+                "Authorization": f"Api-Key {api_key}",
+                "x-folder-id": folder_id,
+                "Content-Type": "application/json"
+            }
+            data = {
+                "modelUri": f"gpt://{folder_id}/yandexgpt-lite",
+                "completionOptions": {"maxTokens": 1},
+                "messages": [{"role": "user", "text": "Hi"}]
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                return {"valid": True, "provider": "yandex"}
+            else:
+                return {"valid": False, "error": f"API returned {response.status_code}"}
+
+        elif provider == 'ollama':
+            import requests
+            try:
+                response = requests.get("http://localhost:11434/api/tags", timeout=5)
+                if response.status_code == 200:
+                    return {"valid": True, "provider": "ollama"}
+                else:
+                    return {"valid": False, "error": f"Ollama returned {response.status_code}"}
+            except requests.exceptions.ConnectionError:
+                return {"valid": False, "error": "Ollama not running"}
+
         else:
             return {
                 "valid": False,
@@ -3506,6 +3625,64 @@ async def test_api_key(request: ApiKeyTestRequest):
             "valid": False,
             "error": str(e)
         }
+
+
+@app.get("/api-keys/status", summary="Get status of all API keys")
+async def get_api_key_status():
+    """
+    Get the status of all provider API keys.
+
+    Returns which providers have keys available (from env or embedded)
+    and which require user configuration.
+
+    Response format:
+    {
+        "providers": {
+            "deepseek": {"available": true, "source": "embedded", "tier": "embedded"},
+            "openai": {"available": false, "source": null, "tier": "user"},
+            ...
+        },
+        "embedded_providers": ["deepseek", "qwen", "mistral", "gemini"],
+        "user_providers": ["openai", "anthropic", "xai"]
+    }
+    """
+    try:
+        from backend.config.embedded_keys import get_key_status, EMBEDDED_PROVIDERS, USER_PROVIDERS
+
+        status = get_key_status()
+
+        # Add tier information
+        for provider, info in status.items():
+            info["tier"] = "embedded" if provider in EMBEDDED_PROVIDERS else "user"
+
+        return {
+            "providers": status,
+            "embedded_providers": EMBEDDED_PROVIDERS,
+            "user_providers": USER_PROVIDERS
+        }
+    except ImportError:
+        # Fallback if embedded keys module not available
+        import os
+        all_providers = ["deepseek", "qwen", "mistral", "gemini", "openai", "anthropic", "xai"]
+        status = {}
+        for provider in all_providers:
+            env_var = f"{provider.upper()}_API_KEY"
+            env_key = os.getenv(env_var)
+            has_key = bool(env_key and env_key != f"your_{provider}_key_here" and env_key != "missing-key")
+            status[provider] = {
+                "available": has_key,
+                "source": "env" if has_key else None,
+                "tier": "embedded" if provider in ["deepseek", "qwen", "mistral", "gemini"] else "user"
+            }
+
+        return {
+            "providers": status,
+            "embedded_providers": ["deepseek", "qwen", "mistral", "gemini"],
+            "user_providers": ["openai", "anthropic", "xai"]
+        }
+    except Exception as e:
+        logging.error(f"Failed to get API key status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =============================================================================

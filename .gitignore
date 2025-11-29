@@ -19,5 +19,8 @@ chrome_profile_notebooklm/
 chrome_profile/
 
 # Build Artifacts (Optional, but good practice to ignore dist if source is tracked)
-# dist/ 
+# dist/
 # (Keeping dist/ for now since we want the executable to be ready-to-run)
+
+# Private embedded keys (contains actual API keys for distribution)
+backend/config/embedded_keys_private.py
