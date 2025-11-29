@@ -27,18 +27,23 @@ Agents work in git worktrees. Follow this workflow strictly:
 ### Completing Work
 1. **Always commit to your branch** before ending session
 2. Include clear commit message describing what was done
-3. **Report branch name and commit hash** so user can tell IDE agent to pull/merge
-4. **Update documentation** - if you started with a task doc, update it with completion status
+3. **PUSH TO REMOTE** - Run `git push -u origin <branch-name>` so other agents can access your work
+4. **Report branch name and commit hash** so user can tell IDE agent to pull/merge
+5. **Update documentation** - if you started with a task doc, update it with completion status
 
 ### Example Handoff Message
 ```
 Work complete on branch `xenodochial-borg` (commit a1b2c3d).
+Pushed to remote: git push -u origin xenodochial-borg
 - Implemented X, Y, Z
 - Updated docs/FEATURE_NAME.md
 - All type checks pass
 
 Tell your IDE agent: `git fetch && git merge xenodochial-borg`
 ```
+
+### CRITICAL: Push Before Handoff
+**Always push to remote before providing handoff instructions.** The IDE agent fetches from `origin`, not local branches. If you don't push, the other agent won't see your commits.
 
 ### If Session Ends Unexpectedly
 Agents should commit frequently so work isn't lost if the session freezes or errors out.
