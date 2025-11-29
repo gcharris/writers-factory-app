@@ -1,33 +1,36 @@
 <!--
-  OnboardingWizard.svelte - 4-step first-time setup flow for Writers Factory
+  OnboardingWizard.svelte - 5-step first-time setup flow for Writers Factory
 
   Steps:
-  1. Local AI Setup - Ensure Ollama is installed and working
-  2. Cloud Models Overview - Information about available models
-  3. API Keys - Optional configuration of API keys
-  4. Name Your Assistant - Personalization
+  1. Workspace Location - Choose where projects are stored
+  2. Local AI Setup - Ensure Ollama is installed and working
+  3. Cloud Models Overview - Information about available models
+  4. API Keys - Optional configuration of API keys
+  5. Name Your Assistant - Personalization
 
   Usage:
     <OnboardingWizard on:complete={handleComplete} />
 -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import Step1LocalAI from './Step1LocalAI.svelte';
-  import Step2CloudModels from './Step2CloudModels.svelte';
-  import Step3ApiKeys from './Step3ApiKeys.svelte';
-  import Step4NameAssistant from './Step4NameAssistant.svelte';
+  import Step1WorkspaceLocation from './Step1WorkspaceLocation.svelte';
+  import Step2LocalAI from './Step1LocalAI.svelte';
+  import Step3CloudModels from './Step2CloudModels.svelte';
+  import Step4ApiKeys from './Step3ApiKeys.svelte';
+  import Step5NameAssistant from './Step4NameAssistant.svelte';
 
   const dispatch = createEventDispatcher();
 
   // Wizard state
   let currentStep = 1;
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   // Step completion tracking
-  let step1Complete = false;
-  let step2Complete = false; // Info step - always completable
-  let step3Complete = true;  // Optional - always completable
-  let step4Complete = false;
+  let step1Complete = false; // Workspace location
+  let step2Complete = false; // Local AI
+  let step3Complete = false; // Info step - always completable
+  let step4Complete = true;  // Optional - always completable
+  let step5Complete = false;
 
   function goToStep(step: number) {
     if (step >= 1 && step <= totalSteps) {
@@ -47,12 +50,16 @@
     }
   }
 
-  function handleStep1Complete(event: CustomEvent<{ complete: boolean }>) {
-    step1Complete = event.detail.complete;
+  function handleStep1Complete(event: CustomEvent<{ path: string }>) {
+    step1Complete = true;
   }
 
-  function handleStep4Complete(event: CustomEvent<{ name: string }>) {
-    step4Complete = true;
+  function handleStep2Complete(event: CustomEvent<{ complete: boolean }>) {
+    step2Complete = event.detail.complete;
+  }
+
+  function handleStep5Complete(event: CustomEvent<{ name: string }>) {
+    step5Complete = true;
     // Complete the wizard
     dispatch('complete', { assistantName: event.detail.name });
   }
@@ -82,46 +89,56 @@
   <div class="wizard-progress">
     <div class="progress-step {currentStep >= 1 ? 'active' : ''} {currentStep > 1 ? 'complete' : ''}">
       <div class="step-number">1</div>
-      <div class="step-label">Local AI</div>
+      <div class="step-label">Workspace</div>
     </div>
     <div class="progress-connector {currentStep > 1 ? 'active' : ''}"></div>
     <div class="progress-step {currentStep >= 2 ? 'active' : ''} {currentStep > 2 ? 'complete' : ''}">
       <div class="step-number">2</div>
-      <div class="step-label">Cloud Models</div>
+      <div class="step-label">Local AI</div>
     </div>
     <div class="progress-connector {currentStep > 2 ? 'active' : ''}"></div>
     <div class="progress-step {currentStep >= 3 ? 'active' : ''} {currentStep > 3 ? 'complete' : ''}">
       <div class="step-number">3</div>
-      <div class="step-label">API Keys</div>
+      <div class="step-label">Cloud Models</div>
     </div>
     <div class="progress-connector {currentStep > 3 ? 'active' : ''}"></div>
-    <div class="progress-step {currentStep >= 4 ? 'active' : ''} {step4Complete ? 'complete' : ''}">
+    <div class="progress-step {currentStep >= 4 ? 'active' : ''} {currentStep > 4 ? 'complete' : ''}">
       <div class="step-number">4</div>
-      <div class="step-label">Name Assistant</div>
+      <div class="step-label">API Keys</div>
+    </div>
+    <div class="progress-connector {currentStep > 4 ? 'active' : ''}"></div>
+    <div class="progress-step {currentStep >= 5 ? 'active' : ''} {step5Complete ? 'complete' : ''}">
+      <div class="step-number">5</div>
+      <div class="step-label">Assistant</div>
     </div>
   </div>
 
   <!-- Step Content -->
   <div class="wizard-content">
     {#if currentStep === 1}
-      <Step1LocalAI
+      <Step1WorkspaceLocation
         on:complete={handleStep1Complete}
         on:next={nextStep}
       />
     {:else if currentStep === 2}
-      <Step2CloudModels
-        on:back={prevStep}
+      <Step2LocalAI
+        on:complete={handleStep2Complete}
         on:next={nextStep}
       />
     {:else if currentStep === 3}
-      <Step3ApiKeys
+      <Step3CloudModels
         on:back={prevStep}
         on:next={nextStep}
       />
     {:else if currentStep === 4}
-      <Step4NameAssistant
+      <Step4ApiKeys
         on:back={prevStep}
-        on:complete={handleStep4Complete}
+        on:next={nextStep}
+      />
+    {:else if currentStep === 5}
+      <Step5NameAssistant
+        on:back={prevStep}
+        on:complete={handleStep5Complete}
       />
     {/if}
   </div>
