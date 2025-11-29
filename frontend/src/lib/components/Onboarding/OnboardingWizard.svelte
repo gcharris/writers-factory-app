@@ -1,27 +1,31 @@
 <!--
-  OnboardingWizard.svelte - 3-step first-time setup flow for Writers Factory
+  OnboardingWizard.svelte - 4-step first-time setup flow for Writers Factory
 
   Steps:
-  1. Local AI Setup - Ensure Ollama is installed and working
-  2. Cloud Models - Configure cloud AI models (status, test, configure keys)
-  3. Name Your Assistant - Personalization
+  1. Workspace Location - Choose where to store writing projects
+  2. Local AI Setup - Ensure Ollama is installed and working
+  3. Cloud Models - Configure cloud AI models (status, test, configure keys)
+  4. Name Your Assistant - Personalization
 
   Usage:
     <OnboardingWizard on:complete={handleComplete} />
 -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import Step1WorkspaceLocation from './Step1WorkspaceLocation.svelte';
   import Step1LocalAI from './Step1LocalAI.svelte';
   import Step2CloudModels from './Step2CloudModels.svelte';
   import Step3NameAssistant from './Step3NameAssistant.svelte';
+  import { workspacePath } from '$lib/stores';
 
   const dispatch = createEventDispatcher();
 
   // Wizard state
   let currentStep = 1;
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   // Step completion tracking
+  let step0Complete = false;  // Workspace location
   let step1Complete = false;
   let step2Complete = true;  // Cloud models step is always completable (optional config)
   let step3Complete = false;
@@ -42,6 +46,11 @@
     if (currentStep > 1) {
       currentStep--;
     }
+  }
+
+  function handleStep0Complete(event: CustomEvent<{ path: string }>) {
+    step0Complete = true;
+    workspacePath.set(event.detail.path);
   }
 
   function handleStep1Complete(event: CustomEvent<{ complete: boolean }>) {
@@ -83,7 +92,7 @@
           1
         {/if}
       </div>
-      <div class="step-label">Local AI</div>
+      <div class="step-label">Workspace</div>
     </div>
     <div class="progress-connector {currentStep > 1 ? 'active' : ''}"></div>
     <div class="progress-step {currentStep === 2 ? 'active' : ''} {currentStep > 2 ? 'complete' : ''}">
@@ -96,17 +105,30 @@
           2
         {/if}
       </div>
-      <div class="step-label">Cloud Models</div>
+      <div class="step-label">Local AI</div>
     </div>
     <div class="progress-connector {currentStep > 2 ? 'active' : ''}"></div>
-    <div class="progress-step {currentStep === 3 ? 'active' : ''} {step3Complete ? 'complete' : ''}">
+    <div class="progress-step {currentStep === 3 ? 'active' : ''} {currentStep > 3 ? 'complete' : ''}">
+      <div class="step-number">
+        {#if currentStep > 3}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        {:else}
+          3
+        {/if}
+      </div>
+      <div class="step-label">Cloud Models</div>
+    </div>
+    <div class="progress-connector {currentStep > 3 ? 'active' : ''}"></div>
+    <div class="progress-step {currentStep === 4 ? 'active' : ''} {step3Complete ? 'complete' : ''}">
       <div class="step-number">
         {#if step3Complete}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         {:else}
-          3
+          4
         {/if}
       </div>
       <div class="step-label">Name Assistant</div>
@@ -116,16 +138,22 @@
   <!-- Step Content -->
   <div class="wizard-content">
     {#if currentStep === 1}
-      <Step1LocalAI
-        on:complete={handleStep1Complete}
+      <Step1WorkspaceLocation
+        on:complete={handleStep0Complete}
         on:next={nextStep}
       />
     {:else if currentStep === 2}
+      <Step1LocalAI
+        on:complete={handleStep1Complete}
+        on:next={nextStep}
+        on:back={prevStep}
+      />
+    {:else if currentStep === 3}
       <Step2CloudModels
         on:back={prevStep}
         on:next={nextStep}
       />
-    {:else if currentStep === 3}
+    {:else if currentStep === 4}
       <Step3NameAssistant
         on:back={prevStep}
         on:complete={handleStep3Complete}

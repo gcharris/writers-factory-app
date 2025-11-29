@@ -5288,6 +5288,174 @@ async def get_ollama_pull_status(model: str):
     }
 
 
+# ==============================================
+# Workspace Management Endpoints
+# ==============================================
+
+class WorkspaceValidateRequest(BaseModel):
+    """Request to validate a workspace path."""
+    path: str
+
+
+@app.get("/system/workspace/default", summary="Get default workspace path")
+async def get_default_workspace_path():
+    """
+    Get the default workspace path for Writers Factory.
+
+    Returns ~/Documents/Writers Factory on most systems.
+    """
+    import os
+    from pathlib import Path
+
+    try:
+        # Get user's home directory
+        home = Path.home()
+
+        # Default path: ~/Documents/Writers Factory
+        documents = home / "Documents"
+        default_path = documents / "Writers Factory"
+
+        return {
+            "path": str(default_path),
+            "exists": default_path.exists()
+        }
+    except Exception as e:
+        logging.error(f"Failed to get default workspace path: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get default path: {str(e)}")
+
+
+@app.post("/system/workspace/validate", summary="Validate a workspace path")
+async def validate_workspace_path(request: WorkspaceValidateRequest):
+    """
+    Validate that a path is suitable for use as a workspace.
+
+    Checks:
+    - Path is not empty
+    - Path is absolute
+    - Parent directory exists (or path exists)
+    - Path is writable
+
+    If path doesn't exist, it will be created.
+    """
+    import os
+    from pathlib import Path
+
+    path = request.path
+
+    if not path or not path.strip():
+        return {"valid": False, "error": "Path cannot be empty"}
+
+    try:
+        path_obj = Path(path)
+
+        # Check if path is absolute
+        if not path_obj.is_absolute():
+            return {"valid": False, "error": "Path must be absolute"}
+
+        # If path exists, check it's a directory and writable
+        if path_obj.exists():
+            if not path_obj.is_dir():
+                return {"valid": False, "error": "Path exists but is not a directory"}
+
+            # Check if writable by trying to create a temp file
+            test_file = path_obj / ".wf_write_test"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except (PermissionError, OSError):
+                return {"valid": False, "error": "Directory is not writable"}
+
+            return {"valid": True, "exists": True}
+
+        # Path doesn't exist - check if parent exists and is writable
+        parent = path_obj.parent
+        if not parent.exists():
+            return {"valid": False, "error": f"Parent directory does not exist: {parent}"}
+
+        # Try to create the directory
+        try:
+            path_obj.mkdir(parents=True, exist_ok=True)
+            return {"valid": True, "exists": True, "created": True}
+        except (PermissionError, OSError) as e:
+            return {"valid": False, "error": f"Cannot create directory: {str(e)}"}
+
+    except Exception as e:
+        logging.error(f"Workspace validation failed: {e}")
+        return {"valid": False, "error": f"Validation failed: {str(e)}"}
+
+
+class WorkspaceInitRequest(BaseModel):
+    """Request to initialize a workspace."""
+    path: str
+    project_name: str = "my-project"
+
+
+@app.post("/workspace/init", summary="Initialize workspace with project structure")
+async def init_workspace(request: WorkspaceInitRequest):
+    """
+    Initialize workspace with project folder structure.
+
+    Creates the standard Writers Factory folder hierarchy for a new project.
+    """
+    import os
+    from pathlib import Path
+
+    base_path = Path(request.path)
+    project_path = base_path / "projects" / request.project_name / "content"
+
+    folders = [
+        project_path / "Characters",
+        project_path / "Story Bible" / "Structure",
+        project_path / "Story Bible" / "Themes_and_Philosophy",
+        project_path / "World Bible",
+    ]
+
+    try:
+        for folder in folders:
+            folder.mkdir(parents=True, exist_ok=True)
+
+        return {
+            "success": True,
+            "workspace_path": str(base_path),
+            "project_path": str(project_path),
+            "folders_created": len(folders)
+        }
+    except Exception as e:
+        logging.error(f"Failed to initialize workspace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workspace/status", summary="Get workspace status")
+async def get_workspace_status(path: str = Query(...)):
+    """
+    Check if workspace path exists and is writable.
+
+    Returns information about the workspace including any existing projects.
+    """
+    import os
+    from pathlib import Path
+
+    path_obj = Path(path)
+
+    exists = path_obj.exists()
+    is_dir = path_obj.is_dir() if exists else False
+    writable = os.access(path, os.W_OK) if exists else False
+
+    # Check for existing projects
+    projects = []
+    projects_dir = path_obj / "projects"
+    if projects_dir.exists():
+        projects = [d.name for d in projects_dir.iterdir()
+                   if d.is_dir()]
+
+    return {
+        "exists": exists,
+        "is_directory": is_dir,
+        "writable": writable,
+        "projects": projects
+    }
+
+
 @app.get("/squad/available", summary="Get available squads")
 async def get_available_squads():
     """
