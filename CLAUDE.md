@@ -50,6 +50,71 @@ Agents should commit frequently so work isn't lost if the session freezes or err
 
 ---
 
+## Multi-Agent Coordination (CRITICAL)
+
+This project uses multiple Claude agents working in parallel:
+- **IDE Agent (Claude Code in VSCode)**: Works on `main` branch directly
+- **Cloud Agents (Claude.ai)**: Work in git worktrees (separate directories)
+
+### The Worktree Problem
+Cloud agents work in **isolated worktrees** that only see commits pushed to `origin`. They CANNOT see:
+- Files created but not committed
+- Files committed but not pushed
+- Local branches not pushed to remote
+
+### Rules for IDE Agent (You, if on main)
+
+**When creating task specs for Cloud agents:**
+1. Create the file in `docs/tasks/`
+2. `git add` the file
+3. `git commit -m "docs: Add task spec for X"`
+4. **`git push origin main`** ← CRITICAL! Without this, Cloud can't see it
+5. THEN tell the user to instruct Cloud agent
+
+**When receiving work from Cloud agents:**
+1. They should provide: branch name + commit hash + "pushed to origin"
+2. Run: `git fetch origin`
+3. Run: `git merge <branch-name>` or `git cherry-pick <commit>`
+
+### Rules for Cloud Agents (You, if in worktree)
+
+**Before starting work:**
+1. `git fetch origin` to get latest
+2. `git pull origin main` to sync
+3. Check `docs/tasks/` for task spec
+4. **If task spec file doesn't exist: STOP and ask user** - don't improvise
+
+**When completing work:**
+1. Commit all changes
+2. **`git push -u origin <your-branch>`** ← CRITICAL!
+3. Report: branch name, commit hash, confirmation of push
+
+### Common Failure Modes
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| "File doesn't exist" | IDE agent didn't push | IDE agent: `git push origin main` |
+| "Branch not found" | Cloud agent didn't push | Cloud agent: `git push -u origin <branch>` |
+| Cloud went rogue | No task spec found | Cloud should WAIT, not improvise |
+| Merge conflicts | Both edited same file | Coordinate which agent owns which files |
+
+### Task Handoff Template
+
+**IDE Agent → Cloud Agent:**
+```
+Task spec pushed to main: docs/tasks/FEATURE_NAME.md
+Cloud agent: Run `git pull origin main` then read the spec.
+```
+
+**Cloud Agent → IDE Agent:**
+```
+Work complete on branch `branch-name` (commit abc1234).
+Pushed to remote: git push -u origin branch-name
+IDE agent: Run `git fetch && git merge branch-name`
+```
+
+---
+
 ## Quick Reference
 
 ### Tech Stack
