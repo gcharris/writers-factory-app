@@ -5015,6 +5015,102 @@ async def get_recommended_local_models():
         raise HTTPException(status_code=500, detail=f"Local model detection failed: {str(e)}")
 
 
+# Track active model pulls (in-memory for simplicity)
+_active_pulls: dict = {}
+
+
+class OllamaPullRequest(BaseModel):
+    """Request to pull an Ollama model."""
+    model: str  # Model name to pull (e.g., 'llama3.2:3b', 'mistral:7b')
+
+
+@app.post("/system/ollama/pull", summary="Start pulling an Ollama model")
+async def start_ollama_pull(request: OllamaPullRequest):
+    """
+    Start downloading/pulling an Ollama model in the background.
+
+    This initiates the pull and returns immediately. Use /system/ollama/pull-status
+    to check progress.
+    """
+    import subprocess
+    import threading
+
+    model = request.model
+
+    # Check if already pulling this model
+    if model in _active_pulls and _active_pulls[model].get('status') == 'pulling':
+        return {"status": "already_pulling", "model": model}
+
+    # Initialize pull tracking
+    _active_pulls[model] = {
+        "status": "pulling",
+        "progress": 0,
+        "error": None
+    }
+
+    def pull_model():
+        try:
+            # Run ollama pull command
+            process = subprocess.Popen(
+                ["ollama", "pull", model],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True
+            )
+
+            # Parse progress from output
+            for line in process.stdout:
+                line = line.strip()
+                # Ollama outputs progress like "pulling manifest" or "50%"
+                if "%" in line:
+                    try:
+                        # Extract percentage
+                        import re
+                        match = re.search(r'(\d+)%', line)
+                        if match:
+                            _active_pulls[model]["progress"] = int(match.group(1))
+                    except:
+                        pass
+
+            process.wait()
+
+            if process.returncode == 0:
+                _active_pulls[model]["status"] = "complete"
+                _active_pulls[model]["progress"] = 100
+            else:
+                _active_pulls[model]["status"] = "error"
+                _active_pulls[model]["error"] = "Pull failed"
+
+        except Exception as e:
+            _active_pulls[model]["status"] = "error"
+            _active_pulls[model]["error"] = str(e)
+
+    # Start pull in background thread
+    thread = threading.Thread(target=pull_model, daemon=True)
+    thread.start()
+
+    return {"status": "started", "model": model}
+
+
+@app.get("/system/ollama/pull-status", summary="Get Ollama pull status")
+async def get_ollama_pull_status(model: str):
+    """
+    Get the status of an ongoing or completed model pull.
+
+    Returns:
+        - status: "pulling" | "complete" | "error" | "not_found"
+        - progress: 0-100 percentage
+        - error: Error message if status is "error"
+    """
+    if model not in _active_pulls:
+        return {"status": "not_found", "model": model}
+
+    return {
+        "model": model,
+        **_active_pulls[model]
+    }
+
+
 @app.get("/squad/available", summary="Get available squads")
 async def get_available_squads():
     """
