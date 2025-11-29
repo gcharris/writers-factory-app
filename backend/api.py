@@ -5384,6 +5384,78 @@ async def validate_workspace_path(request: WorkspaceValidateRequest):
         return {"valid": False, "error": f"Validation failed: {str(e)}"}
 
 
+class WorkspaceInitRequest(BaseModel):
+    """Request to initialize a workspace."""
+    path: str
+    project_name: str = "my-project"
+
+
+@app.post("/workspace/init", summary="Initialize workspace with project structure")
+async def init_workspace(request: WorkspaceInitRequest):
+    """
+    Initialize workspace with project folder structure.
+
+    Creates the standard Writers Factory folder hierarchy for a new project.
+    """
+    import os
+    from pathlib import Path
+
+    base_path = Path(request.path)
+    project_path = base_path / "projects" / request.project_name / "content"
+
+    folders = [
+        project_path / "Characters",
+        project_path / "Story Bible" / "Structure",
+        project_path / "Story Bible" / "Themes_and_Philosophy",
+        project_path / "World Bible",
+    ]
+
+    try:
+        for folder in folders:
+            folder.mkdir(parents=True, exist_ok=True)
+
+        return {
+            "success": True,
+            "workspace_path": str(base_path),
+            "project_path": str(project_path),
+            "folders_created": len(folders)
+        }
+    except Exception as e:
+        logging.error(f"Failed to initialize workspace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workspace/status", summary="Get workspace status")
+async def get_workspace_status(path: str = Query(...)):
+    """
+    Check if workspace path exists and is writable.
+
+    Returns information about the workspace including any existing projects.
+    """
+    import os
+    from pathlib import Path
+
+    path_obj = Path(path)
+
+    exists = path_obj.exists()
+    is_dir = path_obj.is_dir() if exists else False
+    writable = os.access(path, os.W_OK) if exists else False
+
+    # Check for existing projects
+    projects = []
+    projects_dir = path_obj / "projects"
+    if projects_dir.exists():
+        projects = [d.name for d in projects_dir.iterdir()
+                   if d.is_dir()]
+
+    return {
+        "exists": exists,
+        "is_directory": is_dir,
+        "writable": writable,
+        "projects": projects
+    }
+
+
 @app.get("/squad/available", summary="Get available squads")
 async def get_available_squads():
     """

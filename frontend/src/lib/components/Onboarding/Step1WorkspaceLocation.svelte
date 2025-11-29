@@ -139,9 +139,9 @@
 
 <div class="step-workspace">
   <div class="step-header">
-    <h2>Choose Your Workspace</h2>
+    <h2>Where should we store your writing projects?</h2>
     <p class="step-description">
-      Pick a folder on your computer where your writing projects will be stored.
+      Choose a folder on your computer. You can use cloud-synced folders like Dropbox or iCloud.
     </p>
   </div>
 

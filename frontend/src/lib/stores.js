@@ -59,6 +59,13 @@ function persistentWritable(key, initialValue) {
 // Track whether user has completed first-time Squad setup
 export const hasCompletedOnboarding = persistentWritable('wf_onboarding_complete', false);
 
+// --- Workspace State ---
+// User-selected location for all writing projects
+export const workspacePath = persistentWritable('wf_workspace_path', null);
+
+// Currently active project within the workspace
+export const activeProjectName = persistentWritable('wf_active_project', null);
+
 // Session ID - persists across refreshes
 export const sessionId = persistentWritable('wf_session_id', null);
 
