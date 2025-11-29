@@ -167,13 +167,29 @@ To test Ollama-not-installed state:
 
 ## Acceptance Criteria
 
-- [ ] Only one model offered: llama3.2:3b
-- [ ] No hardware tier recommendations
-- [ ] Clear 3-state UI: Install Ollama → Install Model → Ready
-- [ ] Progress bar works during download
-- [ ] Continue button disabled until ready
-- [ ] Ollama version shown for troubleshooting
-- [ ] Clean, simple UI without decision paralysis
+- [x] Only one model offered: llama3.2:3b
+- [x] No hardware tier recommendations
+- [x] Clear 3-state UI: Install Ollama → Install Model → Ready
+- [x] Progress bar works during download
+- [x] Continue button disabled until ready
+- [x] Ollama version shown for troubleshooting
+- [x] Clean, simple UI without decision paralysis
+
+## Completion Notes
+
+**Completed: November 2025**
+
+Changes made to `Step1LocalAI.svelte`:
+- Removed `modelRecommendations` object with tiered models (low/medium/high)
+- Removed `getRecommendedModel()` function
+- Removed hardware grid display (RAM, CPU, GPU cards)
+- Removed "Recommendation box" showing max params
+- Removed alternative model options
+- Simplified to single `requiredModel` object for llama3.2:3b
+- Updated ready check to specifically look for llama3.2:3b
+- Simplified UI to 3 clear states
+- Updated messaging per spec
+- Reduced component from 760 lines to ~550 lines
 
 ## Notes
 

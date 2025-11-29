@@ -1,10 +1,14 @@
 <!--
-  Step1LocalAI.svelte - Local AI Setup Step
+  Step1LocalAI.svelte - Local AI Setup Step (Simplified)
 
-  Purpose: Ensure every user has a working local AI before anything else.
-  - Scans hardware capabilities
-  - Checks Ollama installation
-  - Helps install recommended local models
+  Purpose: Ensure every user has Ollama + llama3.2:3b installed.
+  This is a lightweight model sufficient for The Foreman's casual chat.
+  All heavy lifting uses cloud APIs.
+
+  3-State Flow:
+  1. Install Ollama (if not installed)
+  2. Install llama3.2:3b model
+  3. Ready - continue to next step
 -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
@@ -13,25 +17,30 @@
   const BASE_URL = 'http://localhost:8000';
   const dispatch = createEventDispatcher();
 
+  // The only model we need
+  const requiredModel = {
+    id: 'llama3.2:3b',
+    name: 'Llama 3.2',
+    description: 'Fast, lightweight AI for your writing assistant',
+    size: '2GB'
+  };
+
   // State
   let hardwareInfo: HardwareInfo | null = null;
   let scanning = true;
   let error = '';
 
   // Model installation state
-  let installingModel = '';
+  let installing = false;
   let installProgress = 0;
   let installError = '';
 
-  // Recommended models based on RAM
-  const modelRecommendations = {
-    low: { id: 'llama3.2:3b', name: 'Llama 3.2 (3B)', description: 'Fast, lightweight - good for low-end systems', size: '2GB' },
-    medium: { id: 'mistral:7b', name: 'Mistral 7B', description: 'Balanced quality and speed', size: '4GB' },
-    high: { id: 'deepseek-r1:7b', name: 'DeepSeek R1 (7B)', description: 'High quality reasoning', size: '4.5GB' }
-  };
+  // Check if required model is installed
+  $: hasRequiredModel = hardwareInfo?.ollama_models?.some(m =>
+    m.includes('llama3.2') || m.includes('llama3.2:3b')
+  ) ?? false;
 
-  $: recommendedModel = getRecommendedModel(hardwareInfo);
-  $: isReady = hardwareInfo?.ollama_installed && hardwareInfo.ollama_models.length > 0;
+  $: isReady = hardwareInfo?.ollama_installed && hasRequiredModel;
 
   onMount(async () => {
     await scanHardware();
@@ -45,7 +54,7 @@
       // Minimum delay for UX
       const [response] = await Promise.all([
         fetch(`${BASE_URL}/system/hardware`),
-        new Promise(resolve => setTimeout(resolve, 1000))
+        new Promise(resolve => setTimeout(resolve, 800))
       ]);
 
       if (!response.ok) {
@@ -53,7 +62,6 @@
       }
 
       hardwareInfo = await response.json();
-      dispatch('complete', { complete: isReady });
     } catch (e) {
       error = e instanceof Error ? e.message : 'Hardware detection failed';
     } finally {
@@ -61,19 +69,8 @@
     }
   }
 
-  function getRecommendedModel(info: HardwareInfo | null) {
-    if (!info) return modelRecommendations.low;
-
-    if (info.ram_gb >= 16) {
-      return modelRecommendations.high;
-    } else if (info.ram_gb >= 8) {
-      return modelRecommendations.medium;
-    }
-    return modelRecommendations.low;
-  }
-
-  async function installModel(modelId: string) {
-    installingModel = modelId;
+  async function installModel() {
+    installing = true;
     installProgress = 0;
     installError = '';
 
@@ -82,7 +79,7 @@
       const response = await fetch(`${BASE_URL}/system/ollama/pull`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelId })
+        body: JSON.stringify({ model: requiredModel.id })
       });
 
       if (!response.ok) {
@@ -93,13 +90,13 @@
       // Poll for progress
       const pollProgress = async () => {
         try {
-          const statusResp = await fetch(`${BASE_URL}/system/ollama/pull-status?model=${modelId}`);
+          const statusResp = await fetch(`${BASE_URL}/system/ollama/pull-status?model=${requiredModel.id}`);
           if (statusResp.ok) {
             const status = await statusResp.json();
             installProgress = status.progress || 0;
 
             if (status.status === 'complete') {
-              installingModel = '';
+              installing = false;
               await scanHardware(); // Refresh hardware info
               return;
             } else if (status.status === 'error') {
@@ -110,7 +107,7 @@
           setTimeout(pollProgress, 1000);
         } catch (e) {
           installError = e instanceof Error ? e.message : 'Installation failed';
-          installingModel = '';
+          installing = false;
         }
       };
 
@@ -118,12 +115,11 @@
       setTimeout(pollProgress, 500);
     } catch (e) {
       installError = e instanceof Error ? e.message : 'Failed to install model';
-      installingModel = '';
+      installing = false;
     }
   }
 
   function openOllamaWebsite() {
-    // In Tauri, this would open the URL in the default browser
     window.open('https://ollama.ai', '_blank');
   }
 
@@ -136,7 +132,7 @@
   <div class="step-header">
     <h2>Local AI Setup</h2>
     <p class="step-description">
-      Let's set up your local AI assistant first. This ensures you can always write, even offline.
+      Your writing assistant needs a small AI model for offline help. This takes about 2 minutes.
     </p>
   </div>
 
@@ -152,7 +148,7 @@
           <line x1="15" y1="20" x2="15" y2="23"></line>
         </svg>
       </div>
-      <p>Scanning your computer...</p>
+      <p>Checking your system...</p>
     </div>
   {:else if error}
     <div class="error-state">
@@ -161,155 +157,88 @@
       <button class="btn-secondary" on:click={scanHardware}>Try Again</button>
     </div>
   {:else if hardwareInfo}
-    <!-- Hardware Results -->
-    <div class="hardware-results">
-      <div class="hardware-grid">
-        <div class="hardware-item">
-          <span class="hw-icon">💾</span>
-          <span class="hw-label">RAM</span>
-          <span class="hw-value">{hardwareInfo.ram_gb}GB</span>
-          <span class="hw-status success">✓</span>
-        </div>
-        <div class="hardware-item">
-          <span class="hw-icon">💻</span>
-          <span class="hw-label">CPU</span>
-          <span class="hw-value">{hardwareInfo.cpu_cores} cores</span>
-          <span class="hw-status success">✓</span>
-        </div>
-        <div class="hardware-item">
-          <span class="hw-icon">🎨</span>
-          <span class="hw-label">GPU</span>
-          <span class="hw-value">{hardwareInfo.gpu_available ? (hardwareInfo.gpu_name || 'Available') : 'Not detected'}</span>
-          <span class="hw-status {hardwareInfo.gpu_available ? 'success' : 'warning'}">{hardwareInfo.gpu_available ? '✓' : '⚠'}</span>
-        </div>
-        <div class="hardware-item">
-          <span class="hw-icon">🦙</span>
-          <span class="hw-label">Ollama</span>
-          <span class="hw-value">{hardwareInfo.ollama_installed ? `v${hardwareInfo.ollama_version}` : 'Not installed'}</span>
-          <span class="hw-status {hardwareInfo.ollama_installed ? 'success' : 'warning'}">{hardwareInfo.ollama_installed ? '✓' : '⚠'}</span>
-        </div>
-      </div>
-
-      <!-- Recommendation Box -->
-      <div class="recommendation-box">
-        <span class="rec-icon">💡</span>
-        <span class="rec-text">
-          Recommended model size: <strong>{hardwareInfo.recommended_max_params || '7B or smaller'}</strong>
-        </span>
-      </div>
-
-      <!-- Ollama Setup Section -->
+    <div class="setup-content">
+      <!-- State 1: Ollama Not Installed -->
       {#if !hardwareInfo.ollama_installed}
-        <div class="ollama-setup">
-          <div class="setup-card warning">
-            <h3>Ollama Not Installed</h3>
-            <p>Ollama is required to run local AI models. It's free and easy to install.</p>
-            <button class="btn-primary" on:click={openOllamaWebsite}>
-              Install Ollama
-              <span class="external-icon">↗</span>
-            </button>
-            <p class="help-text">After installing, restart this wizard or click "Rescan" below.</p>
-            <button class="btn-secondary" on:click={scanHardware}>Rescan System</button>
+        <div class="status-card warning">
+          <div class="status-icon">⚠️</div>
+          <div class="status-content">
+            <h3>Ollama Required</h3>
+            <p>Ollama runs AI models locally on your computer. It's free and takes just a minute to install.</p>
+            <div class="status-actions">
+              <button class="btn-primary" on:click={openOllamaWebsite}>
+                Install Ollama
+                <span class="external-icon">↗</span>
+              </button>
+              <button class="btn-secondary" on:click={scanHardware}>Rescan</button>
+            </div>
           </div>
         </div>
-      {:else}
-        <!-- Model Installation Section -->
-        <div class="model-section">
-          {#if hardwareInfo.ollama_models.length > 0}
-            <div class="installed-models">
-              <h4>Installed Models</h4>
-              <div class="model-tags">
-                {#each hardwareInfo.ollama_models as model}
-                  <span class="model-tag">✓ {model}</span>
-                {/each}
+
+      <!-- State 2: Ollama Installed, Model Missing -->
+      {:else if !hasRequiredModel}
+        <div class="status-card">
+          <div class="status-row success">
+            <span class="check-icon">✓</span>
+            <span>Ollama v{hardwareInfo.ollama_version}</span>
+          </div>
+
+          <div class="model-install-section">
+            <div class="model-info">
+              <span class="model-icon">📦</span>
+              <div class="model-details">
+                <span class="model-name">{requiredModel.name}</span>
+                <span class="model-size">({requiredModel.size})</span>
               </div>
             </div>
-          {/if}
+            <p class="model-desc">{requiredModel.description}</p>
 
-          <div class="install-models">
-            <h4>Install a Model</h4>
-            <p class="section-desc">Choose a model to install. You can install more later.</p>
-
-            <div class="model-options">
-              <!-- Recommended Model -->
-              <div class="model-option recommended">
-                <div class="model-info">
-                  <span class="model-name">{recommendedModel.name}</span>
-                  <span class="recommended-badge">Recommended</span>
+            {#if installing}
+              <div class="install-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: {installProgress}%"></div>
                 </div>
-                <p class="model-desc">{recommendedModel.description}</p>
-                <div class="model-meta">
-                  <span class="model-size">{recommendedModel.size}</span>
-                  {#if hardwareInfo.ollama_models.includes(recommendedModel.id.split(':')[0]) || hardwareInfo.ollama_models.some(m => m.includes(recommendedModel.id.split(':')[0]))}
-                    <span class="installed-badge">✓ Installed</span>
-                  {:else if installingModel === recommendedModel.id}
-                    <div class="install-progress">
-                      <div class="progress-bar">
-                        <div class="progress-fill" style="width: {installProgress}%"></div>
-                      </div>
-                      <span class="progress-text">{installProgress}%</span>
-                    </div>
-                  {:else}
-                    <button class="btn-install" on:click={() => installModel(recommendedModel.id)}>
-                      Install
-                    </button>
-                  {/if}
-                </div>
+                <span class="progress-text">{installProgress}%</span>
               </div>
-
-              <!-- Alternative Models -->
-              {#each Object.entries(modelRecommendations).filter(([key]) => modelRecommendations[key].id !== recommendedModel.id) as [tier, model]}
-                <div class="model-option">
-                  <div class="model-info">
-                    <span class="model-name">{model.name}</span>
-                    <span class="tier-badge tier-{tier}">{tier}</span>
-                  </div>
-                  <p class="model-desc">{model.description}</p>
-                  <div class="model-meta">
-                    <span class="model-size">{model.size}</span>
-                    {#if hardwareInfo.ollama_models.includes(model.id.split(':')[0]) || hardwareInfo.ollama_models.some(m => m.includes(model.id.split(':')[0]))}
-                      <span class="installed-badge">✓ Installed</span>
-                    {:else if installingModel === model.id}
-                      <div class="install-progress">
-                        <div class="progress-bar">
-                          <div class="progress-fill" style="width: {installProgress}%"></div>
-                        </div>
-                        <span class="progress-text">{installProgress}%</span>
-                      </div>
-                    {:else}
-                      <button class="btn-install" on:click={() => installModel(model.id)}>
-                        Install
-                      </button>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
+            {:else}
+              <button class="btn-primary install-btn" on:click={installModel}>
+                Install Model
+              </button>
+            {/if}
 
             {#if installError}
               <div class="error-message">{installError}</div>
             {/if}
           </div>
         </div>
+
+      <!-- State 3: Ready -->
+      {:else}
+        <div class="status-card ready">
+          <div class="status-row success">
+            <span class="check-icon">✓</span>
+            <span>Ollama v{hardwareInfo.ollama_version}</span>
+          </div>
+          <div class="status-row success">
+            <span class="check-icon">✓</span>
+            <span>{requiredModel.name} installed</span>
+          </div>
+          <div class="ready-message">
+            <span class="ready-icon">🎉</span>
+            <span>Your local AI is ready!</span>
+          </div>
+        </div>
       {/if}
     </div>
-
-    <!-- Ready Status -->
-    {#if isReady}
-      <div class="ready-status">
-        <span class="ready-icon">✓</span>
-        <span class="ready-text">Local AI ready!</span>
-      </div>
-    {/if}
   {/if}
 
   <!-- Navigation -->
   <div class="step-actions">
-    <div></div> <!-- Spacer -->
+    <div></div> <!-- Spacer for alignment -->
     <button
       class="btn-primary"
       on:click={handleContinue}
-      disabled={!isReady && !hardwareInfo?.ollama_installed}
+      disabled={!isReady}
     >
       Continue
       <span class="arrow">→</span>
@@ -319,7 +248,7 @@
 
 <style>
   .step-local-ai {
-    max-width: 700px;
+    max-width: 500px;
     margin: 0 auto;
   }
 
@@ -385,270 +314,130 @@
     margin-bottom: 1rem;
   }
 
-  /* Hardware Results */
-  .hardware-results {
+  /* Setup Content */
+  .setup-content {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .hardware-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
   }
 
-  .hardware-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: var(--bg-primary, #0f1419);
-    border-radius: 8px;
-    border: 1px solid var(--border, #2d3a47);
-  }
-
-  .hw-icon {
-    font-size: 1.25rem;
-  }
-
-  .hw-label {
-    flex: 1;
-    color: var(--text-secondary, #8b949e);
-    font-size: 0.875rem;
-  }
-
-  .hw-value {
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 0.875rem;
-  }
-
-  .hw-status {
-    font-size: 1rem;
-  }
-
-  .hw-status.success {
-    color: var(--success, #3fb950);
-  }
-
-  .hw-status.warning {
-    color: var(--warning, #d29922);
-  }
-
-  /* Recommendation Box */
-  .recommendation-box {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: rgba(0, 217, 255, 0.1);
-    border: 1px solid rgba(0, 217, 255, 0.3);
-    border-radius: 8px;
-  }
-
-  .rec-icon {
-    font-size: 1.25rem;
-  }
-
-  .rec-text {
-    color: var(--text-secondary, #8b949e);
-  }
-
-  .rec-text strong {
-    color: var(--accent-cyan, #00d9ff);
-  }
-
-  /* Ollama Setup */
-  .ollama-setup {
-    margin-top: 1rem;
-  }
-
-  .setup-card {
+  /* Status Card */
+  .status-card {
     padding: 1.5rem;
     background: var(--bg-primary, #0f1419);
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--border, #2d3a47);
-    text-align: center;
   }
 
-  .setup-card.warning {
+  .status-card.warning {
     border-color: var(--warning, #d29922);
-    background: rgba(210, 153, 34, 0.1);
+    background: rgba(210, 153, 34, 0.05);
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
   }
 
-  .setup-card h3 {
+  .status-card.ready {
+    border-color: var(--success, #3fb950);
+    background: rgba(63, 185, 80, 0.05);
+  }
+
+  .status-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+
+  .status-content h3 {
     margin: 0 0 0.5rem 0;
     color: var(--warning, #d29922);
+    font-size: 1.125rem;
   }
 
-  .setup-card p {
-    color: var(--text-secondary, #8b949e);
+  .status-content p {
     margin: 0 0 1rem 0;
-  }
-
-  .help-text {
-    font-size: 0.875rem;
-    margin-top: 1rem !important;
-  }
-
-  /* Model Section */
-  .model-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .installed-models h4,
-  .install-models h4 {
-    font-size: 0.875rem;
-    font-weight: 600;
     color: var(--text-secondary, #8b949e);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 0.75rem 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 
-  .section-desc {
-    color: var(--text-secondary, #8b949e);
-    font-size: 0.875rem;
-    margin: 0 0 1rem 0;
-  }
-
-  .model-tags {
+  .status-actions {
     display: flex;
+    gap: 0.75rem;
     flex-wrap: wrap;
-    gap: 0.5rem;
   }
 
-  .model-tag {
-    padding: 0.375rem 0.75rem;
-    background: var(--bg-secondary, #1a2027);
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-family: 'JetBrains Mono', monospace;
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .status-row.success {
     color: var(--success, #3fb950);
   }
 
-  /* Model Options */
-  .model-options {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .check-icon {
+    font-size: 1.125rem;
   }
 
-  .model-option {
-    padding: 1rem;
-    background: var(--bg-primary, #0f1419);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: 8px;
-    transition: border-color 0.2s;
-  }
-
-  .model-option.recommended {
-    border-color: var(--accent-cyan, #00d9ff);
-    background: rgba(0, 217, 255, 0.05);
+  /* Model Install Section */
+  .model-install-section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border, #2d3a47);
   }
 
   .model-info {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .model-icon {
+    font-size: 1.5rem;
+  }
+
+  .model-details {
+    display: flex;
+    align-items: baseline;
     gap: 0.5rem;
-    margin-bottom: 0.25rem;
   }
 
   .model-name {
     font-weight: 600;
     color: #ffffff;
-  }
-
-  .recommended-badge {
-    font-size: 0.65rem;
-    padding: 0.125rem 0.375rem;
-    background: var(--accent-cyan, #00d9ff);
-    color: var(--bg-primary, #0f1419);
-    border-radius: 3px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .tier-badge {
-    font-size: 0.65rem;
-    padding: 0.125rem 0.375rem;
-    border-radius: 3px;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .tier-badge.tier-low {
-    background: var(--success, #3fb950);
-    color: #000;
-  }
-
-  .tier-badge.tier-medium {
-    background: #58a6ff;
-    color: #000;
-  }
-
-  .tier-badge.tier-high {
-    background: #a371f7;
-    color: #000;
-  }
-
-  .model-desc {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #8b949e);
-    margin: 0 0 0.75rem 0;
-  }
-
-  .model-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    font-size: 1.0625rem;
   }
 
   .model-size {
-    font-size: 0.75rem;
     color: var(--text-secondary, #8b949e);
-    padding: 0.25rem 0.5rem;
-    background: var(--bg-secondary, #1a2027);
-    border-radius: 4px;
-  }
-
-  .installed-badge {
-    font-size: 0.75rem;
-    color: var(--success, #3fb950);
-  }
-
-  .btn-install {
-    padding: 0.375rem 1rem;
-    background: var(--accent-cyan, #00d9ff);
-    color: var(--bg-primary, #0f1419);
-    border: none;
-    border-radius: 4px;
     font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
   }
 
-  .btn-install:hover {
-    background: #00b8d9;
+  .model-desc {
+    color: var(--text-secondary, #8b949e);
+    font-size: 0.875rem;
+    margin: 0 0 1rem 0;
   }
 
-  /* Install Progress */
+  .install-btn {
+    width: 100%;
+  }
+
+  /* Progress Bar */
   .install-progress {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 120px;
+    gap: 0.75rem;
   }
 
   .progress-bar {
     flex: 1;
-    height: 6px;
+    height: 8px;
     background: var(--border, #2d3a47);
-    border-radius: 3px;
+    border-radius: 4px;
     overflow: hidden;
   }
 
@@ -659,30 +448,30 @@
   }
 
   .progress-text {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--accent-cyan, #00d9ff);
-    min-width: 35px;
+    min-width: 40px;
+    text-align: right;
   }
 
-  /* Ready Status */
-  .ready-status {
+  /* Ready Message */
+  .ready-message {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    margin-top: 1rem;
     padding: 1rem;
     background: rgba(63, 185, 80, 0.1);
-    border: 1px solid rgba(63, 185, 80, 0.3);
     border-radius: 8px;
-    margin-top: 1.5rem;
   }
 
   .ready-icon {
     font-size: 1.25rem;
-    color: var(--success, #3fb950);
   }
 
-  .ready-text {
+  .ready-message span:last-child {
     font-weight: 600;
     color: var(--success, #3fb950);
   }
