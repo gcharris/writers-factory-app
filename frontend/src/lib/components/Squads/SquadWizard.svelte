@@ -246,6 +246,17 @@
 </script>
 
 <div class="squad-wizard">
+  <!-- Header with Close Button -->
+  <div class="wizard-header">
+    <h1>Squad Setup</h1>
+    <button class="close-btn" on:click={finishWizard} title="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
   <!-- Progress Steps -->
   <div class="wizard-progress">
     <div class="progress-step {currentStep >= 1 ? 'active' : ''} {currentStep > 1 ? 'complete' : ''}">
@@ -575,9 +586,46 @@
 
 <style>
   .squad-wizard {
+    display: flex;
+    flex-direction: column;
     max-width: 900px;
+    max-height: 90vh;
     margin: 0 auto;
-    padding: 2rem;
+    color: #ffffff;
+  }
+
+  /* Header with Close Button */
+  .wizard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #404040;
+    flex-shrink: 0;
+  }
+
+  .wizard-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: #ffffff;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #888888;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-btn:hover {
+    background: #2d2d2d;
     color: #ffffff;
   }
 
@@ -586,8 +634,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2.5rem;
-    padding: 0 1rem;
+    padding: 1.5rem 2rem;
+    flex-shrink: 0;
   }
 
   .progress-step {
@@ -649,10 +697,13 @@
 
   /* Step Content */
   .wizard-content {
+    flex: 1;
+    overflow-y: auto;
     background: #2d2d2d;
     border: 1px solid #404040;
     border-radius: 12px;
     padding: 2rem;
+    margin: 1rem 2rem 2rem;
   }
 
   .step-content h2 {
