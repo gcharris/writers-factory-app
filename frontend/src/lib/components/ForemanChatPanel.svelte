@@ -3,8 +3,9 @@
   import { apiClient } from '$lib/api_client';
   import {
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
-    foremanWorkOrder, foremanChatHistory
+    foremanWorkOrder, foremanChatHistory, selectedChatModel, defaultChatModel
   } from '$lib/stores';
+  import ModelSelector from './chat/ModelSelector.svelte';
 
   const BASE_URL = 'http://localhost:8000';
 
@@ -146,11 +147,17 @@
     const currentInput = input;
     input = "";
 
-    const userMsg = { role: 'user', text: currentInput };
+    // Get the model to use for this message
+    const modelToUse = $selectedChatModel || $defaultChatModel;
+
+    const userMsg = { role: 'user', text: currentInput, modelRequested: modelToUse };
     messages = [...messages, userMsg];
 
+    // Reset selected model after sending (per-message selection)
+    selectedChatModel.set(null);
+
     try {
-      const data = await apiClient.foremanChat(currentInput);
+      const data = await apiClient.foremanChat(currentInput, modelToUse);
 
       // Extract model routing information if available
       if (data.model_used) {
@@ -427,7 +434,11 @@
               ℹ️ System
             {/if}
           </span>
-          {#if msg.modelUsed}
+          {#if msg.role === 'user' && msg.modelRequested}
+            <span class="message-model user-model" title="Model requested for this message">
+              → {formatModelName(msg.modelRequested)}
+            </span>
+          {:else if msg.modelUsed}
             <span class="message-model" title="Model used for this response">
               {formatModelName(msg.modelUsed)}
             </span>
@@ -456,21 +467,24 @@
   <!-- Chat Input -->
   {#if !showStartProject}
     <div class="chat-input">
-      <textarea
-        bind:value={input}
-        on:keydown={handleKeydown}
-        placeholder="Chat with Foreman..."
-        class="input-field"
-        disabled={isLoading}
-        rows="2"
-      />
-      <button
-        class="btn-send"
-        on:click={sendMessage}
-        disabled={isLoading || !input.trim()}
-      >
-        <span class="icon">➤</span>
-      </button>
+      <div class="input-row">
+        <ModelSelector />
+        <textarea
+          bind:value={input}
+          on:keydown={handleKeydown}
+          placeholder="Chat with Foreman..."
+          class="input-field"
+          disabled={isLoading}
+          rows="2"
+        />
+        <button
+          class="btn-send"
+          on:click={sendMessage}
+          disabled={isLoading || !input.trim()}
+        >
+          <span class="icon">➤</span>
+        </button>
+      </div>
     </div>
   {/if}
 </div>
@@ -921,6 +935,10 @@
     font-size: 0.7rem;
   }
 
+  .message-model.user-model {
+    color: #00d9ff;
+  }
+
   .message-content {
     color: #ffffff;
     line-height: 1.6;
@@ -961,12 +979,16 @@
 
   /* Chat Input */
   .chat-input {
-    display: flex;
-    gap: 0.5rem;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     background: #2d2d2d;
     border-top: 1px solid #404040;
     flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
   }
 
   .input-field {

@@ -86,6 +86,7 @@ export interface ForemanStartRequest {
 
 export interface ForemanChatRequest {
     message: string;
+    model?: string;
 }
 
 export interface ForemanNotebookRequest {
@@ -351,9 +352,11 @@ export class WritersFactoryAPI {
     /**
      * Chat with the Foreman.
      * @param message The user's message.
+     * @param model Optional model ID to use for this message (overrides default).
      */
-    async foremanChat(message: string): Promise<ForemanChatResponse> {
+    async foremanChat(message: string, model?: string): Promise<ForemanChatResponse> {
         const body: ForemanChatRequest = { message };
+        if (model) body.model = model;
         return this._request('/foreman/chat', {
             method: 'POST',
             body: JSON.stringify(body),
