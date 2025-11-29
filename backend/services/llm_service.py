@@ -7,16 +7,35 @@ from dotenv import load_dotenv
 # This helps when running scripts directly that might not have loaded .env
 load_dotenv()
 
+# Import embedded keys for MVP distribution
+try:
+    from backend.config.embedded_keys import get_embedded_key
+except ImportError:
+    # Fallback if config module not available
+    def get_embedded_key(provider):
+        return None
+
 class LLMService:
     def __init__(self):
-        # Helper to get API key with a fallback to prevent initialization errors
-        # if a key is missing, the client is created but will fail on request if key is needed.
-        # Alternatively, we can make client creation lazy or conditional.
-        # For now, we'll use a dummy key if missing to allow service init, 
-        # but specific provider calls will fail if they try to use it.
-        
+        # Helper to get API key with fallback chain:
+        # 1. Environment variable (highest priority, allows override)
+        # 2. Embedded key (baked-in for MVP distribution)
+        # 3. "missing-key" placeholder (client initializes but fails on request)
+
         def get_key(env_var):
-            return os.getenv(env_var, "missing-key")
+            # Try env var first
+            env_key = os.getenv(env_var)
+            if env_key and env_key != "missing-key":
+                return env_key
+
+            # Try embedded key (extract provider name from env var)
+            # e.g., "DEEPSEEK_API_KEY" -> "deepseek"
+            provider = env_var.replace("_API_KEY", "").lower()
+            embedded = get_embedded_key(provider)
+            if embedded:
+                return embedded
+
+            return "missing-key"
 
         # Initialize OpenAI Client
         self.openai_client = AsyncOpenAI(

@@ -197,6 +197,9 @@ export const manuscriptProgress = writable(0); // 0-100 percentage through manus
 // Configurable assistant name (default: "Muse")
 export const assistantName = persistentWritable('wf_assistant_name', 'Muse');
 
+// Default chat model (set during onboarding, default: deepseek-chat)
+export const defaultChatModel = persistentWritable('wf_default_chat_model', 'deepseek-chat');
+
 // Writing stage (auto-detected, manually overridable)
 export const currentStage = persistentWritable('wf_current_stage', 'conception');
 
