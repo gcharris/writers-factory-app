@@ -108,11 +108,15 @@
   function toggleFolder(node) {
     if (!node.isDirectory) return;
 
+    console.log('[FileTree] toggleFolder called:', node.path, 'wasExpanded:', !!expandedFolders[node.path]);
+
     if (expandedFolders[node.path]) {
       const { [node.path]: _, ...rest } = expandedFolders;
       expandedFolders = rest;
+      console.log('[FileTree] Collapsed folder, expandedFolders now:', Object.keys(expandedFolders));
     } else {
       expandedFolders = { ...expandedFolders, [node.path]: true };
+      console.log('[FileTree] Expanded folder, expandedFolders now:', Object.keys(expandedFolders));
     }
   }
 
