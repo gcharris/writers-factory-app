@@ -42,6 +42,8 @@
 
   // Reference to ForemanPanel for loading sessions
   let foremanPanelRef;
+  // Reference to Editor for inserting text
+  let editorRef;
 
   function closeModal() {
     activeModal.set(null);
@@ -69,12 +71,15 @@
 
   <!-- CANVAS Panel: Editor -->
   <svelte:fragment slot="canvas">
-    <Editor />
+    <Editor bind:this={editorRef} />
   </svelte:fragment>
 
   <!-- THE FOREMAN Panel: Chat with header buttons -->
   <svelte:fragment slot="foreman">
-    <ForemanPanel bind:this={foremanPanelRef} />
+    <ForemanPanel
+      bind:this={foremanPanelRef}
+      on:insert-to-editor={(e) => editorRef?.insertAtCursor(e.detail.text)}
+    />
   </svelte:fragment>
 </MainLayout>
 

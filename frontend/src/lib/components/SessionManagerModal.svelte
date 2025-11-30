@@ -37,6 +37,11 @@
   let showDeleteConfirm = false;
   let sessionToDelete = null;
 
+  // Rename state
+  let editingSessionId = null;
+  let editingName = '';
+  let renaming = false;
+
   onMount(async () => {
     await loadSessions();
   });
@@ -171,6 +176,60 @@
     showDeleteConfirm = true;
   }
 
+  function startRename(session, e) {
+    e?.stopPropagation();
+    editingSessionId = session.session_id;
+    editingName = session.name || '';
+  }
+
+  function cancelRename() {
+    editingSessionId = null;
+    editingName = '';
+  }
+
+  async function saveRename(session) {
+    if (!editingName.trim()) {
+      cancelRename();
+      return;
+    }
+
+    renaming = true;
+    try {
+      const res = await fetch(`http://localhost:8000/session/${session.session_id}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingName.trim() })
+      });
+
+      if (!res.ok) throw new Error('Failed to rename');
+
+      // Update local state
+      sessions = sessions.map(s =>
+        s.session_id === session.session_id
+          ? { ...s, name: editingName.trim() }
+          : s
+      );
+
+      if (selectedSession?.session_id === session.session_id) {
+        selectedSession = { ...selectedSession, name: editingName.trim() };
+      }
+    } catch (e) {
+      console.error('Rename failed:', e);
+    } finally {
+      renaming = false;
+      cancelRename();
+    }
+  }
+
+  function handleRenameKeydown(e, session) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveRename(session);
+    } else if (e.key === 'Escape') {
+      cancelRename();
+    }
+  }
+
   async function deleteSession() {
     if (!sessionToDelete) return;
 
@@ -187,13 +246,14 @@
     sessionToDelete = null;
   }
 
-  // Filter and sort sessions
+  // Filter and sort sessions - search by name, preview, scene_id
   $: filteredSessions = sessions
     .filter(s => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        s.session_id.toLowerCase().includes(q) ||
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.preview && s.preview.toLowerCase().includes(q)) ||
         (s.scene_id && s.scene_id.toLowerCase().includes(q))
       );
     })
@@ -298,24 +358,44 @@
             </div>
           {:else}
             {#each filteredSessions as session}
-              <button
+              <div
                 class="session-item"
                 class:selected={selectedSession?.session_id === session.session_id}
+                role="button"
+                tabindex="0"
                 on:click={() => selectSession(session)}
+                on:keydown={(e) => e.key === 'Enter' && selectSession(session)}
               >
                 <div class="session-main">
-                  <span class="session-id">
-                    {session.session_id.slice(0, 8)}...
-                  </span>
-                  {#if session.scene_id}
-                    <span class="session-scene">{session.scene_id}</span>
+                  {#if editingSessionId === session.session_id}
+                    <input
+                      type="text"
+                      class="rename-input"
+                      bind:value={editingName}
+                      on:keydown={(e) => handleRenameKeydown(e, session)}
+                      on:blur={() => saveRename(session)}
+                      on:click|stopPropagation
+                    />
+                  {:else}
+                    <span class="session-name">
+                      {session.name || 'Untitled Chat'}
+                    </span>
+                    <button class="rename-btn" on:click|stopPropagation={(e) => startRename(session, e)} title="Rename">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
                   {/if}
                 </div>
+                {#if session.preview}
+                  <div class="session-preview">{session.preview.slice(0, 60)}...</div>
+                {/if}
                 <div class="session-meta">
                   <span class="session-messages">{session.event_count} msgs</span>
                   <span class="session-time">{formatRelativeTime(session.last_activity)}</span>
                 </div>
-              </button>
+              </div>
             {/each}
           {/if}
         </div>
@@ -334,10 +414,11 @@
           <!-- Preview Header -->
           <div class="preview-header">
             <div class="preview-title">
-              <span class="preview-id">{selectedSession.session_id.slice(0, 8)}...</span>
+              <span class="preview-name">{selectedSession.name || 'Untitled Chat'}</span>
               {#if selectedSession.scene_id}
                 <span class="preview-scene">{selectedSession.scene_id}</span>
               {/if}
+              <span class="preview-id" title="Session ID">{selectedSession.session_id.slice(0, 8)}...</span>
             </div>
             <div class="preview-actions">
               <select bind:value={exportFormat} class="export-select">
@@ -621,14 +702,28 @@
 
   .session-main {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
   }
 
-  .session-id {
-    font-family: var(--font-mono, 'SF Mono', monospace);
+  .session-name {
     font-size: var(--text-sm, 12px);
+    font-weight: var(--font-medium, 500);
     color: var(--text-primary, #e6edf3);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-preview {
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #6e7681);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
   }
 
   .session-scene {
@@ -641,6 +736,41 @@
     justify-content: space-between;
     font-size: var(--text-xs, 11px);
     color: var(--text-muted, #6e7681);
+  }
+
+  .rename-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #6e7681);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.1s ease;
+    flex-shrink: 0;
+  }
+
+  .session-item:hover .rename-btn {
+    opacity: 1;
+  }
+
+  .rename-btn:hover {
+    background: var(--bg-elevated, #2d3a47);
+    color: var(--accent-cyan, #58a6ff);
+  }
+
+  .rename-input {
+    flex: 1;
+    padding: 4px 8px;
+    background: var(--bg-primary, #0f1419);
+    border: 1px solid var(--accent-cyan, #58a6ff);
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-primary, #e6edf3);
+    font-size: var(--text-sm, 12px);
+    outline: none;
   }
 
   /* Preview Panel */
@@ -677,10 +807,17 @@
     gap: 2px;
   }
 
+  .preview-name {
+    font-size: var(--text-sm, 12px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #e6edf3);
+  }
+
   .preview-id {
     font-family: var(--font-mono, 'SF Mono', monospace);
-    font-size: var(--text-sm, 12px);
-    color: var(--text-primary, #e6edf3);
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #6e7681);
+    cursor: help;
   }
 
   .preview-scene {

@@ -545,7 +545,7 @@ jobs:
 
 **Writers Factory Testing**:
 - [BACKEND_TESTING.md](BACKEND_TESTING.md) - Detailed backend test documentation
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+- [CONTRIBUTING.md](../reference/CONTRIBUTING.md) - Contribution guidelines
 
 ---
 

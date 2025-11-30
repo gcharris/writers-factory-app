@@ -35,12 +35,67 @@
   import StoryBibleWizard from './StoryBibleWizard.svelte';
   import NotebookRegistration from './NotebookRegistration.svelte';
 
-  // Panel collapse state
-  let binderCollapsed = false;
-  let foremanCollapsed = false;
+  // Panel resize state (widths in pixels)
+  let binderWidth = 240;
+  let foremanWidth = 380;
+  const MIN_BINDER_WIDTH = 180;
+  const MAX_BINDER_WIDTH = 400;
+  const MIN_FOREMAN_WIDTH = 300;
+  const MAX_FOREMAN_WIDTH = 600;
+
+  // Resize drag state
+  let isResizingBinder = false;
+  let isResizingForeman = false;
+  let resizeStartX = 0;
+  let resizeStartWidth = 0;
 
   // Settings modal
   let showSettings = false;
+
+  // Resize handlers
+  /** @param {MouseEvent} e */
+  function startBinderResize(e) {
+    isResizingBinder = true;
+    resizeStartX = e.clientX;
+    resizeStartWidth = binderWidth;
+    document.addEventListener('mousemove', handleResize);
+    document.addEventListener('mouseup', stopResize);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  /** @param {MouseEvent} e */
+  function startForemanResize(e) {
+    isResizingForeman = true;
+    resizeStartX = e.clientX;
+    resizeStartWidth = foremanWidth;
+    document.addEventListener('mousemove', handleResize);
+    document.addEventListener('mouseup', stopResize);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  /** @param {MouseEvent} e */
+  function handleResize(e) {
+    if (isResizingBinder) {
+      const delta = e.clientX - resizeStartX;
+      const newWidth = Math.min(MAX_BINDER_WIDTH, Math.max(MIN_BINDER_WIDTH, resizeStartWidth + delta));
+      binderWidth = newWidth;
+    } else if (isResizingForeman) {
+      const delta = resizeStartX - e.clientX; // Inverted for right panel
+      const newWidth = Math.min(MAX_FOREMAN_WIDTH, Math.max(MIN_FOREMAN_WIDTH, resizeStartWidth + delta));
+      foremanWidth = newWidth;
+    }
+  }
+
+  function stopResize() {
+    isResizingBinder = false;
+    isResizingForeman = false;
+    document.removeEventListener('mousemove', handleResize);
+    document.removeEventListener('mouseup', stopResize);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
 
   // Mode colors
   const modeColors = {
@@ -69,14 +124,6 @@
       <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
     </svg>`
   };
-
-  function toggleBinder() {
-    binderCollapsed = !binderCollapsed;
-  }
-
-  function toggleForeman() {
-    foremanCollapsed = !foremanCollapsed;
-  }
 
   function openSettings() {
     showSettings = true;
@@ -113,103 +160,93 @@
         <span>Writers Factory</span>
       </div>
 
-      <!-- Mode Tabs -->
+      <!-- Mode Tabs (workflow stages - VOICE is a tool, not a stage) -->
       {#if $foremanActive}
         <nav class="mode-tabs">
-          {#each ['ARCHITECT', 'VOICE_CALIBRATION', 'DIRECTOR', 'EDITOR'] as mode}
+          {#each ['ARCHITECT', 'DIRECTOR', 'EDITOR'] as mode}
             <button
               class="mode-tab {$foremanMode === mode ? 'active' : ''}"
               style="--mode-color: {modeColors[mode]}"
               disabled={mode !== $foremanMode}
             >
               <span class="mode-icon">{@html modeIcons[mode]}</span>
-              <span class="mode-name">{mode === 'VOICE_CALIBRATION' ? 'VOICE' : mode}</span>
+              <span class="mode-name">{mode}</span>
             </button>
           {/each}
         </nav>
       {/if}
     </div>
 
+    <!-- Tools & Settings (RIGHT) -->
     <div class="toolbar-right">
-      <!-- Panel Toggle Buttons -->
-      <div class="panel-toggles">
-        <button
-          class="panel-toggle-btn"
-          class:active={!binderCollapsed}
-          on:click={toggleBinder}
-          title={binderCollapsed ? 'Show Explorer' : 'Hide Explorer'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="18" rx="1"></rect>
-            <rect x="14" y="3" width="7" height="18" rx="1" opacity="0.3"></rect>
-          </svg>
-        </button>
-        <button
-          class="panel-toggle-btn"
-          class:active={!foremanCollapsed}
-          on:click={toggleForeman}
-          title={foremanCollapsed ? 'Show Chat' : 'Hide Chat'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="18" rx="1" opacity="0.3"></rect>
-            <rect x="14" y="3" width="7" height="18" rx="1"></rect>
-          </svg>
-        </button>
-      </div>
+      <!-- Studio Tools Button -->
+      <button class="toolbar-tool-btn" on:click={() => activeModal.set('studio-tools')} title="Studio Tools">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span>STUDIO</span>
+      </button>
 
-      <!-- Window controls placeholder -->
-      <div class="window-controls">
-        <button class="window-btn" title="Minimize">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-        <button class="window-btn" title="Maximize">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-          </svg>
-        </button>
-        <button class="window-btn settings" on:click={openSettings} title="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- Knowledge Graph Button -->
+      <button class="toolbar-tool-btn" on:click={() => activeModal.set('graph-viewer')} title="Knowledge Graph">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <circle cx="19" cy="5" r="2"></circle>
+          <circle cx="5" cy="5" r="2"></circle>
+          <circle cx="19" cy="19" r="2"></circle>
+          <circle cx="5" cy="19" r="2"></circle>
+          <line x1="12" y1="9" x2="12" y2="5"></line>
+          <line x1="14.5" y1="13.5" x2="17" y2="17"></line>
+          <line x1="9.5" y1="13.5" x2="7" y2="17"></line>
+        </svg>
+        <span>GRAPH</span>
+      </button>
+
+      <!-- Settings Button -->
+      <button class="window-btn settings" on:click={openSettings} title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
-      </div>
     </div>
   </header>
 
   <!-- Main Panel Area -->
-  <div class="panel-container">
-    <!-- EXPLORER Panel (Left) -->
-    <aside class="panel panel-binder {binderCollapsed ? 'collapsed' : ''}">
-      {#if !binderCollapsed}
-        <div class="panel-header">
-          <span class="panel-title">EXPLORER</span>
-          <span class="panel-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </span>
-        </div>
-        <div class="panel-content">
-          <slot name="binder" />
-        </div>
-      {/if}
+  <div class="panel-container" class:resizing={isResizingBinder || isResizingForeman}>
+    <!-- BINDER Panel (Left) -->
+    <aside class="panel panel-binder" style="width: {binderWidth}px;">
+      <div class="panel-content">
+        <slot name="binder" />
+      </div>
     </aside>
+
+    <!-- Resize Handle (Binder/Canvas) -->
+    <button
+      class="resize-handle"
+      on:mousedown={startBinderResize}
+      aria-label="Resize binder panel"
+    ></button>
 
     <!-- CANVAS Panel (Center) -->
     <main class="panel panel-canvas">
       <slot name="canvas" />
     </main>
 
+    <!-- Resize Handle (Canvas/Foreman) -->
+    <button
+      class="resize-handle"
+      on:mousedown={startForemanResize}
+      aria-label="Resize assistant panel"
+    ></button>
+
     <!-- Chat Panel (Right) -->
-    <aside class="panel panel-foreman {foremanCollapsed ? 'collapsed' : ''}">
-      {#if !foremanCollapsed}
-        <div class="panel-content">
-          <slot name="foreman" />
-        </div>
-      {/if}
+    <aside class="panel panel-foreman" style="width: {foremanWidth}px;">
+      <div class="panel-content">
+        <slot name="foreman" />
+      </div>
     </aside>
   </div>
 
@@ -348,42 +385,33 @@
     -webkit-app-region: no-drag;
   }
 
-  /* Panel Toggle Buttons in Toolbar */
-  .panel-toggles {
-    display: flex;
-    gap: var(--space-1);
-    margin-right: var(--space-3);
-    padding-right: var(--space-3);
-    border-right: 1px solid var(--border);
-  }
-
-  .panel-toggle-btn {
+  /* Toolbar tool buttons (STUDIO, GRAPH) - styled like mode tabs */
+  .toolbar-tool-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text-muted);
+    font-size: 10px;
+    font-weight: var(--font-medium);
+    letter-spacing: 0.5px;
     cursor: pointer;
     transition: all var(--transition-fast);
-    -webkit-app-region: no-drag;
   }
 
-  .panel-toggle-btn:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+  .toolbar-tool-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
   }
 
-  .panel-toggle-btn.active {
-    color: var(--accent-cyan);
-  }
-
-  .window-controls {
-    display: flex;
-    gap: var(--space-1);
+  .toolbar-tool-btn:active {
+    background: var(--accent-cyan);
+    color: white;
+    border-color: var(--accent-cyan);
   }
 
   .window-btn {
@@ -418,6 +446,43 @@
     overflow: hidden;
   }
 
+  /* Disable transitions during resize for smooth dragging */
+  .panel-container.resizing .panel {
+    transition: none;
+  }
+
+  /* ============================================
+   * RESIZE HANDLES
+   * ============================================ */
+  .resize-handle {
+    width: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background var(--transition-fast);
+    position: relative;
+  }
+
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .resize-handle:hover {
+    background: var(--accent-cyan);
+  }
+
+  .resize-handle:hover::after {
+    background: var(--accent-cyan);
+  }
+
   /* ============================================
    * PANELS (Base Styles)
    * ============================================ */
@@ -425,50 +490,7 @@
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
-    transition: width var(--transition-normal);
-  }
-
-  .panel-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    height: 36px;
-    padding: 0 var(--space-2);
-    background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .panel-title {
-    font-size: var(--text-xs);
-    font-weight: var(--font-semibold);
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
-    flex: 1;
-  }
-
-  .panel-icon {
-    display: flex;
-    color: var(--text-muted);
-  }
-
-  .panel-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .panel-toggle:hover {
-    background: var(--bg-elevated);
-    border-color: var(--border-strong);
-    color: var(--accent-cyan);
+    transition: width 0.15s ease;
   }
 
   .panel-content {
@@ -476,25 +498,11 @@
     overflow: hidden;
   }
 
-  .panel.collapsed {
-    width: 36px !important;
-  }
-
-  .panel.collapsed .panel-header {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .panel.collapsed .panel-content {
-    display: none;
-  }
-
   /* ============================================
    * BINDER PANEL (Left)
    * ============================================ */
   .panel-binder {
-    width: var(--panel-binder-width);
-    border-right: 1px solid var(--border);
+    flex-shrink: 0;
   }
 
   /* ============================================
@@ -502,7 +510,7 @@
    * ============================================ */
   .panel-canvas {
     flex: 1;
-    min-width: var(--panel-canvas-min);
+    min-width: 400px;
     background: var(--bg-primary);
   }
 
@@ -510,44 +518,6 @@
    * FOREMAN PANEL (Right - Primary AI Interface)
    * ============================================ */
   .panel-foreman {
-    width: var(--panel-foreman-width);
-    border-left: 1px solid var(--border);
-  }
-
-  .panel-foreman .panel-header {
-    border-left: 3px solid var(--mode-color, var(--accent-gold));
-  }
-
-  .mode-badge {
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    font-size: 9px;
-    font-weight: var(--font-bold);
-    letter-spacing: 0.5px;
-  }
-
-  .panel-actions {
-    display: flex;
-    gap: var(--space-1);
-    margin-left: auto;
-  }
-
-  .panel-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .panel-action-btn:hover {
-    background: var(--bg-elevated);
-    color: var(--text-secondary);
+    flex-shrink: 0;
   }
 </style>

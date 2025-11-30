@@ -199,7 +199,7 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 **See:**
 - [PHASE_3E_COMPLETION_SUMMARY.md](dev_logs/PHASE_3E_COMPLETION_SUMMARY.md) - Phases 1-2
 - [PHASE_3_ORCHESTRATOR_COMPLETION.md](dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md) - Phase 3
-- [CONFIGURABLE_MODEL_ASSIGNMENTS.md](../CONFIGURABLE_MODEL_ASSIGNMENTS.md) - Configuration guide
+- [MODEL_CONFIGURATION.md](MODEL_CONFIGURATION.md) - Configuration guide
 
 ## Phase 4: Multi-Model Tournament (Planned)
 **Goal:** Consensus detection for critical decisions.
@@ -424,7 +424,7 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### 📝 Documentation
 
-**Status:** [PROJECT_STATUS.md](PROJECT_STATUS.md) - Comprehensive project status
+**Status:** [PROJECT_STATUS.md](status/PROJECT_STATUS.md) - Comprehensive project status
 **Tasks:** [tasks/](tasks/) - Ready-to-implement specifications
 
 ### 🎖️ Team Status

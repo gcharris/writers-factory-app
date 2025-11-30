@@ -14,6 +14,7 @@
   const dispatch = createEventDispatcher();
 
   export let items = []; // Array of { type, name, id?, path?, removable? }
+  export let compact = false; // Compact mode for inline display in input box
 
   function getIcon(type) {
     switch (type) {
@@ -82,7 +83,7 @@
 </script>
 
 {#if items.length > 0}
-  <div class="context-badges">
+  <div class="context-badges" class:compact>
     {#each items as item, i}
       <div class="badge {getTypeClass(item.type)}" title={item.name}>
         <span class="badge-icon">{@html getIcon(item.type)}</span>
@@ -202,5 +203,19 @@
   .badge-remove:hover {
     background: var(--bg-elevated, #2d3748);
     color: var(--error, #f85149);
+  }
+
+  /* Compact mode for inline display */
+  .context-badges.compact {
+    padding: 0;
+    gap: 4px;
+  }
+
+  .context-badges.compact .badge {
+    padding: 2px 6px;
+  }
+
+  .context-badges.compact .badge-name {
+    max-width: 100px;
   }
 </style>

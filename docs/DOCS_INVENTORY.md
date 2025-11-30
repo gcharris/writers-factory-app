@@ -1,5 +1,9 @@
 # Documentation Inventory & Organization Plan
 
+> [!NOTE]
+> This inventory reflects the state as of Nov 25, 2025. For the current structure (reorganized Nov 29, 2025), please see [DOCS_INDEX.md](DOCS_INDEX.md).
+
+
 **Created**: November 25, 2025
 **Purpose**: Comprehensive audit of /docs folder to clarify what's current vs archival
 

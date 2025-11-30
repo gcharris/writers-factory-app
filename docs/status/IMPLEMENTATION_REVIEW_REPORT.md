@@ -218,7 +218,7 @@ POST /squad/course-mode
 
 **Tournament-Ready**: 7 external APIs + 2 local models
 
-**Documentation**: ✅ Complete roster documented in [docs/Writer's Factory App - Complete Agent Roster.md](docs/Writer's Factory App - Complete Agent Roster.md)
+**Documentation**: ✅ Complete roster documented in [AGENT_ROSTER.md](../reference/AGENT_ROSTER.md)
 
 ---
 

@@ -6,7 +6,7 @@ import yaml
 import json
 from typing import List, Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -592,14 +592,39 @@ async def get_session_stats(session_id: str):
 @app.get("/sessions/active", summary="List active sessions")
 async def list_active_sessions(limit: int = 20):
     """
-    Get recently active sessions.
+    Get recently active sessions with names and previews.
     """
     try:
         with get_session_service() as service:
+            # Auto-backfill names for existing sessions on first call
+            service.backfill_session_names()
             sessions = service.get_active_sessions(limit=limit)
             return {"sessions": sessions}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
+
+
+class SessionRenameRequest(BaseModel):
+    name: str
+
+
+@app.post("/session/{session_id}/rename", summary="Rename a session")
+async def rename_session(session_id: str, request: SessionRenameRequest):
+    """
+    Rename a chat session to a user-friendly name.
+    """
+    try:
+        with get_session_service() as service:
+            success = service.rename_session(session_id, request.name)
+            if success:
+                return {"success": True, "session_id": session_id, "name": request.name}
+            else:
+                raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to rename session: {str(e)}")
+
 
 @app.get("/session/{session_id}/uncommitted", summary="Get uncommitted events for Consolidator")
 async def get_uncommitted_events(session_id: str):
@@ -1220,23 +1245,24 @@ You are a LOCAL AI running on the user's computer via Ollama. You are their reli
 
 ## First-Time Users
 
-If this seems like a first conversation, warmly introduce yourself and IMMEDIATELY suggest:
+If this seems like a first conversation, warmly introduce yourself:
 
-"Welcome to Writers Factory! I'm your local AI assistant - I run right on your computer, so I work even without internet.
+"Welcome to Writers Factory! I'm here to help you craft your novel using the **Narrative Protocol** methodology.
 
-For a faster, smarter experience, I recommend configuring cloud AI agents. Go to **Settings** (gear icon) → **Agents** tab to add API keys for Claude, GPT-4, or other cloud models.
+Ready to begin? Here's what we can do together:
+- **Create a Story Bible** - Build your protagonist, theme, and beat sheet
+- **Calibrate your Voice** - Discover and refine your unique writing style
+- **Draft scenes** - Write with AI assistance that understands your story
 
-But I'm always here as your backup! How can I help you get started?"
+What would you like to work on first?"
 
 ## Your Capabilities
 
 You can help with:
-- Basic questions about Writers Factory
-- Simple writing advice
-- Explaining the Narrative Protocol methodology
-- Guiding users to the right features
-
-For complex tasks (detailed story critique, long-form drafting, nuanced character work), encourage users to configure cloud agents.
+- Questions about Writers Factory and the Narrative Protocol
+- Writing advice and story development
+- Building Story Bible artifacts (protagonist, theme, beat sheet)
+- Guiding users through the four-mode workflow
 
 ## Key Concepts to Know
 
@@ -1248,7 +1274,7 @@ For complex tasks (detailed story critique, long-form drafting, nuanced characte
 
 ## Tone
 
-Be friendly, humble about your limitations, and helpful. Nudge users toward configuring cloud agents for the best experience, but never make them feel bad for using you.
+Be friendly, encouraging, and focused on the craft. Help users understand the methodology and guide them toward creating compelling stories.
 """
 
 
@@ -1282,6 +1308,10 @@ async def _casual_chat_with_writers_factory_knowledge(message: str) -> str:
         return f"I'm having trouble connecting to Ollama. Please ensure Ollama is running (`ollama serve`) and that llama3.2:3b is installed (`ollama pull llama3.2:3b`)."
 
 
+# Track current foreman session for persistence
+_foreman_session_id: Optional[str] = None
+
+
 @app.post("/foreman/chat", summary="Chat with the Foreman")
 async def foreman_chat(request: ForemanChatRequest):
     """
@@ -1294,8 +1324,15 @@ async def foreman_chat(request: ForemanChatRequest):
     - Respond with craft-aware guidance
     - Optionally take actions (query NotebookLM, write templates, etc.)
     """
+    global _foreman_session_id
+
     try:
         foreman = get_foreman()
+
+        # Ensure we have a session for persistence
+        if not _foreman_session_id:
+            with get_session_service() as service:
+                _foreman_session_id = service.create_session(name="New Chat")
 
         # Build message with context
         message = request.message
@@ -1347,11 +1384,23 @@ async def foreman_chat(request: ForemanChatRequest):
         # If no project is active, use casual chat mode with Writers Factory knowledge
         if isinstance(result, dict) and result.get("error") and "No active project" in result.get("error", ""):
             casual_response = await _casual_chat_with_writers_factory_knowledge(full_message)
+
+            # Log to session
+            with get_session_service() as service:
+                service.log_event(_foreman_session_id, "user", message)
+                service.log_event(_foreman_session_id, "assistant", casual_response)
+
             return {
                 "response": casual_response,
                 "actions_executed": [],
                 "work_order_status": None
             }
+
+        # Log to session for regular foreman chat
+        response_text = result.get("response", "") if isinstance(result, dict) else str(result)
+        with get_session_service() as service:
+            service.log_event(_foreman_session_id, "user", message)
+            service.log_event(_foreman_session_id, "assistant", response_text)
 
         return result
     except Exception as e:
@@ -1429,8 +1478,9 @@ async def foreman_reset():
     Reset the Foreman to initial state.
 
     Clears the current project, conversation, KB entries (both in-memory and SQLite).
+    Also starts a new session for persistence.
     """
-    global _foreman_instance
+    global _foreman_instance, _foreman_session_id
 
     # Clear SQLite KB for current project before resetting
     kb_deleted = 0
@@ -1438,6 +1488,10 @@ async def foreman_reset():
         kb_deleted = _foreman_instance.clear_project_kb()
 
     _foreman_instance = None
+
+    # Start a fresh session
+    _foreman_session_id = None
+
     return {
         "status": "reset",
         "message": "Foreman has been reset",
@@ -5295,6 +5349,7 @@ async def get_ollama_pull_status(model: str):
 class WorkspaceValidateRequest(BaseModel):
     """Request to validate a workspace path."""
     path: str
+    create_if_missing: bool = False  # Only create directory when user confirms
 
 
 @app.get("/system/workspace/default", summary="Get default workspace path")
@@ -5335,7 +5390,8 @@ async def validate_workspace_path(request: WorkspaceValidateRequest):
     - Parent directory exists (or path exists)
     - Path is writable
 
-    If path doesn't exist, it will be created.
+    If create_if_missing=True and path doesn't exist, it will be created.
+    Otherwise, just validates that creation would be possible.
     """
     import os
     from pathlib import Path
@@ -5372,9 +5428,31 @@ async def validate_workspace_path(request: WorkspaceValidateRequest):
         if not parent.exists():
             return {"valid": False, "error": f"Parent directory does not exist: {parent}"}
 
-        # Try to create the directory
+        # Check if parent is writable (can we create the target directory?)
+        try:
+            test_file = parent / ".wf_write_test"
+            test_file.touch()
+            test_file.unlink()
+        except (PermissionError, OSError):
+            return {"valid": False, "error": "Parent directory is not writable"}
+
+        # If not asked to create, just report it's valid but doesn't exist yet
+        if not request.create_if_missing:
+            return {"valid": True, "exists": False, "can_create": True}
+
+        # Create the directory with standard project structure
         try:
             path_obj.mkdir(parents=True, exist_ok=True)
+
+            # Create standard workspace subfolders
+            subfolders = [
+                "projects",
+                "templates",
+                "exports",
+            ]
+            for subfolder in subfolders:
+                (path_obj / subfolder).mkdir(exist_ok=True)
+
             return {"valid": True, "exists": True, "created": True}
         except (PermissionError, OSError) as e:
             return {"valid": False, "error": f"Cannot create directory: {str(e)}"}

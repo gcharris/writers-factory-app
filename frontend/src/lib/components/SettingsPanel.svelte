@@ -8,7 +8,7 @@
   - Voice (style settings)
   - Advanced (power user options)
 
-  Squad is accessed via wizard button, not a tab (per Squad-first onboarding design)
+  Setup wizard can be re-run via wand icon in header
 -->
 <script>
   import { createEventDispatcher } from 'svelte';
@@ -17,21 +17,23 @@
   import SettingsVoice from './Settings/SettingsVoice.svelte';
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
   import SettingsAssistant from './Settings/SettingsAssistant.svelte';
-  import SquadWizard from './Squads/SquadWizard.svelte';
+  import OnboardingWizard from './Onboarding/OnboardingWizard.svelte';
+  import { hasCompletedOnboarding } from '$lib/stores';
 
   export let activeTab = 'assistant';
 
   const dispatch = createEventDispatcher();
 
-  let showSquadWizard = false;
+  let showSetupWizard = false;
 
-  // Simplified tab order for writers (Squad accessed via button, not tab)
+  // Tab order for writers
   const tabs = [
     { id: 'assistant', label: 'Assistant', icon: 'sparkles' },
     { id: 'orchestrator', label: 'AI Model', icon: 'cpu' },
     { id: 'agents', label: 'API Keys', icon: 'key', sublabel: 'Advanced' },
     { id: 'voice', label: 'Voice', icon: 'mic' },
     { id: 'advanced', label: 'Advanced', icon: 'settings' },
+    { id: 'setup', label: 'Re-run Setup Wizard', icon: 'wand', action: 'openSetupWizard' },
   ];
 
   // Icons for each tab (only icons used in simplified tabs)
@@ -69,15 +71,26 @@
       <circle cx="9" cy="7" r="4"></circle>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
       <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>`,
+    wand: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 4V2"></path>
+      <path d="M15 16v-2"></path>
+      <path d="M8 9h2"></path>
+      <path d="M20 9h2"></path>
+      <path d="M17.8 11.8L19 13"></path>
+      <path d="M15 9h0"></path>
+      <path d="M17.8 6.2L19 5"></path>
+      <path d="m3 21 9-9"></path>
+      <path d="M12.2 6.2L11 5"></path>
     </svg>`
   };
 
-  function openSquadWizard() {
-    showSquadWizard = true;
+  function openSetupWizard() {
+    showSetupWizard = true;
   }
 
-  function closeSquadWizard() {
-    showSquadWizard = false;
+  function closeSetupWizard() {
+    showSetupWizard = false;
   }
 </script>
 
@@ -88,25 +101,30 @@
       <h3>Settings</h3>
     </div>
 
-    <!-- Change Squad Button (wizard-based, not a tab) -->
-    <div class="squad-button-container">
-      <button class="squad-button" on:click={openSquadWizard}>
-        <span class="nav-icon">{@html tabIcons.users}</span>
-        <span class="nav-label">Change Squad</span>
-      </button>
-    </div>
-
     <ul class="nav-list">
       {#each tabs as tab}
         <li>
           <button
-            class="nav-item {activeTab === tab.id ? 'active' : ''}"
-            on:click={() => activeTab = tab.id}
+            class="nav-item {activeTab === tab.id && !tab.action ? 'active' : ''}"
+            on:click={() => {
+              if (tab.action === 'openSetupWizard') {
+                openSetupWizard();
+              } else {
+                activeTab = tab.id;
+              }
+            }}
           >
             <span class="nav-icon">{@html tabIcons[tab.icon]}</span>
             <span class="nav-label">{tab.label}</span>
             {#if tab.sublabel}
               <span class="sublabel">{tab.sublabel}</span>
+            {/if}
+            {#if tab.id === 'setup' && $hasCompletedOnboarding}
+              <span class="checkmark-inline">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
             {/if}
           </button>
         </li>
@@ -130,11 +148,11 @@
   </div>
 </div>
 
-<!-- Squad Wizard Modal -->
-{#if showSquadWizard}
-  <div class="wizard-overlay" on:click={closeSquadWizard} on:keydown={(e) => e.key === 'Escape' && closeSquadWizard()} role="button" tabindex="0">
+<!-- Setup Wizard Modal -->
+{#if showSetupWizard}
+  <div class="wizard-overlay" on:click={closeSetupWizard} on:keydown={(e) => e.key === 'Escape' && closeSetupWizard()} role="button" tabindex="0">
     <div class="wizard-container" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
-      <SquadWizard on:close={closeSquadWizard} />
+      <OnboardingWizard on:close={closeSetupWizard} on:complete={closeSetupWizard} />
     </div>
   </div>
 {/if}
@@ -158,7 +176,7 @@
   }
 
   .nav-header {
-    padding: var(--space-4, 16px);
+    padding: var(--space-3, 12px) var(--space-4, 16px);
     border-bottom: 1px solid var(--border, #2d3a47);
   }
 
@@ -226,32 +244,12 @@
     color: var(--text-muted, #6e7681);
   }
 
-  /* Squad Button (separate from tabs) */
-  .squad-button-container {
-    padding: var(--space-2, 8px);
-    border-bottom: 1px solid var(--border, #2d3a47);
-  }
-
-  .squad-button {
+  .checkmark-inline {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 8px);
-    width: 100%;
-    padding: var(--space-3, 12px);
-    background: var(--accent-purple-muted, rgba(163, 113, 247, 0.15));
-    border: 1px solid var(--accent-purple, #a371f7);
-    border-radius: var(--radius-md, 6px);
-    color: var(--accent-purple, #a371f7);
-    font-size: var(--text-sm, 12px);
-    font-weight: var(--font-semibold, 600);
-    text-align: left;
-    cursor: pointer;
-    transition: all var(--transition-fast, 100ms ease);
-  }
-
-  .squad-button:hover {
-    background: var(--accent-purple-muted, rgba(163, 113, 247, 0.25));
-    transform: translateY(-1px);
+    justify-content: center;
+    color: var(--accent-green, #3fb950);
+    margin-left: auto;
   }
 
   /* Content Area */

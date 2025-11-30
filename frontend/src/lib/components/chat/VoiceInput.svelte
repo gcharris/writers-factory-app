@@ -38,77 +38,86 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognition) {
-      isSupported = true;
-      recognition = new SpeechRecognition();
+      try {
+        // Try to create the recognition object
+        // This may fail in Tauri dev mode on macOS due to missing NSSpeechRecognitionUsageDescription
+        recognition = new SpeechRecognition();
+        isSupported = true;
 
-      // Configuration from settings
-      recognition.continuous = voiceContinuous;
-      recognition.interimResults = true;  // Show results as they come
-      recognition.lang = voiceLanguage;
+        // Configuration from settings
+        recognition.continuous = voiceContinuous;
+        recognition.interimResults = true;  // Show results as they come
+        recognition.lang = voiceLanguage;
 
-      // Event handlers
-      recognition.onstart = () => {
-        isListening = true;
-        error = null;
-        dispatch('start');
-      };
+        // Event handlers
+        recognition.onstart = () => {
+          isListening = true;
+          error = null;
+          dispatch('start');
+        };
 
-      recognition.onend = () => {
-        isListening = false;
-        if (transcript.trim()) {
-          dispatch('result', { transcript: transcript.trim() });
-        }
-        transcript = '';
-        dispatch('end');
-      };
-
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalTranscript += result[0].transcript;
-          } else {
-            interimTranscript += result[0].transcript;
+        recognition.onend = () => {
+          isListening = false;
+          if (transcript.trim()) {
+            dispatch('result', { transcript: transcript.trim() });
           }
-        }
+          transcript = '';
+          dispatch('end');
+        };
 
-        // Emit interim results for live preview
-        if (interimTranscript) {
-          dispatch('interim', { transcript: interimTranscript });
-        }
+        recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
 
-        // Accumulate final transcript
-        if (finalTranscript) {
-          transcript += finalTranscript;
-        }
-      };
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              finalTranscript += result[0].transcript;
+            } else {
+              interimTranscript += result[0].transcript;
+            }
+          }
 
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+          // Emit interim results for live preview
+          if (interimTranscript) {
+            dispatch('interim', { transcript: interimTranscript });
+          }
 
-        switch (event.error) {
-          case 'not-allowed':
-            error = 'Microphone access denied. Please allow microphone access in your browser settings.';
-            break;
-          case 'no-speech':
-            error = 'No speech detected. Please try again.';
-            break;
-          case 'network':
-            error = 'Network error. Please check your connection.';
-            break;
-          case 'aborted':
-            // User cancelled - not an error to show
-            break;
-          default:
-            error = `Speech recognition error: ${event.error}`;
-        }
+          // Accumulate final transcript
+          if (finalTranscript) {
+            transcript += finalTranscript;
+          }
+        };
 
-        isListening = false;
-        dispatch('error', { error, code: event.error });
-      };
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+
+          switch (event.error) {
+            case 'not-allowed':
+              error = 'Microphone access denied. Please allow microphone access in your browser settings.';
+              break;
+            case 'no-speech':
+              error = 'No speech detected. Please try again.';
+              break;
+            case 'network':
+              error = 'Network error. Please check your connection.';
+              break;
+            case 'aborted':
+              // User cancelled - not an error to show
+              break;
+            default:
+              error = `Speech recognition error: ${event.error}`;
+          }
+
+          isListening = false;
+          dispatch('error', { error, code: event.error });
+        };
+      } catch (e) {
+        // Failed to initialize - likely missing permissions in Tauri dev mode
+        console.warn('Speech recognition not available:', e);
+        isSupported = false;
+        error = 'Speech recognition not available in this environment';
+      }
     }
   });
 
@@ -118,7 +127,7 @@
     }
   });
 
-  function toggleListening() {
+  async function toggleListening() {
     if (!isSupported || disabled) return;
 
     if (isListening) {
@@ -126,11 +135,34 @@
     } else {
       transcript = '';
       error = null;
+
+      // Check for microphone permission first (helps prevent native crashes)
+      try {
+        // Request microphone permission before starting recognition
+        // This gives the user a chance to grant permission via the browser prompt
+        // instead of causing a native crash in Tauri
+        const permissionStatus = await navigator.permissions?.query({ name: 'microphone' });
+
+        if (permissionStatus?.state === 'denied') {
+          error = 'Microphone access denied. Please allow in System Settings > Privacy & Security > Microphone.';
+          dispatch('error', { error, code: 'not-allowed' });
+          return;
+        }
+      } catch (permErr) {
+        // Permissions API not supported - continue anyway
+        console.log('Permissions API not available, trying recognition directly');
+      }
+
       try {
         recognition.start();
       } catch (e) {
         // Already started - stop and restart
-        recognition.stop();
+        if (e.message?.includes('already started')) {
+          recognition.stop();
+        } else {
+          error = 'Voice recognition failed to start. Try using Mac dictation (Fn Fn) instead.';
+          dispatch('error', { error, code: 'start-failed' });
+        }
       }
     }
   }

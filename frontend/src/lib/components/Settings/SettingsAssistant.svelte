@@ -282,62 +282,64 @@
 
 <style>
   .settings-assistant {
-    padding: 2rem;
-    max-width: 900px;
+    padding: 0.75rem 1rem;
+    max-width: 800px;
     color: #ffffff;
   }
 
   .header {
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
   }
 
   .header h2 {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.25rem 0;
   }
 
   .subtitle {
     color: #b0b0b0;
     margin: 0;
+    font-size: 0.8125rem;
   }
 
   .section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 1rem;
     background: #2d2d2d;
     border: 1px solid #404040;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .section h3 {
-    font-size: 1.25rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: #d4a574;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.125rem 0;
   }
 
   .section-desc {
     color: #888888;
-    margin: 0 0 1rem 0;
-    font-size: 0.875rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
   }
 
   /* Preset selector */
   .preset-selector {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .preset-btn {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
     background: #1a1a1a;
-    border: 2px solid #404040;
-    border-radius: 8px;
+    border: 1px solid #404040;
+    border-radius: 6px;
     color: #ffffff;
     font-weight: 500;
+    font-size: 0.8125rem;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -363,18 +365,18 @@
   /* Custom name input */
   .custom-name-input {
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
   }
 
   .custom-name-input input {
     width: 100%;
-    padding: 0.75rem 1rem;
-    padding-right: 4rem;
+    padding: 0.5rem 0.75rem;
+    padding-right: 3rem;
     background: #1a1a1a;
-    border: 2px solid #404040;
-    border-radius: 8px;
+    border: 1px solid #404040;
+    border-radius: 6px;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 0.875rem;
     transition: border-color 0.2s;
   }
 
@@ -400,29 +402,29 @@
   .preview {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: #1a1a1a;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .preview-label {
     color: #888888;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
   }
 
   .preview-name {
     color: #d4a574;
     font-weight: 600;
-    font-size: 1.125rem;
+    font-size: 0.9375rem;
   }
 
   /* Toggle styles */
   .toggle-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
+    gap: 0.25rem;
+    margin-bottom: 0.625rem;
   }
 
   .toggle-group:last-child {
@@ -432,7 +434,7 @@
   .toggle-label {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     cursor: pointer;
     user-select: none;
   }
@@ -443,10 +445,10 @@
 
   .toggle-switch {
     position: relative;
-    width: 48px;
-    height: 24px;
+    width: 36px;
+    height: 18px;
     background: #404040;
-    border-radius: 12px;
+    border-radius: 9px;
     transition: background 0.2s;
     flex-shrink: 0;
   }
@@ -456,8 +458,8 @@
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     background: #ffffff;
     border-radius: 50%;
     transition: transform 0.2s;
@@ -468,51 +470,53 @@
   }
 
   .toggle-input:checked + .toggle-switch::after {
-    transform: translateX(24px);
+    transform: translateX(18px);
   }
 
   .toggle-text {
-    font-size: 1rem;
+    font-size: 0.8125rem;
     font-weight: 500;
   }
 
   .toggle-desc {
     margin: 0;
-    padding-left: 3.25rem;
-    font-size: 0.875rem;
+    padding-left: 2.5rem;
+    font-size: 0.6875rem;
     color: #888888;
   }
 
   /* Info panel */
   .info-panel {
-    padding: 1.5rem;
+    padding: 0.75rem 1rem;
     background: #3a2a1a20;
     border: 1px solid #d4a57440;
-    border-radius: 8px;
-    margin-bottom: 2rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
   }
 
   .info-panel h4 {
-    font-size: 1rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: #d4a574;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.25rem 0;
   }
 
   .info-panel p {
     color: #b0b0b0;
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.375rem 0;
+    font-size: 0.75rem;
   }
 
   .info-panel ul {
     margin: 0;
-    padding-left: 1.5rem;
+    padding-left: 1.25rem;
   }
 
   .info-panel li {
     color: #b0b0b0;
-    line-height: 1.6;
-    margin-bottom: 0.25rem;
+    line-height: 1.4;
+    margin-bottom: 0.125rem;
+    font-size: 0.75rem;
   }
 
   .info-panel li strong {
@@ -522,17 +526,18 @@
   /* Actions */
   .actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     justify-content: flex-end;
   }
 
   .btn-secondary {
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     background: transparent;
     color: #b0b0b0;
     border: 1px solid #404040;
     border-radius: 4px;
     font-weight: 500;
+    font-size: 0.8125rem;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -543,12 +548,13 @@
   }
 
   .btn-save {
-    padding: 0.75rem 2rem;
+    padding: 0.5rem 1.25rem;
     background: #d4a574;
     color: #1a1a1a;
     border: none;
     border-radius: 4px;
     font-weight: 600;
+    font-size: 0.8125rem;
     cursor: pointer;
     transition: background 0.2s;
   }
@@ -558,10 +564,11 @@
   }
 
   .message {
-    margin-top: 1rem;
-    padding: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
     border-radius: 4px;
     font-weight: 500;
+    font-size: 0.75rem;
   }
 
   .message.success {
@@ -574,28 +581,28 @@
   .warning-panel {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: #3a2a1a40;
     border: 1px solid #d4a57460;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #d4a574;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
   }
 
   .warning-icon {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
 
   .voice-options {
-    margin-top: 1rem;
-    padding: 1rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: #1a1a1a;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .option-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.625rem;
   }
 
   .option-group:last-child {
@@ -604,20 +611,20 @@
 
   .option-label {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #ffffff;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
 
   .select-input {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.375rem 0.5rem;
     background: #2d2d2d;
-    border: 2px solid #404040;
-    border-radius: 8px;
+    border: 1px solid #404040;
+    border-radius: 4px;
     color: #ffffff;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: border-color 0.2s;
   }
@@ -633,8 +640,8 @@
   }
 
   .option-desc {
-    margin: 0.5rem 0 0 0;
-    font-size: 0.75rem;
+    margin: 0.25rem 0 0 0;
+    font-size: 0.6875rem;
     color: #888888;
   }
 </style>

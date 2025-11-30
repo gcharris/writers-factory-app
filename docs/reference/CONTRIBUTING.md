@@ -136,7 +136,7 @@ writers-factory-app/
 │   ├── dev_logs/            # Implementation logs
 │   ├── claude-skills/       # Reference skills from Explants
 │   ├── ARCHITECTURE.md      # System architecture
-│   ├── TESTING.md           # Testing guide
+│   ├── guides/TESTING.md    # Testing guide
 │   └── [50+ more docs]
 └── README.md                # Project overview
 ```
@@ -180,7 +180,7 @@ cd backend
 pytest tests/test_your_new_service.py -v
 ```
 
-See [TESTING.md](TESTING.md) for detailed testing guidelines.
+See [TESTING.md](../guides/TESTING.md) for detailed testing guidelines.
 
 ### 4. Run Quality Checks
 
@@ -293,7 +293,7 @@ class TestFeature:
         assert result is not None
 ```
 
-**See [TESTING.md](TESTING.md) for comprehensive testing documentation.**
+**See [TESTING.md](../guides/TESTING.md) for comprehensive testing documentation.**
 
 ---
 
@@ -455,13 +455,13 @@ Fixes #123
 **Backend Testing (Critical)**:
 - 13 services still need tests (only 4 of 19 tested)
 - Priority: SceneWriterService, StructureVariantService, SettingsService
-- See [TESTING.md](TESTING.md) for test patterns
+- See [TESTING.md](../guides/TESTING.md) for test patterns
 
 **Frontend UI Components (Phase 5)**:
 - Track 3: ARCHITECT Mode UI (7 components)
 - Track 3: VOICE_CALIBRATION Mode UI (6 components)
 - Track 3: DIRECTOR Mode UI (16 components)
-- See [UI_IMPLEMENTATION_PLAN_V2.md](specs/UI_IMPLEMENTATION_PLAN_V2.md)
+- See [UI_IMPLEMENTATION_PLAN_V2.md](../specs/UI_IMPLEMENTATION_PLAN_V2.md)
 
 ### Medium Priority
 
@@ -487,11 +487,11 @@ Fixes #123
 ## 📚 Resources
 
 ### Documentation
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [TESTING.md](TESTING.md) - Testing guide
-- [API_REFERENCE.md](API_REFERENCE.md) - API endpoints
-- [BACKEND_SERVICES.md](BACKEND_SERVICES.md) - Service documentation
-- [DOCS_INDEX.md](DOCS_INDEX.md) - Complete documentation index
+- [ARCHITECTURE.md](../ARCHITECTURE.md) - System architecture
+- [TESTING.md](../guides/TESTING.md) - Testing guide
+- [API_REFERENCE.md](../API_REFERENCE.md) - API endpoints
+- [BACKEND_SERVICES.md](../BACKEND_SERVICES.md) - Service documentation
+- [DOCS_INDEX.md](../DOCS_INDEX.md) - Complete documentation index
 
 ### External Resources
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)

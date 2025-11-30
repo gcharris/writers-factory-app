@@ -37,6 +37,28 @@ Base = declarative_base()
 
 
 # --- Models ---
+class SessionMetadata(Base):
+    """
+    Metadata for a chat session (name, preview, etc).
+
+    Stored separately from events to allow easy updates without touching event history.
+    """
+    __tablename__ = "session_metadata"
+
+    session_id = Column(String(36), primary_key=True)
+    name = Column(String(100), nullable=True)  # User-friendly session name
+    preview = Column(String(300), nullable=True)  # First ~200 chars of conversation
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> dict:
+        return {
+            "session_id": self.session_id,
+            "name": self.name,
+            "preview": self.preview,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class SessionEvent(Base):
     """
     A single event (message) in a chat session.
@@ -110,18 +132,33 @@ class SessionService:
 
     # --- Session Management ---
 
-    def create_session(self, scene_id: Optional[str] = None) -> str:
+    def create_session(self, scene_id: Optional[str] = None, name: Optional[str] = None) -> str:
         """
         Create a new chat session.
 
         Args:
             scene_id: Optional scene identifier to link this session to
+            name: Optional initial name for the session
 
         Returns:
             The new session UUID
         """
         session_id = str(uuid.uuid4())
         logger.info(f"Created new session: {session_id}" + (f" (scene: {scene_id})" if scene_id else ""))
+
+        # Create session metadata
+        metadata = SessionMetadata(
+            session_id=session_id,
+            name=name or "New Chat",
+            preview=None,
+            created_at=datetime.now(timezone.utc)
+        )
+        try:
+            self.db.add(metadata)
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Failed to create session metadata: {e}")
 
         # Optionally log a system event marking session start
         self.log_event(
@@ -170,11 +207,79 @@ class SessionService:
             self.db.commit()
             self.db.refresh(event)
             logger.debug(f"Logged event {event.id} to session {session_id[:8]}... ({role}, {token_count} tokens)")
+
+            # Auto-generate session name from first user message
+            if role == 'user':
+                self._maybe_update_session_name(session_id, content)
+
             return event
         except Exception as e:
             self.db.rollback()
             logger.error(f"Failed to log event: {e}")
             raise
+
+    def _maybe_update_session_name(self, session_id: str, content: str):
+        """
+        Update session name if it's still the default "New Chat".
+        Generates a name from the first user message.
+        """
+        try:
+            metadata = self.db.query(SessionMetadata).filter(
+                SessionMetadata.session_id == session_id
+            ).first()
+
+            if metadata and metadata.name == "New Chat":
+                # Generate name from content
+                name = self._generate_session_name(content)
+                preview = content[:200].strip() if content else None
+                metadata.name = name
+                metadata.preview = preview
+                self.db.commit()
+                logger.debug(f"Auto-named session {session_id[:8]}... as '{name}'")
+        except Exception as e:
+            logger.error(f"Failed to auto-name session: {e}")
+
+    def _generate_session_name(self, content: str) -> str:
+        """
+        Generate a friendly session name from message content.
+        Strips common prefixes and truncates to ~50 chars.
+        """
+        if not content:
+            return "New Chat"
+
+        # Clean up the content
+        name = content.strip()
+
+        # Remove common prefixes
+        prefixes_to_remove = [
+            "help me with ",
+            "help me ",
+            "i need to ",
+            "i need help with ",
+            "i want to ",
+            "can you help me ",
+            "can you ",
+            "please ",
+            "i'd like to ",
+            "let's ",
+        ]
+        name_lower = name.lower()
+        for prefix in prefixes_to_remove:
+            if name_lower.startswith(prefix):
+                name = name[len(prefix):]
+                break
+
+        # Capitalize first letter
+        if name:
+            name = name[0].upper() + name[1:] if len(name) > 1 else name.upper()
+
+        # Truncate to ~50 chars at word boundary
+        if len(name) > 50:
+            name = name[:50].rsplit(' ', 1)[0]
+            if not name.endswith(('...', '.', '!', '?')):
+                name += '...'
+
+        return name or "New Chat"
 
     # --- History Retrieval ---
 
@@ -211,13 +316,14 @@ class SessionService:
 
     def get_active_sessions(self, limit: int = 20) -> List[dict]:
         """
-        Get recently active sessions.
+        Get recently active sessions with names and previews.
 
         Returns:
-            List of session summaries with id, scene_id, event_count, last_activity
+            List of session summaries with id, name, preview, scene_id, event_count, last_activity
         """
         try:
             from sqlalchemy import func
+            from sqlalchemy.orm import aliased
 
             # Subquery to get session stats
             results = self.db.query(
@@ -231,18 +337,122 @@ class SessionService:
                 func.max(SessionEvent.timestamp).desc()
             ).limit(limit).all()
 
-            return [
-                {
+            # Get metadata for these sessions
+            session_ids = [r.session_id for r in results]
+            metadata_map = {}
+            if session_ids:
+                metadata_results = self.db.query(SessionMetadata).filter(
+                    SessionMetadata.session_id.in_(session_ids)
+                ).all()
+                metadata_map = {m.session_id: m for m in metadata_results}
+
+            sessions = []
+            for r in results:
+                meta = metadata_map.get(r.session_id)
+                sessions.append({
                     "session_id": r.session_id,
+                    "name": meta.name if meta else None,
+                    "preview": meta.preview if meta else None,
                     "scene_id": r.scene_id,
                     "event_count": r.event_count,
                     "last_activity": r.last_activity.isoformat() if r.last_activity else None
-                }
-                for r in results
-            ]
+                })
+
+            return sessions
         except Exception as e:
             logger.error(f"Failed to get active sessions: {e}")
             return []
+
+    def rename_session(self, session_id: str, name: str) -> bool:
+        """
+        Rename a session.
+
+        Args:
+            session_id: The session UUID
+            name: The new name for the session
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            metadata = self.db.query(SessionMetadata).filter(
+                SessionMetadata.session_id == session_id
+            ).first()
+
+            if metadata:
+                metadata.name = name[:100]  # Enforce max length
+                self.db.commit()
+                logger.info(f"Renamed session {session_id[:8]}... to '{name}'")
+                return True
+            else:
+                # Create metadata if it doesn't exist
+                metadata = SessionMetadata(
+                    session_id=session_id,
+                    name=name[:100],
+                    preview=None,
+                    created_at=datetime.now(timezone.utc)
+                )
+                self.db.add(metadata)
+                self.db.commit()
+                logger.info(f"Created metadata for session {session_id[:8]}... with name '{name}'")
+                return True
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Failed to rename session: {e}")
+            return False
+
+    def backfill_session_names(self) -> int:
+        """
+        Generate names for existing sessions that don't have metadata.
+        Called once to migrate old sessions.
+
+        Returns:
+            Number of sessions updated
+        """
+        try:
+            from sqlalchemy import func
+
+            # Find sessions without metadata
+            existing_metadata = self.db.query(SessionMetadata.session_id).all()
+            existing_ids = {m.session_id for m in existing_metadata}
+
+            # Get all session IDs
+            all_sessions = self.db.query(
+                SessionEvent.session_id
+            ).distinct().all()
+
+            count = 0
+            for (session_id,) in all_sessions:
+                if session_id not in existing_ids:
+                    # Get first user message for this session
+                    first_msg = self.db.query(SessionEvent).filter(
+                        SessionEvent.session_id == session_id,
+                        SessionEvent.role == 'user'
+                    ).order_by(SessionEvent.timestamp.asc()).first()
+
+                    if first_msg:
+                        name = self._generate_session_name(first_msg.content)
+                        preview = first_msg.content[:200].strip()
+                    else:
+                        name = "Chat"
+                        preview = None
+
+                    metadata = SessionMetadata(
+                        session_id=session_id,
+                        name=name,
+                        preview=preview,
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    self.db.add(metadata)
+                    count += 1
+
+            self.db.commit()
+            logger.info(f"Backfilled {count} session names")
+            return count
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Failed to backfill session names: {e}")
+            return 0
 
     # --- Consolidator Support ---
 

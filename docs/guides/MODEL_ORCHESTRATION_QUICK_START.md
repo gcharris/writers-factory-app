@@ -246,9 +246,9 @@ ollama serve
 ## 📚 Full Documentation
 
 - **Quick Start**: This document
-- **Complete Guide**: `docs/CONFIGURABLE_MODEL_ASSIGNMENTS.md` (430 lines)
-- **Implementation Details**: `docs/dev_logs/PHASE_3E_NEXT_STEPS.md`
-- **Completion Summary**: `docs/dev_logs/PHASE_3E_COMPLETION_SUMMARY.md`
+- **Complete Guide**: `MODEL_CONFIGURATION.md` (430 lines)
+- **Implementation Details**: `../dev_logs/PHASE_3E_NEXT_STEPS.md`
+- **Completion Summary**: `../dev_logs/PHASE_3E_COMPLETION_SUMMARY.md`
 
 ---
 
@@ -265,4 +265,4 @@ ollama serve
 
 **That's it! You're ready to use the intelligent multi-model system.** 🎉
 
-*For detailed configuration options, see `docs/CONFIGURABLE_MODEL_ASSIGNMENTS.md`*
+*For detailed configuration options, see `MODEL_CONFIGURATION.md`*

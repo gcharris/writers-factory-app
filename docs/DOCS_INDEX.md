@@ -1,7 +1,7 @@
 # Writers Factory - Documentation Index
 
-**Version**: 2.0 (Reorganized)
-**Last Updated**: November 25, 2025
+**Version**: 2.1 (Reorganized)
+**Last Updated**: November 29, 2025
 **Total Documentation**: 58+ files (~400K words)
 
 ---
@@ -11,7 +11,7 @@
 **New to Writers Factory?** Start here:
 1. [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and UI/UX strategy
 2. [04_roadmap.md](04_roadmap.md) - Development roadmap and phase tracking
-3. [PHASE_3E_QUICK_START.md](PHASE_3E_QUICK_START.md) - Quick start guide for Phase 3E Model Orchestrator
+3. [guides/MODEL_ORCHESTRATION_QUICK_START.md](guides/MODEL_ORCHESTRATION_QUICK_START.md) - Quick start guide for Model Orchestrator
 
 **Want to implement UI?** Start here:
 1. [specs/UI_IMPLEMENTATION_PLAN_V2.md](specs/UI_IMPLEMENTATION_PLAN_V2.md) - Complete UI implementation plan (87 components)
@@ -29,20 +29,24 @@
 
 ```
 /docs
-├── /archive              - Historical documentation (9 files)
-│   ├── /drafts          - Abandoned drafts
-│   └── /superseded      - Replaced by newer versions
-├── /claude-skills        - Reference Claude skills (13+ folders)
-├── /dev_logs            - Implementation logs (20 files)
+├── /status              - Status & progress reports (6 files)
+├── /guides              - User & developer guides (8 files)
+├── /reference           - Reference materials (4 files)
 ├── /specs               - Technical specifications (16 files)
-└── ROOT FILES           - Core documentation (14 files)
+├── /dev_logs            - Implementation logs (20 files)
+├── /claude-skills       - Reference Claude skills (13+ folders)
+├── /archive             - Historical documentation (12 files)
+└── ROOT FILES           - Core documentation (12 files)
 ```
 
 Each folder now has a **README.md** explaining its purpose and organization. See folder READMEs for details:
-- [archive/README.md](archive/README.md)
-- [claude-skills/README.md](claude-skills/README.md)
-- [dev_logs/README.md](dev_logs/README.md)
+- [status/README.md](status/README.md)
+- [guides/README.md](guides/README.md)
+- [reference/README.md](reference/README.md)
 - [specs/README.md](specs/README.md)
+- [dev_logs/README.md](dev_logs/README.md)
+- [claude-skills/README.md](claude-skills/README.md)
+- [archive/README.md](archive/README.md)
 
 ---
 
@@ -64,8 +68,8 @@ Each folder now has a **README.md** explaining its purpose and organization. See
 ### Configuration & Setup
 | Document | Size | Purpose | Status |
 |----------|------|---------|--------|
-| [CONFIGURABLE_MODEL_ASSIGNMENTS.md](CONFIGURABLE_MODEL_ASSIGNMENTS.md) | 12K | Phase 3E model configuration guide | ✅ Current |
-| [PHASE_3E_QUICK_START.md](PHASE_3E_QUICK_START.md) | 7K | Phase 3E quick start guide | ✅ Current |
+| [guides/MODEL_CONFIGURATION.md](guides/MODEL_CONFIGURATION.md) | 12K | Model configuration guide | ✅ Current |
+| [guides/MODEL_ORCHESTRATION_QUICK_START.md](guides/MODEL_ORCHESTRATION_QUICK_START.md) | 7K | Model Orchestrator quick start | ✅ Current |
 
 ### Philosophy & Standards
 | Document | Size | Purpose | Status |
@@ -73,14 +77,49 @@ Each folder now has a **README.md** explaining its purpose and organization. See
 | [NARRATIVE PROTOCOL.md](NARRATIVE%20PROTOCOL.md) | 4K | Writing quality standards | ✅ Current |
 | [manifesto.md](manifesto.md) | 5K | Project philosophy and goals | ✅ Current |
 | [index.md](index.md) | 5K | Documentation homepage | ✅ Current |
-
-### Reference Documents
-| Document | Size | Purpose | Status |
-|----------|------|---------|--------|
-| [AI Self-Review Document for Creative Prose.md](AI%20Self-Review%20Document%20for%20Creative%20Prose.md) | 7K | Quality checklist | 📚 Reference |
-| [Guidance for Scene-Level Agent Refinement.md](Guidance%20for%20Scene-Level%20Agent%20Refinement.md) | 6K | Agent tuning guidance | 📚 Reference |
 | [DOCS_INVENTORY.md](DOCS_INVENTORY.md) | - | Complete documentation inventory | ✅ Current |
 | [DOCS_INDEX.md](DOCS_INDEX.md) | - | This file | ✅ Current |
+
+---
+
+## 📈 Status & Progress Reports (/status)
+
+| Document | Purpose |
+|----------|---------|
+| [PROJECT_STATUS.md](status/PROJECT_STATUS.md) | High-level project status |
+| [RECENT_ACCOMPLISHMENTS.md](status/RECENT_ACCOMPLISHMENTS.md) | Log of recent achievements |
+| [CURRENT_UI_ISSUES.md](status/CURRENT_UI_ISSUES.md) | Tracking of current UI issues |
+| [IMPLEMENTATION_REVIEW_REPORT.md](status/IMPLEMENTATION_REVIEW_REPORT.md) | Detailed implementation reviews |
+| [SQUAD_SYSTEM_TEST_REPORT.md](status/SQUAD_SYSTEM_TEST_REPORT.md) | Test reports for the Squad system |
+| [PHASE_3E_TO_3F_MIGRATION_REPORT.md](status/PHASE_3E_TO_3F_MIGRATION_REPORT.md) | Migration reports |
+
+---
+
+## 📘 User & Developer Guides (/guides)
+
+| Document | Purpose |
+|----------|---------|
+| [MODEL_ORCHESTRATION_QUICK_START.md](guides/MODEL_ORCHESTRATION_QUICK_START.md) | Quick start for Model Orchestrator |
+| [MODEL_CONFIGURATION.md](guides/MODEL_CONFIGURATION.md) | Detailed model configuration guide |
+| [SETTINGS_QUICK_START.md](guides/SETTINGS_QUICK_START.md) | Quick start for settings |
+| [SETTINGS_UI_GUIDE.md](guides/SETTINGS_UI_GUIDE.md) | Guide to the Settings UI |
+| [SETTINGS_SYSTEM.md](guides/SETTINGS_SYSTEM.md) | Deep dive into the settings system |
+| [USER_MIGRATION_GUIDE.md](guides/USER_MIGRATION_GUIDE.md) | Guide for migrating users |
+| [UI_ARCHITECTURE_TOUR.md](guides/UI_ARCHITECTURE_TOUR.md) | Tour of the UI architecture |
+| [CODEBASE_PIPELINE_WALKTHROUGH.md](guides/CODEBASE_PIPELINE_WALKTHROUGH.md) | Walkthrough of the codebase pipeline |
+| [TESTING.md](guides/TESTING.md) | General testing guide |
+| [BACKEND_TESTING.md](guides/BACKEND_TESTING.md) | Backend specific testing guide |
+
+---
+
+## 📚 Reference Materials (/reference)
+
+| Document | Purpose |
+|----------|---------|
+| [AI_SELF_REVIEW.md](reference/AI_SELF_REVIEW.md) | Quality checklist for creative prose |
+| [SCENE_AGENT_REFINEMENT.md](reference/SCENE_AGENT_REFINEMENT.md) | Guidance for agent tuning |
+| [AGENT_ROSTER.md](reference/AGENT_ROSTER.md) | Complete roster of agents |
+| [CONTRIBUTING.md](reference/CONTRIBUTING.md) | Contribution guidelines |
 
 ---
 
@@ -129,10 +168,6 @@ Each folder now has a **README.md** explaining its purpose and organization. See
 | [RAG_IMPLEMENTATION.md](specs/RAG_IMPLEMENTATION.md) | 28K | RAG system implementation plan | ✅ Current |
 | [FILE_SYNC.md](specs/FILE_SYNC.md) | 16K | File synchronization specification | ✅ Current |
 | [SECURITY.md](specs/SECURITY.md) | 19K | Security considerations | ✅ Current |
-
-**Total Specifications**: 16 files (~350K words)
-
-See [specs/README.md](specs/README.md) for detailed organization and reading guide.
 
 ---
 
@@ -188,8 +223,6 @@ Implementation logs organized chronologically by phase. See [dev_logs/README.md]
 | [TROUBLESHOOTING_REPORT_NOV22.md](dev_logs/TROUBLESHOOTING_REPORT_NOV22.md) | 2K | Troubleshooting session |
 | [MANAGER_INSTALLATION_PLAN.md](dev_logs/MANAGER_INSTALLATION_PLAN.md) | 2K | Installation plan |
 
-**Total Dev Logs**: 20 files (~200K words)
-
 ---
 
 ## 📚 Reference Materials (/claude-skills)
@@ -200,25 +233,6 @@ Original Claude skills from Explants project that served as reference for Direct
 
 See [claude-skills/README.md](claude-skills/README.md) for complete details.
 
-### Skills Included
-1. **explants-scene-writer/** - Scene writing (Mickey Bardot voice)
-2. **explants-scene-analyzer-scorer/** - Scene analysis (5-category rubric)
-3. **explants-scene-enhancement/** - Scene enhancement (Action Prompt, 6-Pass)
-4. **explants-smart-scaffold-generator/** - Scaffold generation
-5. **explants-scene-multiplier/** - Scene multiplier (5 strategies)
-6. **mickey-bardot-character-identity/** - Character identity
-7. **Gemini Gem files/** - Gemini reference files
-8. **Sample transcripts and documentation**
-
-**Mapping to Writers Factory**:
-| Claude Skill | Writers Factory Service | Status |
-|--------------|-------------------------|--------|
-| explants-scene-analyzer-scorer | SceneAnalyzerService | ✅ Implemented |
-| explants-smart-scaffold-generator | ScaffoldGeneratorService | ✅ Implemented |
-| explants-mickey-scene-writer | SceneWriterService | ✅ Implemented |
-| explants-scene-enhancement | SceneEnhancementService | ✅ Implemented |
-| explants-scene-multiplier | SceneWriterService (tournament) | ✅ Implemented |
-
 ---
 
 ## 🗄️ Archived Documentation (/archive)
@@ -228,6 +242,9 @@ Historical documentation that has been superseded or is no longer actively maint
 See [archive/README.md](archive/README.md) for archival policy.
 
 ### Architecture Versions (/archive)
+- [SYSTEM_ARCHITECTURE_DEEP_DIVE.md](archive/SYSTEM_ARCHITECTURE_DEEP_DIVE.md)
+- [LIVE_SQUAD_ARCHITECTURE.md](archive/LIVE_SQUAD_ARCHITECTURE.md)
+- [SQUAD_ARCHITECTURE_IMPLEMENTATION.md](archive/SQUAD_ARCHITECTURE_IMPLEMENTATION.md)
 - MASTER_ARCHITECTURE V2.0.md → V4.1.md
 - Master Architecture V4.1 Review & Next Steps.md
 - 01_architecture.md, 02_scene_pipeline.md, 03_data_schema.md
@@ -240,8 +257,6 @@ See [archive/README.md](archive/README.md) for archival policy.
 ### Drafts (/archive/drafts)
 - Architecture for Macro-Level Analysis (Graph Health Service).md
 - SETTINGS CONFIGURATION Comments.md
-
-**Total Archived**: 9+ files
 
 ---
 
@@ -263,8 +278,9 @@ See [archive/README.md](archive/README.md) for archival policy.
 
 **Configuration & Settings**:
 - [specs/SETTINGS_CONFIGURATION.md](specs/SETTINGS_CONFIGURATION.md) - 11 settings categories
-- [CONFIGURABLE_MODEL_ASSIGNMENTS.md](CONFIGURABLE_MODEL_ASSIGNMENTS.md) - Model configuration
-- [PHASE_3E_QUICK_START.md](PHASE_3E_QUICK_START.md) - Phase 3E quick start
+- [guides/MODEL_CONFIGURATION.md](guides/MODEL_CONFIGURATION.md) - Model configuration
+- [guides/MODEL_ORCHESTRATION_QUICK_START.md](guides/MODEL_ORCHESTRATION_QUICK_START.md) - Model Orchestrator quick start
+- [guides/SETTINGS_SYSTEM.md](guides/SETTINGS_SYSTEM.md) - Settings system guide
 
 **Architecture & Planning**:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Main architecture (includes UI/UX strategy)
@@ -300,7 +316,7 @@ See [archive/README.md](archive/README.md) for archival policy.
 **Phase 3E** (Complete): Model Orchestration
 - [dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md](dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md)
 - [dev_logs/PHASE_3E_COMPLETION_SUMMARY.md](dev_logs/PHASE_3E_COMPLETION_SUMMARY.md)
-- [CONFIGURABLE_MODEL_ASSIGNMENTS.md](CONFIGURABLE_MODEL_ASSIGNMENTS.md)
+- [guides/MODEL_CONFIGURATION.md](guides/MODEL_CONFIGURATION.md)
 
 **Phase 4** (Planned): Multi-Model Tournament
 - [dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md](dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md)
@@ -313,53 +329,3 @@ See [archive/README.md](archive/README.md) for archival policy.
 - [04_roadmap.md](04_roadmap.md) section: Phase 6
 
 ---
-
-## 📊 Documentation Statistics
-
-**Total Files**: 58+ markdown files
-- **Root Level**: 14 files
-- **Specifications**: 16 files (~350K words)
-- **Development Logs**: 20 files (~200K words)
-- **Reference Materials**: 13+ folders
-- **Archived**: 9+ files
-
-**Total Word Count**: ~400K words
-
-**Documentation Coverage**:
-- ✅ **Architecture**: Complete
-- ✅ **Backend Services**: Complete (88 API endpoints documented)
-- ✅ **UI/UX Strategy**: Complete (87 components planned)
-- ✅ **Phase 3E (Model Orchestrator)**: Complete
-- 🚧 **Phase 3D (Graph Health)**: In Progress (4/7 checks)
-- 📋 **Phase 4 (Tournament)**: Planned
-- 🚧 **Phase 5 (UI)**: In Progress (Track 1 starting)
-
----
-
-## 🚀 Current Development Status
-
-**Active Phase**: Phase 5 (UI/UX Implementation) - Track 1 Critical UI
-**Parallel Work**: Phase 3D (Graph Health) - 3 remaining checks
-
-**Next Steps**:
-1. ✅ Documentation reorganization (Complete)
-2. ⏳ Push to GitHub
-3. ⏳ Start Track 1 UI Implementation (Week 1):
-   - SettingsAgents.svelte (API keys)
-   - SettingsOrchestrator.svelte (Quality tiers)
-   - MainLayout.svelte (4-panel IDE)
-   - ForemanChatPanel.svelte (Enhanced chat)
-   - StudioPanel.svelte (Mode cards)
-
-**Recommended Reading Order for New Contributors**:
-1. [ARCHITECTURE.md](ARCHITECTURE.md) - Understand the system
-2. [04_roadmap.md](04_roadmap.md) - See where we are
-3. [specs/UI_IMPLEMENTATION_PLAN_V2.md](specs/UI_IMPLEMENTATION_PLAN_V2.md) - Understand UI work ahead
-4. [BACKEND_SERVICES.md](BACKEND_SERVICES.md) - Understand backend APIs
-5. [dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md](dev_logs/PHASE_3_ORCHESTRATOR_COMPLETION.md) - Latest completed work
-
----
-
-**Last Updated**: November 25, 2025
-**Version**: 2.0 (Reorganized)
-**Maintained By**: Writers Factory Development Team

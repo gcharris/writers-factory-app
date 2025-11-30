@@ -29,6 +29,7 @@
   }
 
   function handleClick() {
+    console.log('[TreeNode] handleClick:', node.name, 'isDirectory:', node.isDirectory);
     openFile(node);
   }
 </script>

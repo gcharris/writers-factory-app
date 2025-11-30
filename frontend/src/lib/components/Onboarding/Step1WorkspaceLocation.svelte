@@ -2,43 +2,54 @@
   Step1WorkspaceLocation.svelte - Workspace Location Setup Step
 
   Purpose: Let users choose where their writing projects will be stored.
-  This is the first step before Local AI setup.
 
-  Flow:
-  1. Show default location (~/Documents/Writers Factory)
-  2. Let user browse for custom location
-  3. Validate the path is writable
-  4. Continue when a valid path is selected
+  Redesigned Flow:
+  1. Present a clear choice: Use default location OR choose custom
+  2. Default option is prominent with "Use Default" button
+  3. Custom option via "Choose Your Own" button
+  4. Only show confirmation after user makes a choice
 -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
-  import { open } from '@tauri-apps/plugin-dialog';
   import { workspacePath } from '$lib/stores';
 
   const BASE_URL = 'http://localhost:8000';
   const dispatch = createEventDispatcher();
 
+  // Tauri dialog (loaded dynamically)
+  let tauriDialog: any = null;
+  let isTauriAvailable = false;
+
   // State
+  type ViewState = 'choosing' | 'confirming';
+  let viewState: ViewState = 'choosing';
   let selectedPath: string = '';
   let validating = false;
   let pathValid = false;
   let error = '';
   let defaultPath = '';
 
-  // Check if path is valid
+  // Check if ready to continue
   $: isReady = selectedPath && pathValid && !validating;
 
   onMount(async () => {
+    // Try to load Tauri dialog API
+    try {
+      tauriDialog = await import('@tauri-apps/plugin-dialog');
+      isTauriAvailable = true;
+    } catch (e) {
+      console.log('Tauri dialog not available');
+      isTauriAvailable = false;
+    }
+
     // Get the default workspace path from backend
     await getDefaultPath();
 
-    // Check if we already have a saved workspace path
+    // If we already have a saved workspace path, go to confirm state
     if ($workspacePath) {
       selectedPath = $workspacePath;
       await validatePath(selectedPath);
-    } else if (defaultPath) {
-      selectedPath = defaultPath;
-      await validatePath(defaultPath);
+      viewState = 'confirming';
     }
   });
 
@@ -51,8 +62,8 @@
       }
     } catch (e) {
       console.warn('Failed to get default workspace path:', e);
-      // Fallback - will be set by backend
-      defaultPath = '';
+      // Fallback
+      defaultPath = '~/Documents/Writers Factory';
     }
   }
 
@@ -91,9 +102,22 @@
     }
   }
 
+  async function useDefaultLocation() {
+    if (defaultPath) {
+      selectedPath = defaultPath;
+      await validatePath(defaultPath);
+      viewState = 'confirming';
+    }
+  }
+
   async function browseFolder() {
+    if (!isTauriAvailable || !tauriDialog) {
+      error = 'Folder picker requires the desktop app';
+      return;
+    }
+
     try {
-      const selected = await open({
+      const selected = await tauriDialog.open({
         directory: true,
         multiple: false,
         title: 'Choose Workspace Location'
@@ -102,6 +126,7 @@
       if (selected && typeof selected === 'string') {
         selectedPath = selected;
         await validatePath(selected);
+        viewState = 'confirming';
       }
     } catch (e) {
       console.error('Failed to open folder dialog:', e);
@@ -109,19 +134,44 @@
     }
   }
 
-  async function useDefaultPath() {
-    if (defaultPath) {
-      selectedPath = defaultPath;
-      await validatePath(defaultPath);
-    }
+  function changeLocation() {
+    viewState = 'choosing';
+    error = '';
   }
 
-  function handleContinue() {
-    if (isReady) {
-      // Save the workspace path to the store
+  async function handleContinue() {
+    if (!isReady) return;
+
+    // Create the directory if it doesn't exist yet
+    validating = true;
+    error = '';
+
+    try {
+      const response = await fetch(`${BASE_URL}/system/workspace/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: selectedPath, create_if_missing: true })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to create workspace');
+      }
+
+      const result = await response.json();
+      if (!result.valid) {
+        error = result.error || 'Failed to create workspace directory';
+        return;
+      }
+
+      // Success - save the workspace path and proceed
       workspacePath.set(selectedPath);
       dispatch('complete', { path: selectedPath });
       dispatch('next');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to create workspace';
+    } finally {
+      validating = false;
     }
   }
 
@@ -146,44 +196,62 @@
   </div>
 
   <div class="workspace-content">
-    <!-- Current Selection -->
-    <div class="path-display {pathValid ? 'valid' : error ? 'invalid' : ''}">
-      <div class="path-icon">
-        {#if validating}
-          <div class="spinner"></div>
-        {:else if pathValid}
-          <span class="check">✓</span>
-        {:else if error}
-          <span class="error-icon">✗</span>
-        {:else}
-          <span class="folder-icon">📁</span>
-        {/if}
-      </div>
-      <div class="path-text">
-        {#if selectedPath}
-          <span class="path-value">{formatPath(selectedPath)}</span>
-        {:else}
-          <span class="path-placeholder">No location selected</span>
-        {/if}
-      </div>
-    </div>
-
-    {#if error}
-      <div class="error-message">{error}</div>
-    {/if}
-
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <button class="btn-primary" on:click={browseFolder}>
-        <span class="btn-icon">📂</span>
-        Browse...
-      </button>
-      {#if defaultPath && selectedPath !== defaultPath}
-        <button class="btn-secondary" on:click={useDefaultPath}>
-          Use Default Location
+    {#if viewState === 'choosing'}
+      <!-- Choice View: Two clear options -->
+      <div class="choice-section">
+        <!-- Default Location Option -->
+        <button class="choice-card primary" on:click={useDefaultLocation}>
+          <div class="choice-icon">📁</div>
+          <div class="choice-content">
+            <h3>Use Default Location</h3>
+            <p class="choice-path">{formatPath(defaultPath || '~/Documents/Writers Factory')}</p>
+            <p class="choice-hint">Recommended - we'll create this folder for you</p>
+          </div>
+          <div class="choice-arrow">→</div>
         </button>
+
+        <!-- Custom Location Option -->
+        <button class="choice-card secondary" on:click={browseFolder} disabled={!isTauriAvailable}>
+          <div class="choice-icon">🔍</div>
+          <div class="choice-content">
+            <h3>Choose Your Own Location</h3>
+            <p class="choice-hint">Select an existing folder or create a new one</p>
+          </div>
+          <div class="choice-arrow">→</div>
+        </button>
+      </div>
+
+      {#if error}
+        <div class="error-message">{error}</div>
       {/if}
-    </div>
+    {:else}
+      <!-- Confirmation View: Show selected path -->
+      <div class="confirmation-section">
+        <div class="path-display valid">
+          <div class="path-icon">
+            {#if validating}
+              <div class="spinner"></div>
+            {:else if pathValid}
+              <span class="check">✓</span>
+            {:else}
+              <span class="error-icon">✗</span>
+            {/if}
+          </div>
+          <div class="path-text">
+            <span class="path-label">Your workspace:</span>
+            <span class="path-value">{formatPath(selectedPath)}</span>
+          </div>
+        </div>
+
+        {#if error}
+          <div class="error-message">{error}</div>
+        {/if}
+
+        <button class="btn-change" on:click={changeLocation}>
+          Choose a different location
+        </button>
+      </div>
+    {/if}
 
     <!-- Info Box -->
     <div class="info-box">
@@ -202,7 +270,7 @@
 
   <!-- Navigation -->
   <div class="step-actions">
-    <div></div> <!-- Spacer for alignment -->
+    <div></div>
     <button
       class="btn-primary"
       on:click={handleContinue}
@@ -216,7 +284,7 @@
 
 <style>
   .step-workspace {
-    max-width: 500px;
+    max-width: 520px;
     margin: 0 auto;
   }
 
@@ -238,31 +306,102 @@
     font-size: 1rem;
   }
 
-  /* Workspace Content */
   .workspace-content {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
 
-  /* Path Display */
+  /* Choice Cards */
+  .choice-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .choice-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-primary, #0f1419);
+    border: 2px solid var(--border, #2d3a47);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+  }
+
+  .choice-card:hover:not(:disabled) {
+    border-color: var(--accent-cyan, #00d9ff);
+    background: rgba(0, 217, 255, 0.05);
+  }
+
+  .choice-card:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .choice-card.primary {
+    border-color: var(--accent-cyan, #00d9ff);
+    background: rgba(0, 217, 255, 0.08);
+  }
+
+  .choice-icon {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+  }
+
+  .choice-content {
+    flex: 1;
+  }
+
+  .choice-content h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .choice-path {
+    margin: 0 0 0.25rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    color: var(--accent-cyan, #00d9ff);
+  }
+
+  .choice-hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #6e7681);
+  }
+
+  .choice-arrow {
+    font-size: 1.5rem;
+    color: var(--text-muted, #6e7681);
+    flex-shrink: 0;
+  }
+
+  .choice-card:hover .choice-arrow {
+    color: var(--accent-cyan, #00d9ff);
+  }
+
+  /* Confirmation Section */
+  .confirmation-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
   .path-display {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem 1.25rem;
+    padding: 1.25rem;
     background: var(--bg-primary, #0f1419);
-    border: 2px solid var(--border, #2d3a47);
+    border: 2px solid var(--success, #3fb950);
     border-radius: 8px;
-    transition: border-color 0.2s;
-  }
-
-  .path-display.valid {
-    border-color: var(--success, #3fb950);
-  }
-
-  .path-display.invalid {
-    border-color: var(--error, #f85149);
   }
 
   .path-icon {
@@ -300,7 +439,16 @@
 
   .path-text {
     flex: 1;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .path-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6e7681);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .path-value {
@@ -310,9 +458,21 @@
     word-break: break-all;
   }
 
-  .path-placeholder {
+  .btn-change {
+    align-self: flex-start;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: 6px;
     color: var(--text-secondary, #8b949e);
-    font-style: italic;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-change:hover {
+    border-color: var(--accent-cyan, #00d9ff);
+    color: var(--accent-cyan, #00d9ff);
   }
 
   /* Error Message */
@@ -323,17 +483,6 @@
     border-radius: 6px;
     color: var(--error, #f85149);
     font-size: 0.875rem;
-  }
-
-  /* Action Buttons */
-  .action-buttons {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-icon {
-    margin-right: 0.5rem;
   }
 
   /* Info Box */
@@ -400,23 +549,6 @@
   .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    color: var(--text-secondary, #8b949e);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background: var(--bg-tertiary, #242d38);
-    border-color: var(--accent-cyan, #00d9ff);
-    color: var(--accent-cyan, #00d9ff);
   }
 
   .arrow {

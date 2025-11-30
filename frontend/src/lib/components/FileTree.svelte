@@ -8,18 +8,20 @@
   - No automatic categorization - trust the writer to organize their files
 -->
 <script>
-  import { open } from '@tauri-apps/plugin-dialog';
-  import { readDir } from '@tauri-apps/plugin-fs';
-  import { editorContent, activeFile } from '$lib/stores';
+  import { editorContent, activeFile, workspacePath } from '$lib/stores';
   import { onMount } from 'svelte';
   import TreeNode from './TreeNode.svelte';
+
+  // Dynamically import Tauri APIs (only available in Tauri runtime)
+  let tauriDialog = null;
+  let tauriFs = null;
+  let isTauriAvailable = false;
 
   export let selectedFile = "";
   let fileTree = null;
   let currentPath = "";
   let errorMsg = "";
   let isLoadingFile = false;  // Loading state for file operations
-  const STORAGE_KEY = "last_project_path";
 
   // Track expanded folders by path (use object for Svelte reactivity)
   let expandedFolders = {};
@@ -27,15 +29,46 @@
   $: selectedFile = $activeFile;
 
   onMount(async () => {
-    const savedPath = localStorage.getItem(STORAGE_KEY);
-    if (savedPath) {
-      await loadProject(savedPath);
+    // Check if we're actually running in Tauri (not just browser)
+    // @ts-ignore - __TAURI_INTERNALS__ only exists in Tauri runtime
+    const inTauriRuntime = typeof window !== 'undefined' && window.__TAURI_INTERNALS__;
+
+    if (!inTauriRuntime) {
+      console.log('Not in Tauri runtime - running in browser mode');
+      isTauriAvailable = false;
+      return;  // Don't try to load Tauri APIs or saved projects
+    }
+
+    // We're in Tauri - load the APIs
+    try {
+      tauriDialog = await import('@tauri-apps/plugin-dialog');
+      tauriFs = await import('@tauri-apps/plugin-fs');
+      isTauriAvailable = true;
+
+      // Load saved project if available (check workspacePath store first, then legacy key)
+      const savedPath = $workspacePath || localStorage.getItem('last_project_path');
+      if (savedPath) {
+        await loadProject(savedPath);
+      }
+    } catch (e) {
+      console.log('Failed to load Tauri APIs:', e);
+      isTauriAvailable = false;
     }
   });
 
+  // React to workspace path changes (e.g., from onboarding wizard)
+  $: if ($workspacePath && isTauriAvailable && $workspacePath !== currentPath) {
+    loadProject($workspacePath);
+  }
+
   async function openProjectDialog() {
+    if (!isTauriAvailable || !tauriDialog) {
+      errorMsg = "File dialog requires the desktop app. Run: npm run tauri dev";
+      return;
+    }
+
     try {
-      const selected = await open({ directory: true, multiple: false });
+      const selected = await tauriDialog.open({ directory: true, multiple: false });
       if (selected) {
         await loadProject(selected);
       }
@@ -45,17 +78,24 @@
   }
 
   async function loadProject(path) {
+    if (!isTauriAvailable || !tauriFs) {
+      errorMsg = "File access requires the desktop app. Run: npm run tauri dev";
+      return;
+    }
+
     currentPath = path;
     errorMsg = "";
-    localStorage.setItem(STORAGE_KEY, path);
+    // Sync to workspacePath store (this also persists to localStorage via persistentWritable)
+    workspacePath.set(path);
 
     try {
-      const entries = await readDir(path, { recursive: true });
+      const entries = await tauriFs.readDir(path, { recursive: true });
       fileTree = buildTree(entries, path);
       // Auto-expand root
       expandedFolders = { ...expandedFolders, [path]: true };
+      console.log('[FileTree] Loaded project:', path, 'with', entries.length, 'entries');
     } catch (e) {
-      console.error(e);
+      console.error('[FileTree] Failed to load project:', e);
       errorMsg = "Cannot read folder. Check permissions.";
       fileTree = null;
     }
@@ -108,11 +148,15 @@
   function toggleFolder(node) {
     if (!node.isDirectory) return;
 
+    console.log('[FileTree] toggleFolder called:', node.path, 'currently expanded:', !!expandedFolders[node.path]);
+
     if (expandedFolders[node.path]) {
       const { [node.path]: _, ...rest } = expandedFolders;
       expandedFolders = rest;
+      console.log('[FileTree] Collapsed folder, expandedFolders now:', Object.keys(expandedFolders));
     } else {
       expandedFolders = { ...expandedFolders, [node.path]: true };
+      console.log('[FileTree] Expanded folder, expandedFolders now:', Object.keys(expandedFolders));
     }
   }
 
@@ -196,10 +240,15 @@
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
         </svg>
       </div>
-      <button class="open-btn" on:click={openProjectDialog}>
-        Open Project Folder
-      </button>
-      <p class="empty-hint">Select your content folder to begin</p>
+      {#if isTauriAvailable}
+        <button class="open-btn" on:click={openProjectDialog}>
+          Open Project Folder
+        </button>
+        <p class="empty-hint">Select your content folder to begin</p>
+      {:else}
+        <!-- Browser mode: file browser disabled, chat still works -->
+        <p class="empty-hint">Desktop app required</p>
+      {/if}
     </div>
   {/if}
 </div>

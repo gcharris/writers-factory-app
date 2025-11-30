@@ -15,16 +15,11 @@
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
     foremanWorkOrder, foremanChatHistory, activeModal, activeFile,
     assistantName, currentStage, assistantSettings,
-    showWorkOrderHistory, cancelWorkOrder
   } from '$lib/stores';
-  import AgentDropdown from './chat/AgentDropdown.svelte';
-  import StageDropdown from './chat/StageDropdown.svelte';
+  import ModelSelector from './chat/ModelSelector.svelte';
   import MentionPicker from './chat/MentionPicker.svelte';
-  import AttachButton from './chat/AttachButton.svelte';
   import ContextBadge from './chat/ContextBadge.svelte';
   import VoiceInput from './chat/VoiceInput.svelte';
-  import StatusBar from './chat/StatusBar.svelte';
-  import WorkOrderHistory from './chat/WorkOrderHistory.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -37,16 +32,33 @@
 
   // Enhanced input state
   let showMentionMenu = false;
-  let selectedAgent = 'default';
   let contextItems = []; // Array of { type, name, id?, path?, content? }
+  let isDragOver = false; // For drag-drop file support
   let inputRef;
+  let fileInputRef; // Hidden file input for + button
   let interimTranscript = ""; // Live voice preview
+  let chatMessagesRef; // Reference to chat container for auto-scroll
+
+  // Auto-scroll to bottom when messages change
+  function scrollToBottom() {
+    if (chatMessagesRef) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        chatMessagesRef.scrollTop = chatMessagesRef.scrollHeight;
+      }, 0);
+    }
+  }
 
   // Sync messages with Foreman chat history
   $: {
     if ($foremanChatHistory.length > 0) {
       messages = $foremanChatHistory;
     }
+  }
+
+  // Auto-scroll when messages array changes
+  $: if (messages.length > 0) {
+    scrollToBottom();
   }
 
   // Track if we have an active project
@@ -60,6 +72,25 @@
         role: 'system',
         text: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
       }];
+    }
+    // Scroll to bottom after initial load
+    scrollToBottom();
+
+    // DEBUG: Log focus/blur events for dictation troubleshooting
+    if (inputRef) {
+      inputRef.addEventListener('focus', () => {
+        console.log('[Dictation Debug] Input FOCUSED');
+        console.log('[Dictation Debug] contenteditable:', inputRef.getAttribute('contenteditable'));
+        console.log('[Dictation Debug] computed styles:', {
+          userSelect: getComputedStyle(inputRef).userSelect,
+          webkitUserSelect: getComputedStyle(inputRef).webkitUserSelect,
+          webkitUserModify: getComputedStyle(inputRef).webkitUserModify,
+          pointerEvents: getComputedStyle(inputRef).pointerEvents,
+        });
+      });
+      inputRef.addEventListener('blur', () => {
+        console.log('[Dictation Debug] Input BLURRED');
+      });
     }
   });
 
@@ -151,7 +182,7 @@
 
       // Use context-aware chat if we have context items
       const data = context.length > 0
-        ? await apiClient.foremanChatWithContext(currentInput, context, selectedAgent)
+        ? await apiClient.foremanChatWithContext(currentInput, context)
         : await apiClient.foremanChat(currentInput);
 
       console.log('[ForemanPanel] Response:', data);
@@ -209,6 +240,11 @@
   function handleContentEditableInput(e) {
     // Get text content from contenteditable div
     input = e.target.textContent || '';
+
+    // Detect @ to trigger mention menu (Cursor-style)
+    if (e.inputType === 'insertText' && e.data === '@') {
+      showMentionMenu = true;
+    }
   }
 
   // Handle paste in contenteditable - strip formatting
@@ -247,18 +283,6 @@
   // ============================================
   function openNotebook() {
     activeModal.set('notebooklm');
-  }
-
-  function openStudio() {
-    activeModal.set('studio-tools');
-  }
-
-  function openGraph() {
-    activeModal.set('graph-viewer');
-  }
-
-  function openSettings() {
-    activeModal.set('settings');
   }
 
   function openSessions() {
@@ -345,17 +369,50 @@
     contextItems = contextItems.filter(c => c.type !== 'active-file');
   }
 
-  function handleAttachment(e) {
-    const attachment = e.detail;
-    // Add attachment to context
-    contextItems = [...contextItems, {
-      type: attachment.type,
-      name: attachment.name,
-      content: attachment.content,
-      size: attachment.size,
-      mimeType: attachment.mimeType,
-      removable: true
-    }];
+  // Drag-drop handlers for files from binder
+  function handleDragOver(e) {
+    e.preventDefault();
+    isDragOver = true;
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    isDragOver = false;
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    isDragOver = false;
+
+    // First try: Get file data from binder (FileTree component)
+    const fileData = e.dataTransfer?.getData('application/json');
+    if (fileData) {
+      try {
+        const file = JSON.parse(fileData);
+        contextItems = [...contextItems, {
+          type: 'file',
+          name: file.name,
+          path: file.path,
+          removable: true
+        }];
+        return;
+      } catch (err) {
+        console.warn('Failed to parse binder file data:', err);
+      }
+    }
+
+    // Second try: Native file drop from Finder
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      for (const file of files) {
+        contextItems = [...contextItems, {
+          type: 'file',
+          name: file.name,
+          path: file.path || file.name, // file.path may not be available in browser
+          removable: true
+        }];
+      }
+    }
   }
 
   function handleMentionSelect(e) {
@@ -389,15 +446,6 @@
     contextItems = contextItems.filter((_, i) => i !== index);
   }
 
-  function handleAgentChange(e) {
-    selectedAgent = e.detail.agent;
-  }
-
-  function openAgentSettings() {
-    activeModal.set('settings');
-    // TODO: Navigate to Squad tab
-  }
-
   // Voice input handlers
   function handleVoiceResult(e) {
     const { transcript } = e.detail;
@@ -429,24 +477,43 @@
     messages = [...messages, errorMsg];
   }
 
-  function toggleMentionMenu() {
-    showMentionMenu = !showMentionMenu;
+  // File picker functions
+  function openFilePicker() {
+    fileInputRef?.click();
   }
 
-  // Work order handlers
-  function openWorkOrderHistory() {
-    showWorkOrderHistory.set(true);
-  }
-
-  function handleCancelTask(e) {
-    const { id } = e.detail;
-    if (confirm('Cancel this task?')) {
-      cancelWorkOrder(id);
+  function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      for (const file of files) {
+        contextItems = [...contextItems, {
+          type: 'file',
+          name: file.name,
+          path: file.name, // Browser doesn't expose full path for security
+          removable: true
+        }];
+      }
     }
+    // Reset input so same file can be selected again
+    e.target.value = '';
   }
 
-  function closeWorkOrderHistory() {
-    showWorkOrderHistory.set(false);
+  // Slash commands - insert "/" and focus input
+  function openSlashMenu() {
+    // Insert "/" into the input field
+    input = '/';
+    if (inputRef) {
+      inputRef.textContent = '/';
+      inputRef.focus();
+      // Move cursor to end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(inputRef);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+    // TODO: Could show a command picker menu here in the future
   }
 </script>
 
@@ -456,16 +523,18 @@
     <!-- Minimal Chat Header -->
     <div class="foreman-header">
       <div class="header-left">
-        <span class="header-title">{$assistantName}</span>
+        <span class="header-title">I'm {$assistantName}</span>
+        <span class="header-subtitle">your writing assistant</span>
       </div>
 
       <div class="header-right">
         <!-- New Chat Button -->
-        <button class="header-btn" on:click={clearChat} title="New Chat">
+        <button class="header-btn new-chat-btn" on:click={clearChat} title="Start New Chat">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
+          <span class="btn-label">New</span>
         </button>
 
         <!-- Chat History Button -->
@@ -518,7 +587,7 @@
     {/if}
 
     <!-- Chat Messages -->
-      <div class="chat-messages">
+      <div class="chat-messages" bind:this={chatMessagesRef}>
         {#each messages as msg, i}
           <div class="message {msg.role}">
             {#if msg.role === 'user'}
@@ -598,99 +667,95 @@
         {/if}
       </div>
 
-      <!-- Enhanced Chat Input -->
-      <div class="chat-input-enhanced">
-        <!-- Top Row: Dropdowns -->
-        <div class="input-controls">
-          <AgentDropdown
-            {selectedAgent}
-            on:change={handleAgentChange}
-            on:configure={openAgentSettings}
-          />
-          {#if $assistantSettings.showStage}
-            <StageDropdown on:change />
+      <!-- Chat Input (Cursor-style: full-width box with controls below) -->
+      <div class="chat-input-area">
+        <!-- Main Input Box - clicking anywhere focuses input -->
+        <div
+          class="chat-input-box"
+          class:drag-over={isDragOver}
+          on:dragover={handleDragOver}
+          on:dragleave={handleDragLeave}
+          on:drop={handleDrop}
+          on:click={() => inputRef?.focus()}
+        >
+          <!-- Context badges row (only if files attached) -->
+          {#if contextItems.length > 0}
+            <div class="badges-row">
+              <ContextBadge items={contextItems} on:remove={removeContextItem} compact />
+            </div>
           {/if}
-        </div>
 
-        <!-- Context Badges -->
-        <ContextBadge items={contextItems} on:remove={removeContextItem} />
+          <!-- Text input - starts at top left -->
+          <div
+            bind:this={inputRef}
+            class="chat-input-editable"
+            contenteditable={!isLoading}
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Message input"
+            data-placeholder="Type your message..."
+            on:input={handleContentEditableInput}
+            on:keydown={handleKeydown}
+            on:paste={handlePaste}
+            spellcheck="true"
+          ></div>
 
-        <!-- Input Row -->
-        <div class="input-row">
-          <div class="input-toolbar">
-            <button
-              class="toolbar-btn mention-btn"
-              class:active={showMentionMenu}
-              on:click={toggleMentionMenu}
-              title="@mention files or context"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
-              </svg>
-            </button>
-
-            <AttachButton on:attach={handleAttachment} />
-          </div>
-
-          <div class="input-field-wrapper">
-            <!-- Using contenteditable div for better Mac dictation support in WKWebView -->
-            <div
-              bind:this={inputRef}
-              class="chat-input-editable"
-              contenteditable={!isLoading}
-              role="textbox"
-              aria-multiline="false"
-              aria-label="Message input"
-              data-placeholder="Ask {$assistantName}..."
-              on:input={handleContentEditableInput}
-              on:keydown={handleKeydown}
-              on:paste={handlePaste}
-              spellcheck="true"
-            ></div>
-
-            <!-- Mention Picker (positioned above input) -->
-            <MentionPicker
-              bind:open={showMentionMenu}
-              on:select={handleMentionSelect}
-              on:close={() => showMentionMenu = false}
-            />
-          </div>
-
-          <div class="input-actions">
+          <!-- Actions floating top-right -->
+          <div class="input-actions-float">
             <VoiceInput
               disabled={isLoading}
               on:result={handleVoiceResult}
               on:interim={handleVoiceInterim}
               on:error={handleVoiceError}
             />
-
             <button
               class="send-btn"
-              on:click={sendMessage}
+              on:click|stopPropagation={sendMessage}
               disabled={isLoading || !input.trim()}
+              title="Send message"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
             </button>
           </div>
+
+          <!-- Mention Picker -->
+          <MentionPicker
+            bind:open={showMentionMenu}
+            on:select={handleMentionSelect}
+            on:close={() => showMentionMenu = false}
+          />
+        </div>
+
+        <!-- Controls row BELOW the input box -->
+        <div class="input-controls-row">
+          <ModelSelector />
+          <button class="control-btn" on:click={() => showMentionMenu = true} title="Add context (@)">
+            <span class="control-icon">@</span>
+          </button>
+          <button class="control-btn" on:click={openSlashMenu} title="Commands (/)">
+            <span class="control-icon">/</span>
+          </button>
+          <button class="control-btn" on:click={openFilePicker} title="Attach file from disk">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <!-- Hidden file input -->
+          <input
+            type="file"
+            bind:this={fileInputRef}
+            on:change={handleFileSelect}
+            style="display: none;"
+            multiple
+          />
         </div>
       </div>
-
-      <!-- Status Bar (bottom of panel) -->
-      <StatusBar
-        on:open-history={openWorkOrderHistory}
-        on:cancel-task={handleCancelTask}
-      />
   </div>
 </div>
-
-<!-- Work Order History Modal -->
-{#if $showWorkOrderHistory}
-  <WorkOrderHistory on:close={closeWorkOrderHistory} />
-{/if}
 
 <style>
   .foreman-panel {
@@ -736,6 +801,32 @@
     font-size: var(--text-sm);
     font-weight: var(--font-semibold);
     color: var(--text-primary);
+  }
+
+  .header-subtitle {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .header-btn.new-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .header-btn.new-chat-btn:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+  }
+
+  .btn-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
   }
 
   .foreman-avatar {
@@ -1016,8 +1107,10 @@
     color: var(--text-secondary);
   }
 
-  /* Enhanced Chat Input */
-  .chat-input-enhanced {
+  /* ============================================
+   * CHAT INPUT AREA (Cursor-style)
+   * ============================================ */
+  .chat-input-area {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -1026,66 +1119,54 @@
     border-top: 1px solid var(--border);
   }
 
-  .input-controls {
+  /* Main input box with border - shallow, expands as needed */
+  .chat-input-box {
+    position: relative;
     display: flex;
-    gap: var(--space-2);
+    flex-direction: column;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    padding-right: 80px; /* Space for floating actions */
+    min-height: 40px;
+    cursor: text;
+    transition: border-color 0.2s, background-color 0.2s;
   }
 
-  .input-row {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--space-2);
+  .chat-input-box:focus-within {
+    border-color: var(--accent-cyan);
   }
 
-  .input-toolbar,
-  .input-actions {
+  .chat-input-box.drag-over {
+    border-color: var(--accent-cyan);
+    background: var(--bg-elevated);
+  }
+
+  /* Badges row - only shown when items present */
+  .badges-row {
+    margin-bottom: var(--space-1);
+  }
+
+  /* Actions floating top-right */
+  .input-actions-float {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
     display: flex;
     gap: var(--space-1);
   }
 
-  .input-field-wrapper {
-    flex: 1;
-    position: relative;
-  }
-
-  .toolbar-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .toolbar-btn:hover {
-    background: var(--bg-secondary);
-    border-color: var(--border-strong);
-    color: var(--text-secondary);
-  }
-
-  .toolbar-btn.mention-btn.active {
-    background: var(--accent-cyan-muted);
-    border-color: var(--accent-cyan);
-    color: var(--accent-cyan);
-  }
-
   /* Contenteditable div for better Mac dictation support */
   .chat-input-editable {
-    flex: 1;
-    padding: var(--space-2);
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    width: 100%;
+    background: transparent;
+    border: none;
     color: var(--text-primary);
     font-size: var(--text-sm);
     font-family: var(--font-ui);
-    min-height: 36px;
-    max-height: 100px;
+    min-height: 20px;
+    max-height: 120px;
     overflow-y: auto;
     outline: none;
     /* Critical for dictation support */
@@ -1093,10 +1174,6 @@
     user-select: text;
     -webkit-user-modify: read-write;
     cursor: text;
-  }
-
-  .chat-input-editable:focus {
-    border-color: var(--accent-cyan);
   }
 
   /* Placeholder via data attribute */
@@ -1111,21 +1188,46 @@
     cursor: not-allowed;
   }
 
-  .chat-input-enhanced textarea:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
+  /* Controls row below the input box */
+  .input-controls-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-top: var(--space-1);
   }
 
-  .chat-input-enhanced textarea::placeholder {
+  .control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
     color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
   }
 
+  .control-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+  }
+
+  .control-icon {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+  }
+
+  /* Send button */
   .send-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     background: var(--accent-cyan);
     border: none;
     border-radius: var(--radius-md);
