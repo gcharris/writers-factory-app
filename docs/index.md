@@ -8,21 +8,7 @@
 
 Before you install the software, understand what we are building. We are not just writing a novel; we are engineering a synthetic cognitive system.
 
-### [👉 Read the Manifesto: The Cyborg Novelist](manifesto)
-
-*Understanding the difference between "Chatting with AI" and "Engineering a Muse."*
-
-### [👉 Read the Writer's Journey](journey)
-
-*The complete creative workflow from research to polished novel.*
-
-### [👉 Meet the Agents: Model Intelligence Guide](agents)
-
-*An overview of the different AI models (Claude, GPT, DeepSeek, etc.) and how they think.*
-
-### [👉 Read the Full Course Proposal](course_proposal)
-
-*The detailed academic proposal, learning outcomes, and day-by-day breakdown.*
+Use the links in the sidebar to read the **Manifesto**, explore the **Writer's Journey**, and meet the **Agents**.
 
 ---
 
