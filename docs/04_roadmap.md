@@ -439,3 +439,21 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 ---
 
 *Roadmap last updated: 2025-11-27 by Claude Code*
+
+## Phase 6: The Publisher (Planned)
+**Goal:** Turn the manuscript into a shippable product.
+
+### 1. The Compiler
+- [ ] **Pandoc Pipeline:** Markdown -> PDF/EPUB conversion service.
+- [ ] **Typesetting Engine:** CSS/LaTeX templates for professional formatting.
+- [ ] **Front Matter Generator:** Auto-create Title Page, Copyright, TOC.
+
+### 2. The Art Department
+- [ ] **Cover Concept Agent:** Analyzes Story Bible to suggest visual metaphors.
+- [ ] **Prompt Builder:** Converts concepts into Midjourney/DALL-E prompts.
+- [ ] **Image Generator:** API integration for generation.
+- [ ] **Title Compositor:** Overlay text on images.
+
+### 3. Release Automation
+- [ ] **Showcase Builder:** Auto-generate PRs for the student showcase.
+- [ ] **Release Packager:** Zip artifacts for download.

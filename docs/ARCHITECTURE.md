@@ -644,12 +644,34 @@ The UI implementation follows a strategic 3-track approach that enables immediat
 
 **See**: [UI/UX Implementation Strategy](#uiux-implementation-strategy) section above for complete details.
 
-### Phase 6: Polish & Release (Planned)
-- [ ] Packaging (`.dmg` / `.exe` installers)
-- [ ] Optimizations (lazy loading for large graphs)
-- [ ] Plugins (external agent registry)
-- [ ] Documentation (user guides, quick start tutorials)
-- [ ] Testing (end-to-end workflow validation)
+### Phase 6: The Publisher (Export & Production)
+*Planned Feature Set*
+
+**Goal:** Turn the folder of Markdown files into a professional industry-standard novel (PDF/EPUB) with cover art.
+
+#### 1. The Compiler (Pandoc Integration)
+- **Input:** `content/Manuscript/**/*.md` (Ordered by structure)
+- **Processing:**
+    - Concatenation of scenes into chapters
+    - Smart typography (quotes, em-dashes) via Pandoc
+    - Front matter generation (Title Page, Copyright, Dedication)
+- **Output:**
+    - **PDF:** Typeset with LaTeX/WeasyPrint (Garamond/Caslon fonts, proper margins)
+    - **EPUB:** Validated e-book for Kindle/Apple Books
+    - **Docx:** For traditional editor collaboration
+
+#### 2. The Art Department (Cover Generation)
+- **AI Integration:** DALL-E 3 / Midjourney / Stable Diffusion
+- **Workflow:**
+    1. **Concept Extraction:** LLM reads `03_Premise.md` + `04_Theme.md` -> Suggests visual concepts.
+    2. **Prompt Engineering:** "Director" agent converts concepts into high-fidelity image prompts.
+    3. **Generation:** User selects style (Noir, Oil Painting, Minimalist) -> System calls API.
+    4. **Typography:** Overlay title/author text (using ImageMagick or HTML/CSS canvas).
+
+#### 3. The Release Manager
+- **Version Control:** Tagging the git commit as "v1.0"
+- **Packaging:** Zipping PDF + EPUB + Cover
+- **Showcase Update:** Auto-generating the entry for `docs/showcase.md` (Title, Blurb, Link)
 
 ---
 
