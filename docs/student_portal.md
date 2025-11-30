@@ -70,8 +70,8 @@ Welcome to the Writers Factory. Choose the path that matches your goals for the 
     * *Engineers:* Draft a technical proposal for a system improvement (e.g., "Better Graph Pruning").
 
 ### **Day 5: Showcase**
-* **Morning:** Final assembly.
-* **Afternoon:** Presentations (10 mins).
+*   **Morning:** Final assembly. [**👉 Submit Your Work**]({{ '/submission_guide' | relative_url }})
+*   **Afternoon:** Presentations (10 mins).
     * *Creative:* Premise + Reading.
     * *Technical:* Problem + Solution + Impact.
 

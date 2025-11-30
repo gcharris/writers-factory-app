@@ -9,6 +9,10 @@ title: Student Projects
 
 Here we celebrate the output of the Writers Factory. From completed novellas to critical system architecture upgrades, this is what our students have built in just one week.
 
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ '/submission_guide' | relative_url }}" style="background: #2ea44f; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">📤 Submit Your Project</a>
+</div>
+
 ---
 
 <!-- Community Showcase Section -->
