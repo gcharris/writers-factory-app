@@ -182,7 +182,8 @@ These are **complete, useful components** that just need to be integrated:
 | Component | Location | Reason |
 |-----------|----------|--------|
 | FileTree 2.svelte | components/ | Duplicate with space in name |
-| Step1LocalAI.svelte | Onboarding/ | Replaced by Step1WorkspaceLocation |
+
+**Note**: `Step1LocalAI.svelte` is NOT a duplicate - it's Step 2 (Ollama check), while `Step1WorkspaceLocation.svelte` is Step 1 (workspace folder). Both are needed.
 
 ### Editors (Alternative Implementations)
 
