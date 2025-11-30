@@ -281,10 +281,6 @@
   // ============================================
   // Header Button Functions
   // ============================================
-  function openNotebook() {
-    activeModal.set('notebooklm');
-  }
-
   function openSessions() {
     activeModal.set('session-manager');
   }
@@ -545,48 +541,6 @@
           </svg>
         </button>
 
-        <!-- Separator -->
-        <span class="header-separator"></span>
-
-        <!-- NotebookLM Button -->
-        <button class="header-btn" on:click={openNotebook} title="NotebookLM Research">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-          </svg>
-        </button>
-
-        <!-- Studio Tools Button -->
-        <button class="header-btn" on:click={openStudio} title="Studio Tools">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-            <polyline points="2 17 12 22 22 17"></polyline>
-            <polyline points="2 12 12 17 22 12"></polyline>
-          </svg>
-        </button>
-
-        <!-- Graph Button -->
-        <button class="header-btn" on:click={openGraph} title="Knowledge Graph">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <circle cx="4" cy="6" r="2"></circle>
-            <circle cx="20" cy="6" r="2"></circle>
-            <circle cx="4" cy="18" r="2"></circle>
-            <circle cx="20" cy="18" r="2"></circle>
-            <line x1="6" y1="6" x2="9.5" y2="10"></line>
-            <line x1="18" y1="6" x2="14.5" y2="10"></line>
-            <line x1="6" y1="18" x2="9.5" y2="14"></line>
-            <line x1="18" y1="18" x2="14.5" y2="14"></line>
-          </svg>
-        </button>
-
-        <!-- Settings Button -->
-        <button class="header-btn settings" on:click={openSettings} title="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
       </div>
     </div>
 

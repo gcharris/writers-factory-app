@@ -100,6 +100,7 @@
   // Mode colors
   const modeColors = {
     ARCHITECT: 'var(--mode-architect)',
+    VOICE: 'var(--mode-voice)',
     VOICE_CALIBRATION: 'var(--mode-voice)',
     DIRECTOR: 'var(--mode-director)',
     EDITOR: 'var(--mode-editor)'
@@ -110,6 +111,11 @@
     ARCHITECT: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
       <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>`,
+    VOICE: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <line x1="12" y1="19" x2="12" y2="23"></line>
     </svg>`,
     VOICE_CALIBRATION: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -160,46 +166,61 @@
         <span>Writers Factory</span>
       </div>
 
-      <!-- Mode Tabs (workflow stages - VOICE is a tool, not a stage) -->
-      {#if $foremanActive}
-        <nav class="mode-tabs">
-          {#each ['ARCHITECT', 'DIRECTOR', 'EDITOR'] as mode}
-            <button
-              class="mode-tab {$foremanMode === mode ? 'active' : ''}"
-              style="--mode-color: {modeColors[mode]}"
-              disabled={mode !== $foremanMode}
-            >
-              <span class="mode-icon">{@html modeIcons[mode]}</span>
-              <span class="mode-name">{mode}</span>
-            </button>
-          {/each}
-        </nav>
-      {/if}
+      <!-- Mode Tabs (workflow stages) -->
+      <nav class="mode-tabs">
+        {#each ['ARCHITECT', 'VOICE', 'DIRECTOR', 'EDITOR'] as mode}
+          <button
+            class="mode-tab {$foremanMode === mode ? 'active' : ''}"
+            style="--mode-color: {modeColors[mode]}"
+            disabled={mode !== $foremanMode}
+          >
+            <span class="mode-icon">{@html modeIcons[mode]}</span>
+            <span class="mode-name">{mode}</span>
+          </button>
+        {/each}
+      </nav>
     </div>
 
     <!-- Tools & Settings (RIGHT) -->
     <div class="toolbar-right">
+      <!-- NotebookLM Button -->
+      <button class="toolbar-tool-btn" on:click={() => activeModal.set('notebooklm')} title="NotebookLM Research">
+        <svg width="16" height="16" viewBox="0 0 106 78" fill="currentColor" stroke="none">
+          <path d="M52.96.1C23.71.1,0,23.61,0,52.62v25.15h9.76v-2.51c0-11.77,9.61-21.31,21.48-21.31s21.48,9.54,21.48,21.31v2.51h9.76v-2.51c0-17.11-13.99-30.98-31.24-30.98-6.72,0-12.94,2.1-18.03,5.69,5.33-10.51,16.31-17.73,28.99-17.73,17.91,0,32.43,14.41,32.43,32.16v13.36h9.76v-13.36c0-23.11-18.89-41.85-42.19-41.85-10.48,0-20.06,3.79-27.44,10.06,7.25-13.59,21.63-22.84,38.21-22.84,23.86,0,43.2,19.18,43.2,42.84v25.15h9.76v-25.15C105.92,23.61,82.21.1,52.96.1Z"></path>
+        </svg>
+        <span>NOTEBOOK</span>
+      </button>
+
       <!-- Studio Tools Button -->
       <button class="toolbar-tool-btn" on:click={() => activeModal.set('studio-tools')} title="Studio Tools">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l1.912 5.813a2 2 0 0 1 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 1-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 1-1.275-1.275L3 12l5.813-1.912a2 2 0 0 1 1.275-1.275L12 3Z" />
+          <path d="M5 3v4" />
+          <path d="M9 5H1" />
+          <path d="M20 21l2-2" />
+          <path d="M20 21l-2 2" />
+          <path d="M20 21l-2-2" />
+          <path d="M20 21l2 2" />
         </svg>
         <span>STUDIO</span>
       </button>
 
       <!-- Knowledge Graph Button -->
       <button class="toolbar-tool-btn" on:click={() => activeModal.set('graph-viewer')} title="Knowledge Graph">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <circle cx="19" cy="5" r="2"></circle>
-          <circle cx="5" cy="5" r="2"></circle>
-          <circle cx="19" cy="19" r="2"></circle>
-          <circle cx="5" cy="19" r="2"></circle>
-          <line x1="12" y1="9" x2="12" y2="5"></line>
-          <line x1="14.5" y1="13.5" x2="17" y2="17"></line>
-          <line x1="9.5" y1="13.5" x2="7" y2="17"></line>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v6" />
+          <path d="M12 15v6" />
+          <path d="M4.2 7.5l5.2 3" />
+          <path d="M14.6 13.5l5.2 3" />
+          <path d="M19.8 7.5l-5.2 3" />
+          <path d="M9.4 13.5l-5.2 3" />
+          <circle cx="12" cy="3" r="1.5" />
+          <circle cx="12" cy="21" r="1.5" />
+          <circle cx="4.2" cy="7.5" r="1.5" />
+          <circle cx="19.8" cy="7.5" r="1.5" />
+          <circle cx="4.2" cy="16.5" r="1.5" />
+          <circle cx="19.8" cy="16.5" r="1.5" />
         </svg>
         <span>GRAPH</span>
       </button>

@@ -201,33 +201,6 @@
       </div>
     </div>
 
-    <!-- Default System Model -->
-    <div class="section">
-      <h3>Default AI Model</h3>
-      <p class="section-desc">
-        Primary model used for strategic tasks when online. DeepSeek V3 offers excellent quality at low cost.
-      </p>
-
-      <div class="model-selector">
-        {#each availableModels as model}
-          <button
-            class="model-option {defaultModel === model.id ? 'selected' : ''}"
-            on:click={() => defaultModel = model.id}
-          >
-            <div class="model-info">
-              <span class="model-name">{model.name}</span>
-              <span class="model-tier tier-{model.tier}">{model.tier}</span>
-            </div>
-            <span class="model-cost">{model.cost}</span>
-          </button>
-        {/each}
-      </div>
-
-      <div class="model-note">
-        <strong>Note:</strong> When offline, the system automatically falls back to local models (Mistral/Llama).
-      </div>
-    </div>
-
     <!-- Context Window Settings -->
     <div class="section">
       <h3>Context Window</h3>

@@ -17,6 +17,7 @@
   import SettingsVoice from './Settings/SettingsVoice.svelte';
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
   import SettingsAssistant from './Settings/SettingsAssistant.svelte';
+  import SettingsModels from './Settings/SettingsModels.svelte';
   import OnboardingWizard from './Onboarding/OnboardingWizard.svelte';
   import { hasCompletedOnboarding } from '$lib/stores';
 
@@ -29,8 +30,9 @@
   // Tab order for writers
   const tabs = [
     { id: 'assistant', label: 'Assistant', icon: 'sparkles' },
-    { id: 'orchestrator', label: 'AI Model', icon: 'cpu' },
-    { id: 'agents', label: 'API Keys', icon: 'key', sublabel: 'Advanced' },
+    { id: 'orchestrator', label: 'Orchestrator', icon: 'cpu' },
+    { id: 'agents', label: 'API Keys', icon: 'key' },
+    { id: 'models', label: 'AI Model Configuration', icon: 'layers' },
     { id: 'voice', label: 'Voice', icon: 'mic' },
     { id: 'advanced', label: 'Advanced', icon: 'settings' },
     { id: 'setup', label: 'Re-run Setup Wizard', icon: 'wand', action: 'openSetupWizard' },
@@ -82,6 +84,11 @@
       <path d="M17.8 6.2L19 5"></path>
       <path d="m3 21 9-9"></path>
       <path d="M12.2 6.2L11 5"></path>
+    </svg>`,
+    layers: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+      <polyline points="2 17 12 22 22 17"></polyline>
+      <polyline points="2 12 12 17 22 12"></polyline>
     </svg>`
   };
 
@@ -140,6 +147,8 @@
       <SettingsOrchestrator />
     {:else if activeTab === 'agents'}
       <SettingsAgents />
+    {:else if activeTab === 'models'}
+      <SettingsModels />
     {:else if activeTab === 'voice'}
       <SettingsVoice />
     {:else if activeTab === 'advanced'}
