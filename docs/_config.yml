@@ -1,0 +1,9 @@
+exclude:
+  - claude-skills
+  - dev_logs
+  - planning theories
+  - archive
+  - tasks
+  - specs
+  - status
+  - reference
