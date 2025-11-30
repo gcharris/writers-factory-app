@@ -11,3 +11,4 @@ exclude:
   - specs
   - status
   - reference
+  - course_information

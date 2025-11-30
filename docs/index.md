@@ -8,7 +8,7 @@
 
 Before you install the software, understand what we are building. We are not just writing a novel; we are engineering a synthetic cognitive system.
 
-Use the links in the sidebar to read the **Manifesto**, explore the **Writer's Journey**, and meet the **Agents**.
+Use the links in the sidebar to read the **Philosophy**, explore the **Writer's Journey**, and meet the **Squad**.
 
 ---
 
@@ -29,7 +29,7 @@ Welcome to the Writers Factory. Choose the path that matches your goals for the 
 **Status:** Mandatory
 **Deadline:** 48 hours before Day 1
 
-1.  **Read the Manifesto:** Link above.
+1.  **Read the Philosophy:** Link above.
 2.  **Install the Software:** Use the link above for your track.
 3.  **The "Health Check":** Open the app. If you see the "Welcome to Writers Factory" screen, you are ready.
 4.  **NotebookLM Preparation:** You must create a NotebookLM account and upload 5,000 words of *personal writing* (emails, journals, blogs) to train your Voice Avatar.
