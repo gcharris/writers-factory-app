@@ -1133,5 +1133,81 @@ The implementation is complete when:
 
 ---
 
+## Update: Component Audit Findings (November 30, 2025)
+
+After completing Track A, a Component Audit revealed that **49 of 91 components (54%) are orphaned** - they exist but are never imported into the application. Many Track B features already have components built; they just need **wiring**, not creation.
+
+### Key Discovery
+
+The original Track B estimate of 40 hours assumed building new components. The revised approach focuses on **integration** instead:
+
+| Original Plan | Revised Plan |
+|---------------|--------------|
+| Build Story Bible Panel | Wire existing `StoryBibleWizard.svelte` |
+| Build Voice Tournament UI | Wire existing `VoiceTournamentLauncher.svelte`, `VoiceVariantGrid.svelte`, `VoiceComparisonView.svelte` |
+| Build Variant Grid | Wire existing `SceneVariantGrid.svelte`, `SceneComparison.svelte` |
+| Build Health Dashboard | Wire existing `HealthDashboard.svelte`, `GraphHealthDashboard.svelte` |
+| Build Scaffold Generator | Wire existing `ScaffoldGenerator.svelte` |
+
+### Revised Track B: Integration Focus
+
+**New Estimate**: ~20 hours (down from 40)
+
+#### B.1: Wire StudioToolsPanel Tabs (4 hours)
+The `StudioToolsPanel.svelte` currently shows placeholders for each tab. Wire up:
+- `voice-tournament` tab → `VoiceTournamentLauncher.svelte` + `VoiceVariantGrid.svelte`
+- `scaffold-generator` tab → `ScaffoldGenerator.svelte`
+- `health-dashboard` tab → `HealthDashboard.svelte` or `GraphHealthDashboard.svelte`
+- `scene-multiplier` tab → `SceneVariantGrid.svelte` + `SceneComparison.svelte`
+
+#### B.2: Wire GraphModal (2 hours)
+The `GraphModal.svelte` needs content:
+- Wire `GraphExplorer.svelte` → `GraphCanvas.svelte` + `GraphControls.svelte` + `GraphNodeDetails.svelte`
+- Or wire `LiveGraph.svelte` for simpler visualization
+
+#### B.3: Add Director Mode Components (4 hours)
+Wire into appropriate locations:
+- `SixPassEnhancement.svelte` → Director mode workflow
+- `ActionPromptView.svelte` → Director mode workflow
+- `EnhancementPanel.svelte` → StudioToolsPanel or standalone modal
+
+#### B.4: Add Debug Tools (2 hours)
+- "Force Advance Phase" button in Settings Advanced tab
+- Call `/foreman/advance-mode` endpoint
+- Essential for testing gated progression
+
+#### B.5: Fix Real Blockers (4 hours)
+1. **Folder Expansion Bug** - `FileTree.svelte` / `TreeNode.svelte` folder click not working
+2. **Onboarding Reset Bug** - Check `+page.svelte` onMount for debug code
+3. **TypeScript Errors** - Run `npm run check` and fix critical errors
+
+#### B.6: Clean Up (2 hours)
+- Delete `FileTree 2.svelte` (duplicate)
+- Consolidate duplicate Settings components
+- Wire `UsageIndicator.svelte` to StatusBar
+- Wire `HardwareStatusPanel.svelte` to SquadWizard
+
+### Revised Timeline
+
+| Task | Hours | Status |
+|------|-------|--------|
+| B.1: Wire StudioToolsPanel | 4 | Pending |
+| B.2: Wire GraphModal | 2 | Pending |
+| B.3: Wire Director Components | 4 | Pending |
+| B.4: Add Debug Tools | 2 | Pending |
+| B.5: Fix Real Blockers | 4 | Pending |
+| B.6: Clean Up | 2 | Pending |
+| **Revised Track B Total** | **18-20** | |
+
+### Reference: Component Audit
+
+See `/docs/COMPONENT_AUDIT.md` for the full component inventory with:
+- All 42 integrated components
+- All 49 orphaned components with integration targets
+- Priority rankings for wiring tasks
+- Real blockers identified
+
+---
+
 *Document created by Claude (eloquent-raman agent) as the Writers Journey specialist.*
-*Ready for implementation assignment to development agents.*
+*Updated November 30, 2025 with Component Audit findings.*
