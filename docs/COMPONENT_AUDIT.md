@@ -2,10 +2,38 @@
 
 > Audit of all 91 Svelte components to identify integration status and wiring gaps.
 
-**Audit Date**: November 2025
-**Total Components**: 91
-**Integrated**: 42 (46%)
-**Orphaned**: 49 (54%)
+**Audit Date**: November 30, 2025
+**Last Updated**: November 30, 2025
+**Total Components**: 90 (after cleanup)
+**Integrated**: 46 (51%) - up from 42
+**Orphaned**: 44 (49%) - down from 49
+
+---
+
+## Session Progress (eloquent-raman branch)
+
+### Completed This Session
+- [x] Created Component Audit document
+- [x] Deleted `FileTree 2.svelte` (duplicate)
+- [x] Wired 4 orphaned components to StudioToolsPanel:
+  - VoiceTournamentLauncher → voice-tournament tab
+  - ScaffoldGenerator → scaffold-generator tab
+  - HealthDashboard → health-dashboard tab
+  - SceneVariantGrid → scene-multiplier tab
+- [x] Created Track A components (ScoreDisplay, ModeIndicator, ForemanAction)
+- [x] Fixed FileTree file loading bug (encodeURIComponent issue)
+
+### Pending Testing (IDE Agent)
+- [ ] Test StudioToolsPanel tabs render correctly
+- [ ] Test folder expansion in FileTree
+- [ ] Verify onboarding persistence in Tauri WebView
+- [ ] Run `npm run check` for TypeScript errors
+
+### Remaining Work (Track B Revised)
+- [ ] Wire GraphModal to graph exploration components
+- [ ] Add "Force Advance Phase" debug tool
+- [ ] Fix any bugs found during testing
+- [ ] Wire remaining useful orphaned components
 
 ---
 

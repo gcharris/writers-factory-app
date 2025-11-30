@@ -1191,23 +1191,54 @@ Wire into appropriate locations:
 
 | Task | Hours | Status |
 |------|-------|--------|
-| B.1: Wire StudioToolsPanel | 4 | Pending |
+| B.1: Wire StudioToolsPanel | 4 | **DONE** ✅ |
 | B.2: Wire GraphModal | 2 | Pending |
 | B.3: Wire Director Components | 4 | Pending |
 | B.4: Add Debug Tools | 2 | Pending |
-| B.5: Fix Real Blockers | 4 | Pending |
-| B.6: Clean Up | 2 | Pending |
-| **Revised Track B Total** | **18-20** | |
+| B.5: Fix Real Blockers | 4 | **Testing** 🔄 |
+| B.6: Clean Up | 2 | **Partial** (FileTree 2 deleted) |
+| **Revised Track B Total** | **~12 remaining** | |
 
 ### Reference: Component Audit
 
 See `/docs/COMPONENT_AUDIT.md` for the full component inventory with:
-- All 42 integrated components
-- All 49 orphaned components with integration targets
+- 46 integrated components (up from 42)
+- 44 orphaned components (down from 49)
 - Priority rankings for wiring tasks
 - Real blockers identified
 
 ---
 
+## Latest Session Status (November 30, 2025)
+
+### Branch: `eloquent-raman`
+
+**Commits:**
+1. `fd9e9f3` - FileTree file loading fix (encodeURIComponent)
+2. `c41be7d` - Track A components (ScoreDisplay, ModeIndicator, ForemanAction)
+3. `8905fdc` - Component Audit document
+4. `a96d774` - Audit correction + FileTree 2 deletion
+5. `e73c793` - Wire orphaned components to StudioToolsPanel
+
+**What's Working:**
+- FileTree loads files when clicked (fixed path encoding)
+- StudioToolsPanel has real components in 4/5 tabs
+- ModeIndicator shows Foreman mode in StatusBar
+- ScoreDisplay ready for Director mode
+- ForemanAction renders actions in chat
+
+**Needs Testing by IDE Agent:**
+1. Open Studio Tools modal → each tab should render a real UI
+2. Click folders in FileTree → should expand/collapse
+3. Complete onboarding → should not re-show on refresh
+4. Run `npm run check` → report TypeScript errors
+
+**Handoff Command:**
+```bash
+git fetch origin && git merge eloquent-raman
+```
+
+---
+
 *Document created by Claude (eloquent-raman agent) as the Writers Journey specialist.*
-*Updated November 30, 2025 with Component Audit findings.*
+*Updated November 30, 2025 with session progress.*
