@@ -37,7 +37,25 @@
   // Help overlay
   let showHelp = false;
 
+  // Format menu state
+  let showFormatMenu = false;
+  let showHeadingSubmenu = false;
+  let formatMenuRef;
+
+  // Selection popup state
+  let showSelectionPopup = false;
+  let selectionPopupPos = { x: 0, y: 0 };
+  let selectedText = '';
+
   $: currentFile = $activeFile;
+
+  // Close format menu when clicking outside
+  function handleClickOutside(event) {
+    if (formatMenuRef && !formatMenuRef.contains(event.target)) {
+      showFormatMenu = false;
+      showHeadingSubmenu = false;
+    }
+  }
 
   // Render Markdown to HTML for preview
   $: previewHtml = $editorContent ? marked.parse($editorContent) : '';
@@ -147,6 +165,113 @@
   }
 
   // ============================================
+  // FORMAT MENU ACTIONS
+  // ============================================
+
+  function toggleFormatMenu() {
+    showFormatMenu = !showFormatMenu;
+    if (!showFormatMenu) {
+      showHeadingSubmenu = false;
+    }
+  }
+
+  function applyHeading(level) {
+    if (editorRef) {
+      editorRef.applyHeading(level);
+    }
+    showFormatMenu = false;
+    showHeadingSubmenu = false;
+  }
+
+  function applyBold() {
+    if (editorRef) {
+      editorRef.applyBold();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyItalic() {
+    if (editorRef) {
+      editorRef.applyItalic();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyStrikethrough() {
+    if (editorRef) {
+      editorRef.applyStrikethrough();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyCode() {
+    if (editorRef) {
+      editorRef.applyCode();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyQuote() {
+    if (editorRef) {
+      editorRef.applyQuote();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyBulletList() {
+    if (editorRef) {
+      editorRef.applyBulletList();
+    }
+    showFormatMenu = false;
+  }
+
+  function applyNumberedList() {
+    if (editorRef) {
+      editorRef.applyNumberedList();
+    }
+    showFormatMenu = false;
+  }
+
+  function insertHorizontalRule() {
+    if (editorRef) {
+      editorRef.insertHorizontalRule();
+    }
+    showFormatMenu = false;
+  }
+
+  // ============================================
+  // SELECTION POPUP & COPY TO CHAT
+  // ============================================
+
+  function handleEditorSelection(event) {
+    if (event.detail && event.detail.selectedText) {
+      selectedText = event.detail.selectedText;
+      if (selectedText.length > 0) {
+        // Position popup near selection
+        selectionPopupPos = { x: event.detail.x || 100, y: event.detail.y || 100 };
+        showSelectionPopup = true;
+      } else {
+        showSelectionPopup = false;
+      }
+    }
+  }
+
+  function copyToClipboard() {
+    if (selectedText) {
+      navigator.clipboard.writeText(selectedText);
+    }
+    showSelectionPopup = false;
+  }
+
+  function copyToChat() {
+    if (selectedText) {
+      // Dispatch event to parent to insert into Foreman chat
+      dispatch('copyToChat', { text: selectedText });
+    }
+    showSelectionPopup = false;
+  }
+
+  // ============================================
   // EXPAND/FULLSCREEN MODE
   // ============================================
 
@@ -179,25 +304,12 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:click={handleClickOutside} />
 
 <div class="editor-wrapper" class:expanded={isExpanded}>
   <!-- Editor Toolbar -->
   <div class="editor-toolbar">
     <div class="toolbar-left">
-      <span class="file-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-        </svg>
-      </span>
-      <span class="filename">{currentFile ? currentFile.split('/').pop() : 'No file selected'}</span>
-      {#if currentFile && currentFile.endsWith('.md')}
-        <span class="file-type" class:preview-mode={viewMode === 'preview'}>{viewMode === 'preview' ? 'PREVIEW' : 'MARKDOWN'}</span>
-      {/if}
-    </div>
-
-    <div class="toolbar-center">
       {#if currentFile && currentFile.endsWith('.md')}
         <!-- View Mode Toggle (eye=preview, split=side-by-side) -->
         <div class="view-toggle">
@@ -224,11 +336,103 @@
             </svg>
           </button>
         </div>
+        <span class="file-type" class:preview-mode={viewMode === 'preview'}>{viewMode === 'preview' ? 'PREVIEW' : 'MARKDOWN'}</span>
+      {/if}
+    </div>
+
+    <div class="toolbar-center">
+      {#if currentFile && currentFile.endsWith('.md') && viewMode !== 'preview'}
+        <!-- Heading Dropdown -->
+        <div class="format-dropdown" bind:this={formatMenuRef}>
+          <button
+            class="format-btn heading-btn"
+            on:click={() => showHeadingSubmenu = !showHeadingSubmenu}
+            title="Paragraph style"
+          >
+            <span class="heading-label">P</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          {#if showHeadingSubmenu}
+            <div class="dropdown-menu heading-menu">
+              <button class="dropdown-item" on:click={() => applyHeading(0)}>
+                <span class="item-label">Normal Text</span>
+                <span class="item-shortcut">⌘0</span>
+              </button>
+              <button class="dropdown-item" on:click={() => applyHeading(1)}>
+                <span class="item-label heading-1">Heading 1</span>
+                <span class="item-shortcut">⌘1</span>
+              </button>
+              <button class="dropdown-item" on:click={() => applyHeading(2)}>
+                <span class="item-label heading-2">Heading 2</span>
+                <span class="item-shortcut">⌘2</span>
+              </button>
+              <button class="dropdown-item" on:click={() => applyHeading(3)}>
+                <span class="item-label heading-3">Heading 3</span>
+                <span class="item-shortcut">⌘3</span>
+              </button>
+            </div>
+          {/if}
+        </div>
 
         <!-- Separator -->
         <span class="toolbar-sep"></span>
 
-        <!-- Font Size Controls -->
+        <!-- Inline Formatting Buttons -->
+        <button class="format-btn" on:click={applyBold} title="Bold (⌘B)">
+          <strong>B</strong>
+        </button>
+        <button class="format-btn italic-btn" on:click={applyItalic} title="Italic (⌘I)">
+          <em>I</em>
+        </button>
+        <button class="format-btn" on:click={applyStrikethrough} title="Strikethrough (⌘⇧X)">
+          <span style="text-decoration: line-through">S</span>
+        </button>
+        <button class="format-btn code-btn" on:click={applyCode} title="Inline Code (⌘⇧K)">
+          <code>&lt;/&gt;</code>
+        </button>
+
+        <!-- Separator -->
+        <span class="toolbar-sep"></span>
+
+        <!-- Block Formatting Buttons -->
+        <button class="format-btn" on:click={applyQuote} title="Blockquote (⌘⇧Q)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"></path>
+            <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"></path>
+          </svg>
+        </button>
+        <button class="format-btn" on:click={applyBulletList} title="Bullet List">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <circle cx="3" cy="6" r="1" fill="currentColor"></circle>
+            <circle cx="3" cy="12" r="1" fill="currentColor"></circle>
+            <circle cx="3" cy="18" r="1" fill="currentColor"></circle>
+          </svg>
+        </button>
+        <button class="format-btn" on:click={applyNumberedList} title="Numbered List">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="10" y1="6" x2="21" y2="6"></line>
+            <line x1="10" y1="12" x2="21" y2="12"></line>
+            <line x1="10" y1="18" x2="21" y2="18"></line>
+            <text x="2" y="8" font-size="8" fill="currentColor">1</text>
+            <text x="2" y="14" font-size="8" fill="currentColor">2</text>
+            <text x="2" y="20" font-size="8" fill="currentColor">3</text>
+          </svg>
+        </button>
+        <button class="format-btn" on:click={insertHorizontalRule} title="Horizontal Rule">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+          </svg>
+        </button>
+
+        <!-- Separator -->
+        <span class="toolbar-sep"></span>
+
+        <!-- Font Size Controls (compact) -->
         <div class="font-size-controls">
           <button
             class="font-btn"
@@ -236,18 +440,18 @@
             disabled={fontSize <= MIN_FONT_SIZE}
             title="Decrease font size (Cmd+-)"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
-          <span class="font-size-label" title="Font size">{fontSize}px</span>
+          <span class="font-size-label" title="Font size">{fontSize}</span>
           <button
             class="font-btn"
             on:click={increaseFontSize}
             disabled={fontSize >= MAX_FONT_SIZE}
             title="Increase font size (Cmd++)"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
@@ -314,6 +518,7 @@
             on:save={handleSave}
             on:change={handleChange}
             on:fontsize={handleFontSize}
+            on:selection={handleEditorSelection}
           />
         </div>
       {/if}
@@ -361,6 +566,34 @@
 
 </div>
 
+<!-- Selection Popup -->
+{#if showSelectionPopup && selectedText}
+  <div
+    class="selection-popup"
+    style="left: {selectionPopupPos.x}px; top: {selectionPopupPos.y - 40}px;"
+  >
+    <button class="popup-btn" on:click={applyBold} title="Bold">
+      <strong>B</strong>
+    </button>
+    <button class="popup-btn italic" on:click={applyItalic} title="Italic">
+      <em>I</em>
+    </button>
+    <span class="popup-sep"></span>
+    <button class="popup-btn" on:click={copyToClipboard} title="Copy">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    </button>
+    <button class="popup-btn chat-btn" on:click={copyToChat} title="Copy to Chat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Chat</span>
+    </button>
+  </div>
+{/if}
+
 <!-- Help Overlay -->
 <EditorHelp bind:open={showHelp} />
 
@@ -406,19 +639,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-1, 4px);
-  }
-
-  .file-icon {
-    display: flex;
-    align-items: center;
-    color: var(--text-muted, #8b949e);
-  }
-
-  .filename {
-    font-size: var(--text-sm, 13px);
-    font-weight: var(--font-medium, 500);
-    color: var(--text-primary, #e6edf3);
-    font-family: var(--font-mono, 'SF Mono', monospace);
   }
 
   .file-type {
@@ -516,8 +736,127 @@
     font-size: var(--text-xs, 11px);
     font-family: var(--font-mono, 'SF Mono', monospace);
     color: var(--text-muted, #8b949e);
-    min-width: 32px;
+    min-width: 20px;
     text-align: center;
+  }
+
+  /* Format Buttons */
+  .format-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 4px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #8b949e);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .format-btn:hover {
+    color: var(--text-primary, #e6edf3);
+    background: var(--bg-tertiary, #252d38);
+  }
+
+  .format-btn strong {
+    font-weight: 700;
+  }
+
+  .format-btn em {
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  .format-btn.code-btn {
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .format-btn.code-btn code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+  }
+
+  .format-btn.heading-btn {
+    gap: 2px;
+  }
+
+  .heading-label {
+    font-weight: 600;
+  }
+
+  /* Format Dropdown */
+  .format-dropdown {
+    position: relative;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--bg-secondary, #1a2027);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-md, 6px);
+    padding: 4px;
+    min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-secondary, #c9d1d9);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+  }
+
+  .dropdown-item:hover {
+    background: var(--bg-tertiary, #252d38);
+    color: var(--text-primary, #e6edf3);
+  }
+
+  .item-label {
+    font-size: 13px;
+  }
+
+  .item-label.heading-1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-gold, #d4a574);
+  }
+
+  .item-label.heading-2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-gold, #d4a574);
+  }
+
+  .item-label.heading-3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-gold, #d4a574);
+  }
+
+  .item-shortcut {
+    font-size: 11px;
+    font-family: var(--font-mono, 'SF Mono', monospace);
+    color: var(--text-muted, #8b949e);
   }
 
   .toolbar-right {
@@ -910,5 +1249,72 @@
 
   .editor-wrapper.expanded .expand-btn:hover {
     background: var(--accent-cyan-hover, #79b8ff);
+  }
+
+  /* Selection Popup */
+  .selection-popup {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: var(--bg-secondary, #1a2027);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-md, 6px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+  }
+
+  .popup-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #8b949e);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .popup-btn:hover {
+    color: var(--text-primary, #e6edf3);
+    background: var(--bg-tertiary, #252d38);
+  }
+
+  .popup-btn strong {
+    font-weight: 700;
+  }
+
+  .popup-btn.italic em {
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  .popup-btn.chat-btn {
+    color: var(--accent-cyan, #58a6ff);
+  }
+
+  .popup-btn.chat-btn span {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .popup-btn.chat-btn:hover {
+    color: var(--accent-cyan, #58a6ff);
+    background: rgba(88, 166, 255, 0.15);
+  }
+
+  .popup-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border, #2d3a47);
+    margin: 0 4px;
   }
 </style>

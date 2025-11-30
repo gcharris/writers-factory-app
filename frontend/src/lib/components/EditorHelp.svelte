@@ -166,6 +166,73 @@
             </span>
             Keyboard Shortcuts
           </h3>
+
+          <!-- Formatting Shortcuts -->
+          <h4 class="shortcut-category">Formatting</h4>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>B</kbd>
+              </div>
+              <span class="shortcut-desc">Bold</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>I</kbd>
+              </div>
+              <span class="shortcut-desc">Italic</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>⇧</kbd><span class="key-sep">+</span><kbd>X</kbd>
+              </div>
+              <span class="shortcut-desc">Strikethrough</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>⇧</kbd><span class="key-sep">+</span><kbd>K</kbd>
+              </div>
+              <span class="shortcut-desc">Inline code</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>⇧</kbd><span class="key-sep">+</span><kbd>Q</kbd>
+              </div>
+              <span class="shortcut-desc">Blockquote</span>
+            </div>
+          </div>
+
+          <!-- Heading Shortcuts -->
+          <h4 class="shortcut-category">Headings</h4>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>1</kbd>
+              </div>
+              <span class="shortcut-desc">Heading 1</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>2</kbd>
+              </div>
+              <span class="shortcut-desc">Heading 2</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>3</kbd>
+              </div>
+              <span class="shortcut-desc">Heading 3</span>
+            </div>
+            <div class="shortcut-item">
+              <div class="keys">
+                <kbd>⌘</kbd><span class="key-sep">+</span><kbd>0</kbd>
+              </div>
+              <span class="shortcut-desc">Normal text</span>
+            </div>
+          </div>
+
+          <!-- General Shortcuts -->
+          <h4 class="shortcut-category">General</h4>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="keys">
@@ -458,6 +525,19 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-2, 8px);
+  }
+
+  .shortcut-category {
+    font-size: var(--text-xs, 11px);
+    font-weight: 600;
+    color: var(--text-muted, #8b949e);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: var(--space-3, 12px) 0 var(--space-2, 8px) 0;
+  }
+
+  .shortcut-category:first-of-type {
+    margin-top: 0;
   }
 
   .shortcut-item {

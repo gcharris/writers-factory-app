@@ -168,6 +168,47 @@
   ]);
 
   // ============================================
+  // FORMATTING HELPERS
+  // ============================================
+
+  // Wrap selected text with prefix and suffix (e.g., **bold**)
+  function wrapSelection(view, prefix, suffix) {
+    const { from, to } = view.state.selection.main;
+    const selectedText = view.state.sliceDoc(from, to);
+
+    if (from === to) {
+      // No selection - insert markers and place cursor between
+      view.dispatch({
+        changes: { from, to, insert: prefix + suffix },
+        selection: { anchor: from + prefix.length },
+      });
+    } else {
+      // Wrap selection
+      view.dispatch({
+        changes: { from, to, insert: prefix + selectedText + suffix },
+        selection: { anchor: from + prefix.length, head: from + prefix.length + selectedText.length },
+      });
+    }
+    view.focus();
+  }
+
+  // Set line prefix (for headings, quotes, etc.)
+  function setLinePrefix(view, newPrefix) {
+    const { from } = view.state.selection.main;
+    const line = view.state.doc.lineAt(from);
+    const lineText = line.text;
+
+    // Remove existing heading/quote prefixes
+    const cleanedText = lineText.replace(/^(#{1,6}\s*|>\s*)/, '');
+    const newLineText = newPrefix + cleanedText;
+
+    view.dispatch({
+      changes: { from: line.from, to: line.to, insert: newLineText },
+    });
+    view.focus();
+  }
+
+  // ============================================
   // EDITOR SETUP
   // ============================================
 
@@ -218,6 +259,78 @@
               return true;
             },
           },
+          // Bold (Cmd+B)
+          {
+            key: 'Mod-b',
+            run: (view) => {
+              wrapSelection(view, '**', '**');
+              return true;
+            },
+          },
+          // Italic (Cmd+I)
+          {
+            key: 'Mod-i',
+            run: (view) => {
+              wrapSelection(view, '*', '*');
+              return true;
+            },
+          },
+          // Heading 1 (Cmd+1)
+          {
+            key: 'Mod-1',
+            run: (view) => {
+              setLinePrefix(view, '# ');
+              return true;
+            },
+          },
+          // Heading 2 (Cmd+2)
+          {
+            key: 'Mod-2',
+            run: (view) => {
+              setLinePrefix(view, '## ');
+              return true;
+            },
+          },
+          // Heading 3 (Cmd+3)
+          {
+            key: 'Mod-3',
+            run: (view) => {
+              setLinePrefix(view, '### ');
+              return true;
+            },
+          },
+          // Normal text - remove heading (Cmd+0)
+          {
+            key: 'Mod-0',
+            run: (view) => {
+              setLinePrefix(view, '');
+              return true;
+            },
+          },
+          // Strikethrough (Cmd+Shift+X)
+          {
+            key: 'Mod-Shift-x',
+            run: (view) => {
+              wrapSelection(view, '~~', '~~');
+              return true;
+            },
+          },
+          // Inline code (Cmd+Shift+K)
+          {
+            key: 'Mod-Shift-k',
+            run: (view) => {
+              wrapSelection(view, '`', '`');
+              return true;
+            },
+          },
+          // Blockquote (Cmd+Shift+Q)
+          {
+            key: 'Mod-Shift-q',
+            run: (view) => {
+              setLinePrefix(view, '> ');
+              return true;
+            },
+          },
         ]),
 
         // Markdown language support
@@ -245,12 +358,29 @@
             dispatch('change', { content: text });
           }
 
-          // Update cursor position
+          // Update cursor position and dispatch selection events
           if (update.selectionSet) {
-            const pos = update.state.selection.main.head;
+            const sel = update.state.selection.main;
+            const pos = sel.head;
             const line = update.state.doc.lineAt(pos);
             cursorLine = line.number;
             cursorCol = pos - line.from + 1;
+
+            // Dispatch selection event when text is selected
+            const selectedText = update.state.sliceDoc(sel.from, sel.to);
+            if (selectedText.length > 0) {
+              // Get coordinates for popup positioning
+              const coords = update.view.coordsAtPos(sel.from);
+              dispatch('selection', {
+                selectedText,
+                from: sel.from,
+                to: sel.to,
+                x: coords ? coords.left : 0,
+                y: coords ? coords.top : 0,
+              });
+            } else {
+              dispatch('selection', { selectedText: '', from: sel.from, to: sel.to });
+            }
           }
         }),
 
@@ -343,6 +473,84 @@
   // Get stats
   export function getStats() {
     return { wordCount, lineCount, cursorLine, cursorCol };
+  }
+
+  // Get selected text
+  export function getSelectedText() {
+    if (!editorView) return '';
+    const { from, to } = editorView.state.selection.main;
+    return editorView.state.sliceDoc(from, to);
+  }
+
+  // Apply bold formatting
+  export function applyBold() {
+    if (editorView) {
+      wrapSelection(editorView, '**', '**');
+    }
+  }
+
+  // Apply italic formatting
+  export function applyItalic() {
+    if (editorView) {
+      wrapSelection(editorView, '*', '*');
+    }
+  }
+
+  // Apply strikethrough formatting
+  export function applyStrikethrough() {
+    if (editorView) {
+      wrapSelection(editorView, '~~', '~~');
+    }
+  }
+
+  // Apply inline code formatting
+  export function applyCode() {
+    if (editorView) {
+      wrapSelection(editorView, '`', '`');
+    }
+  }
+
+  // Apply heading (level 1-3, or 0 for normal)
+  export function applyHeading(level) {
+    if (!editorView) return;
+    const prefix = level > 0 ? '#'.repeat(level) + ' ' : '';
+    setLinePrefix(editorView, prefix);
+  }
+
+  // Apply blockquote
+  export function applyQuote() {
+    if (editorView) {
+      setLinePrefix(editorView, '> ');
+    }
+  }
+
+  // Apply bullet list to current line
+  export function applyBulletList() {
+    if (editorView) {
+      setLinePrefix(editorView, '- ');
+    }
+  }
+
+  // Apply numbered list to current line
+  export function applyNumberedList() {
+    if (editorView) {
+      setLinePrefix(editorView, '1. ');
+    }
+  }
+
+  // Insert horizontal rule
+  export function insertHorizontalRule() {
+    if (editorView) {
+      const pos = editorView.state.selection.main.head;
+      const line = editorView.state.doc.lineAt(pos);
+      // Insert at end of current line, then newline + hr + newline
+      const insert = '\n\n---\n\n';
+      editorView.dispatch({
+        changes: { from: line.to, insert },
+        selection: { anchor: line.to + insert.length },
+      });
+      editorView.focus();
+    }
   }
 </script>
 
