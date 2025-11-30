@@ -4,11 +4,12 @@
 
 ---
 
-## 🚨 READ THIS FIRST: The Mission
+## 🚨 READ THIS FIRST: Confidentiality & Keys
 
-Before you install the software, understand what we are building. We are not just writing a novel; we are engineering a synthetic cognitive system.
-
-Use the links in the sidebar to read the **Philosophy**, explore the **Writer's Journey**, and meet the **Squad**.
+> **IMPORTANT:** The "Writer Track" version of this software includes **pre-paid API keys** (worth ~$500/student).
+> *   **DO NOT share this binary** with anyone outside the course.
+> *   **DO NOT upload it** to public file servers.
+> *   Access is tracked. Leaked keys will result in the immediate revocation of the entire class's access.
 
 ---
 
@@ -16,11 +17,11 @@ Use the links in the sidebar to read the **Philosophy**, explore the **Writer's 
 
 Welcome to the Writers Factory. Choose the path that matches your goals for the week.
 
-| ✍️ **The Writer Track**                                       | 🛠️ **The Engineer Track**                                     |
+| ✍️ **The Writer Track**                                       | 🛠️ **The Architect Track** (formerly Engineer)                |
 | :----------------------------------------------------------- | :----------------------------------------------------------- |
-| **Goal:** Write a novella (15k+ words)                       | **Goal:** Improve the System Architecture                    |
-| **Activity:** Creative Writing & Analysis                    | **Activity:** Python/Rust Development                        |
-| **Setup:** Download & Run (No coding)                        | **Setup:** Clone Repo & Build                                |
+| **Goal:** Write a novella (15k+ words)                       | **Goal:** Optimize the "Context Engine"                      |
+| **Activity:** Creative Writing & Analysis                    | **Activity:** Prompt Engineering, Graph Logic, & Config      |
+| **Setup:** Download & Run (No coding)                        | **Setup:** Clone Repo & Modify JSON/Prompts                  |
 | [**⬇️ Download Mac/Windows App**](https://github.com/gcharris/writers-factory-desktop/releases/latest) | [**↗️ View Source Code**](https://github.com/gcharris/writers-factory-desktop) |
 
 ---
