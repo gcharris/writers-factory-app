@@ -12,6 +12,10 @@ Before you install the software, understand what we are building. We are not jus
 
 *Understanding the difference between "Chatting with AI" and "Engineering a Muse."*
 
+### [👉 Read the Writer's Journey](journey)
+
+*The complete creative workflow from research to polished novel.*
+
 ---
 
 ## Choose Your Track
