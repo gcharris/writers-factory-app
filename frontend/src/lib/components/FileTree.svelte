@@ -18,6 +18,7 @@
   let fileTree = null;
   let currentPath = "";
   let errorMsg = "";
+  let isLoadingFile = false;  // Loading state for file operations
   const STORAGE_KEY = "last_project_path";
 
   // Track expanded folders by path (use object for Svelte reactivity)
@@ -121,18 +122,34 @@
       return;
     }
 
-    try {
-      selectedFile = node.path;
+    // Prevent double-clicks while loading
+    if (isLoadingFile) return;
 
-      const response = await fetch(`http://localhost:8000/files/${encodeURIComponent(node.path)}`);
-      if (!response.ok) throw new Error("Backend failed to read file");
+    try {
+      isLoadingFile = true;
+      selectedFile = node.path;
+      errorMsg = ""; // Clear any previous error
+
+      // Note: We don't use encodeURIComponent on the full path because FastAPI's
+      // {filepath:path} expects the slashes to be preserved. We only need to handle
+      // special characters in individual path segments if any.
+      const response = await fetch(`http://localhost:8000/files/${node.path}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(errorData.detail || "Backend failed to read file");
+      }
 
       const data = await response.json();
       editorContent.set(data.content);
       activeFile.set(node.path);
     } catch (e) {
-      console.error(e);
-      errorMsg = "Failed to read file: " + e;
+      console.error("FileTree: Failed to open file:", e);
+      errorMsg = `Failed to read file: ${e.message}`;
+      // Reset selection on error
+      selectedFile = "";
+    } finally {
+      isLoadingFile = false;
     }
   }
 </script>
@@ -159,7 +176,7 @@
 
   <!-- File Tree -->
   {#if fileTree}
-    <div class="tree-container">
+    <div class="tree-container" class:loading={isLoadingFile}>
       {#each fileTree.children as node (node.path)}
         <TreeNode
           {node}
@@ -167,6 +184,7 @@
           {expandedFolders}
           {openFile}
           {toggleFolder}
+          loadingFile={isLoadingFile ? selectedFile : null}
         />
       {/each}
     </div>
@@ -255,6 +273,11 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--space-2, 8px) 0;
+  }
+
+  .tree-container.loading {
+    opacity: 0.8;
+    pointer-events: none;
   }
 
   /* Empty State */

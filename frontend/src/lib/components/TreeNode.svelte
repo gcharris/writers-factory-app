@@ -15,9 +15,11 @@
   export let expandedFolders;
   export let openFile;
   export let toggleFolder;
+  export let loadingFile = null;  // Path of file currently being loaded
 
   $: isExpanded = !!expandedFolders[node.path];
   $: isActive = $activeFile === node.path;
+  $: isLoading = loadingFile === node.path;
 
   // Get file extension for icon styling
   function getFileType(name) {
@@ -33,9 +35,10 @@
 
 <div class="tree-node">
   <button
-    class="node-row {node.isDirectory ? 'folder' : 'file'} {isActive ? 'active' : ''}"
+    class="node-row {node.isDirectory ? 'folder' : 'file'} {isActive ? 'active' : ''} {isLoading ? 'loading' : ''}"
     style="padding-left: {8 + depth * 16}px"
     on:click={handleClick}
+    disabled={isLoading}
   >
     <!-- Chevron for folders -->
     {#if node.isDirectory}
@@ -50,7 +53,12 @@
 
     <!-- Icon -->
     <span class="node-icon {node.isDirectory ? 'folder-icon' : 'file-icon'} {getFileType(node.name)}">
-      {#if node.isDirectory}
+      {#if isLoading}
+        <!-- Loading spinner -->
+        <svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+      {:else if node.isDirectory}
         {#if isExpanded}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -82,6 +90,7 @@
         {expandedFolders}
         {openFile}
         {toggleFolder}
+        {loadingFile}
       />
     {/each}
   {/if}
@@ -118,6 +127,26 @@
     background: var(--bg-elevated, #2d3a47);
     border-left-color: var(--accent-cyan, #58a6ff);
     color: var(--text-primary);
+  }
+
+  .node-row.loading {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  .node-row:disabled {
+    pointer-events: none;
+  }
+
+  /* Spinner animation */
+  .spinner {
+    animation: spin 1s linear infinite;
+    color: var(--accent-cyan, #58a6ff);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   /* Chevron */

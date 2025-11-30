@@ -55,20 +55,25 @@
     try {
       const content = editorRef?.getContent() || $editorContent;
 
-      const response = await fetch(`http://localhost:8000/files/${encodeURIComponent(currentFile)}`, {
+      // Note: Don't use encodeURIComponent on full path - FastAPI's {filepath:path}
+      // expects slashes to be preserved
+      const response = await fetch(`http://localhost:8000/files/${currentFile}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       });
 
-      if (!response.ok) throw new Error('Backend failed to save file');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(errorData.detail || 'Backend failed to save file');
+      }
 
       lastSaved = new Date().toLocaleTimeString();
       // Update store with saved content
       editorContent.set(content);
     } catch (e) {
       saveError = e.message;
-      console.error('Error saving:', e);
+      console.error('Editor: Error saving file:', e);
     } finally {
       isSaving.set(false);
     }
