@@ -6,6 +6,7 @@
     foremanWorkOrder, foremanChatHistory, selectedChatModel, defaultChatModel
   } from '$lib/stores';
   import ModelSelector from './chat/ModelSelector.svelte';
+  import ForemanAction from './chat/ForemanAction.svelte';
 
   const BASE_URL = 'http://localhost:8000';
 
@@ -169,6 +170,8 @@
         role: 'assistant',
         text: data.response,
         modelUsed: data.model_used,
+        // Store full action objects for rich rendering
+        actions: data.actions || [],
       };
       messages = [...messages, assistantMsg];
 
@@ -176,13 +179,8 @@
         foremanWorkOrder.set(data.work_order_status);
       }
 
-      if (data.actions_executed && data.actions_executed.length > 0) {
-        const actionsMsg = {
-          role: 'system',
-          text: `Actions: ${data.actions_executed.join(', ')}`
-        };
-        messages = [...messages, actionsMsg];
-      }
+      // Note: We now render actions inline with the assistant message
+      // using the ForemanAction component, instead of as a separate system message
 
       await checkForemanStatus();
     } catch (e) {
@@ -445,6 +443,15 @@
           {/if}
         </div>
         <div class="message-content">{msg.text}</div>
+
+        <!-- Render Foreman actions if present -->
+        {#if msg.role === 'assistant' && msg.actions && msg.actions.length > 0}
+          <div class="message-actions">
+            {#each msg.actions as action}
+              <ForemanAction {action} />
+            {/each}
+          </div>
+        {/if}
       </div>
     {/each}
 
@@ -943,6 +950,13 @@
     color: #ffffff;
     line-height: 1.6;
     white-space: pre-wrap;
+  }
+
+  .message-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .typing-indicator {

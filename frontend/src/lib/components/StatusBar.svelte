@@ -11,20 +11,13 @@
   import { onMount, onDestroy } from 'svelte';
   import { apiClient } from '$lib/api_client';
   import { foremanMode, foremanActive } from '$lib/stores';
+  import ModeIndicator from './StatusBar/ModeIndicator.svelte';
 
   let graphNodeCount = 0;
   let backendStatus = 'checking';
   let qualityTier = 'budget';
   let currentSpend = 0;
   let budgetLimit = null;
-
-  // Mode colors
-  const modeColors = {
-    ARCHITECT: 'var(--mode-architect, #2f81f7)',
-    VOICE_CALIBRATION: 'var(--mode-voice, #a371f7)',
-    DIRECTOR: 'var(--mode-director, #d4a574)',
-    EDITOR: 'var(--mode-editor, #3fb950)'
-  };
 
   async function checkBackendStatus() {
     try {
@@ -74,14 +67,10 @@
       <span class="status-label">{backendStatus === 'online' ? 'Backend Online' : 'Backend Offline'}</span>
     </div>
 
-    <!-- Foreman Mode -->
-    {#if $foremanActive && $foremanMode}
-      <div class="status-item">
-        <span class="mode-indicator" style="--mode-color: {modeColors[$foremanMode] || modeColors.ARCHITECT}">
-          {$foremanMode.replace('_', ' ')}
-        </span>
-      </div>
-    {/if}
+    <!-- Foreman Mode (using new ModeIndicator component) -->
+    <div class="status-item">
+      <ModeIndicator />
+    </div>
   </div>
 
   <div class="status-right">
@@ -156,18 +145,6 @@
 
   .status-label {
     color: var(--text-secondary, #8b949e);
-  }
-
-  .mode-indicator {
-    padding: 2px 8px;
-    background: color-mix(in srgb, var(--mode-color) 20%, transparent);
-    border: 1px solid var(--mode-color);
-    border-radius: var(--radius-sm, 4px);
-    color: var(--mode-color);
-    font-size: var(--text-xs, 11px);
-    font-weight: var(--font-medium, 500);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   .tier-badge {
