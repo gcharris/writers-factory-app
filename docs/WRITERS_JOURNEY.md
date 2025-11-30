@@ -9,14 +9,15 @@
 ## Table of Contents
 
 1. [Journey Overview](#journey-overview)
-2. [Phase 0: Installation & Setup](#phase-0-installation--setup)
-3. [Phase 1: ARCHITECT Mode](#phase-1-architect-mode---story-bible-creation)
-4. [Phase 2: VOICE_CALIBRATION Mode](#phase-2-voice_calibration-mode---finding-the-voice)
-5. [Phase 3: DIRECTOR Mode](#phase-3-director-mode---drafting-scenes)
-6. [Phase 4: EDITOR Mode](#phase-4-editor-mode---polish--revision)
-7. [Complete Workflow Diagram](#complete-workflow-diagram)
-8. [Testing Checklist](#testing-checklist)
-9. [Known Issues & Blockers](#known-issues--blockers)
+2. [Phase 0: Research Foundation](#phase-0-research-foundation-before-writers-factory)
+3. [Phase 1: Installation & Setup](#phase-1-installation--setup)
+4. [Phase 2: ARCHITECT Mode](#phase-2-architect-mode---story-bible-creation)
+5. [Phase 3: VOICE_CALIBRATION Mode](#phase-3-voice_calibration-mode---finding-the-voice)
+6. [Phase 4: DIRECTOR Mode](#phase-4-director-mode---drafting-scenes)
+7. [Phase 5: EDITOR Mode](#phase-5-editor-mode---polish--revision)
+8. [Complete Workflow Diagram](#complete-workflow-diagram)
+9. [Testing Checklist](#testing-checklist)
+10. [Known Issues & Blockers](#known-issues--blockers)
 
 ---
 
@@ -24,26 +25,126 @@
 
 Writers Factory enforces a professional methodology called the **Narrative Protocol**:
 
-> **"Structure Before Freedom"** - Writers must complete foundational artifacts before drafting.
+> **"Research Before Structure, Structure Before Freedom"**
 
-The journey follows **four Foreman modes** that mirror a professional writing process:
+The journey has **two critical prerequisites** before the four Foreman modes:
 
 ```
-ARCHITECT → VOICE_CALIBRATION → DIRECTOR → EDITOR
-   │              │                 │          │
-   │              │                 │          └─ Polish & Revision
-   │              │                 └─ Scene Drafting (with scaffolds)
-   │              └─ Voice Tournament (find narrative voice)
-   └─ Story Bible Creation (structure, characters, theme)
+RESEARCH FOUNDATION → INSTALLATION → ARCHITECT → VOICE → DIRECTOR → EDITOR
+        │                  │              │          │         │         │
+        │                  │              │          │         │         └─ Polish
+        │                  │              │          │         └─ Scene Drafting
+        │                  │              │          └─ Voice Tournament
+        │                  │              └─ Story Bible (extraction from research)
+        │                  └─ App setup + NotebookLM registration
+        └─ BUILD YOUR NOTEBOOKS FIRST (the real work)
 ```
 
-**Core Principle**: The Foreman (AI creative partner) guides the writer through each phase, refusing to advance until requirements are met.
+### The Critical Insight
+
+**Without NotebookLM, the Story Bible is improvisation.**
+
+When a writer hasn't done research, conversations with the Foreman become random brainstorming sessions. The writer makes up answers on the spot, resulting in a Story Bible built on whatever they happened to think of that day.
+
+**With NotebookLM, the Story Bible is extraction.**
+
+When a writer has spent time building research notebooks - uploading reference novels, world-building documents, character studies, thematic essays - the Foreman becomes a **research extraction tool**. Every question queries the writer's actual thinking, grounded in their source material.
+
+This is the difference between:
+- *"What's your protagonist's fatal flaw?"* → "Uh... pride, I guess?"
+- *"What's your protagonist's fatal flaw?"* → Query NotebookLM → "Based on your character study notes, you described Marcus as having a 'pathological need for control stemming from childhood abandonment.' Shall we formalize this as his fatal flaw?"
+
+**Writers Factory is an extraction tool, not a generation tool.**
 
 ---
 
-## Phase 0: Installation & Setup
+## Phase 0: Research Foundation (BEFORE Writers Factory)
 
-### Step 0.1: App Installation
+> **This phase happens BEFORE you launch Writers Factory.**
+> The quality of your novel depends on the quality of this preparation.
+
+### Why Research Comes First
+
+Writers Factory's power comes from **grounding AI in your source material**. The Foreman can only be as good as the research you give it access to. Without research notebooks:
+
+- The Foreman makes generic suggestions
+- Your Story Bible reflects moment-to-moment improvisation
+- Scene generation lacks grounding in your vision
+- Voice calibration has nothing authentic to calibrate against
+
+### Step 0.1: Build Your NotebookLM Research Library
+
+**Required Time**: Days to weeks (this IS the creative work)
+
+**What to Include**:
+
+#### Character Research Notebook
+- Character backstory documents
+- Psychological profiles
+- Interview transcripts with yourself about the character
+- Reference characters from other works (with analysis of what you admire)
+- Photos, art, or visual references (described in text)
+
+#### World Research Notebook
+- World-building documents
+- Maps and geography (described)
+- Historical timeline
+- Social structures, governments, factions
+- Magic systems, technology rules, physics
+- Reference worlds from other works
+
+#### Theme & Philosophy Notebook
+- Essays on your central theme
+- Philosophical texts that inform your story
+- News articles, research papers relevant to your premise
+- Your own journal entries about what you want to say
+
+#### Craft Research Notebook
+- Passages from novels whose style you admire
+- Writing craft books/articles
+- Analysis of prose techniques you want to emulate
+- Anti-patterns you want to avoid
+
+#### Plot Research Notebook
+- Plot outlines and beat sheets you've drafted
+- Story structure references (Save the Cat, Hero's Journey, etc.)
+- Scene ideas and fragments
+- Subplots and B-story concepts
+
+### Step 0.2: Organize by Queryable Topics
+
+Structure your notebooks so the Foreman can ask specific questions:
+
+| Notebook | Query Examples |
+|----------|---------------|
+| Characters | "What drives Marcus?" "What's Elena's relationship to power?" |
+| World | "What are the rules of magic?" "How does the government work?" |
+| Theme | "What's the central argument?" "What counterarguments exist?" |
+| Craft | "What prose style am I going for?" "What should I avoid?" |
+| Plot | "What happens at the midpoint?" "How does the B-story intersect?" |
+
+### Step 0.3: Test Your Notebooks
+
+Before launching Writers Factory:
+1. Open each NotebookLM notebook
+2. Ask it questions you'd expect during Story Bible creation
+3. Verify it returns grounded, useful answers
+4. Fill gaps where notebooks can't answer
+
+**Only proceed to Phase 1 when your notebooks can answer these questions**:
+- [ ] Who is my protagonist, and what drives them?
+- [ ] What is the central theme I'm exploring?
+- [ ] What are the immutable rules of my world?
+- [ ] What style of prose am I aiming for?
+- [ ] What is my rough plot structure?
+
+---
+
+## Phase 1: Installation & Setup
+
+> Now that your research is ready, install Writers Factory and connect it to your notebooks.
+
+### Step 1.1: App Installation
 
 **What Happens**:
 - Writer downloads and installs the Tauri desktop app
@@ -53,7 +154,7 @@ ARCHITECT → VOICE_CALIBRATION → DIRECTOR → EDITOR
 - `frontend/src/lib/components/Onboarding/OnboardingWizard.svelte`
 - 4-step wizard flow
 
-### Step 0.2: Onboarding Wizard (4 Steps)
+### Step 1.2: Onboarding Wizard (4 Steps)
 
 #### Step 1: Workspace Location
 **Component**: `Step1WorkspaceLocation.svelte`
@@ -145,7 +246,7 @@ ARCHITECT → VOICE_CALIBRATION → DIRECTOR → EDITOR
 
 ---
 
-### Step 0.3: Project Initialization
+### Step 1.3: Project Initialization
 
 **After Onboarding**:
 1. Writer clicks "New Project"
@@ -174,11 +275,57 @@ workspace/
 }
 ```
 
-**Result**: Foreman enters **ARCHITECT mode** and presents the Work Order.
+---
+
+### Step 1.4: Register NotebookLM Notebooks (REQUIRED)
+
+> **This is the critical connection.** Without this step, the Foreman operates blind.
+
+**Immediately after project creation**, register your research notebooks:
+
+**User Actions**:
+1. Click "NotebookLM" in the Foreman header
+2. For each notebook you built in Phase 0:
+   - Click "Register Notebook"
+   - Paste the NotebookLM notebook URL
+   - Assign a **role** (character, world, theme, craft, plot)
+   - Test the connection with a sample query
+3. Verify each notebook responds with grounded answers
+
+**Notebook Roles**:
+| Role | Purpose | Query Examples |
+|------|---------|----------------|
+| `character` | Character psychology, backstory | "What's Marcus's deepest fear?" |
+| `world` | World rules, setting, factions | "How does magic work?" |
+| `theme` | Thematic exploration | "What's the counterargument to my theme?" |
+| `craft` | Prose style, voice references | "What techniques does my reference author use?" |
+| `plot` | Structure, beats, scene ideas | "What happens at the All Is Lost moment?" |
+
+**Backend Endpoint**: `POST /foreman/notebook`
+```json
+{
+  "notebook_url": "https://notebooklm.google.com/notebook/...",
+  "role": "character",
+  "label": "Marcus Character Bible"
+}
+```
+
+**Success Criteria**:
+- [ ] At least one notebook registered
+- [ ] Each notebook responds to test queries
+- [ ] Roles cover character, world, theme at minimum
+
+**Why This Matters**:
+When the Foreman asks "What's your protagonist's fatal flaw?", it will:
+1. Query your character notebook
+2. Find relevant passages from your research
+3. Present extracted answers, not generic suggestions
+
+**Result**: Foreman now enters **ARCHITECT mode** with access to your research.
 
 ---
 
-## Phase 1: ARCHITECT Mode - Story Bible Creation
+## Phase 2: ARCHITECT Mode - Story Bible Creation
 
 ### Overview
 
@@ -203,7 +350,7 @@ The Foreman maintains a **Work Order** tracking these required templates:
 | **Theme** | `Story Bible/Themes_and_Philosophy/Theme.md` | central_theme, theme_statement |
 | **World Rules** | `World Bible/Rules.md` | fundamental_rules |
 
-### Step 1.1: Protagonist Creation
+### Step 2.1: Protagonist Creation (Research-Grounded)
 
 **What Writer Does**:
 1. Chat with Foreman about their protagonist
@@ -211,24 +358,30 @@ The Foreman maintains a **Work Order** tracking these required templates:
 3. Define **The Lie** (mistaken belief driving the flaw)
 4. Map the character arc (start → midpoint → resolution)
 
-**Foreman Challenges**:
-- "That sounds like circumstance, not flaw. What's the *internal* weakness?"
-- "The Lie must be something they *believe*, not a situation."
+**How NotebookLM Changes This**:
+Instead of improvising answers, the Foreman queries your character notebook:
 
-**Technical Flow**:
 ```
-User: "My protagonist is poor and desperate"
-Foreman: {"action": "save_decision", "category": "character", "key": "situation", "value": "poor and desperate"}
-Foreman: "That's circumstance. What internal flaw does this poverty trigger? Fear of vulnerability? Inability to trust?"
+Writer: "Let's define Marcus's fatal flaw"
+Foreman: [Queries character notebook: "What is Marcus's deepest weakness?"]
+NotebookLM: "In your character notes, you wrote: 'Marcus's need for control stems
+from childhood abandonment. He cannot delegate because he believes everyone will
+leave if he shows vulnerability.'"
+Foreman: "Your research suggests a control-based fatal flaw rooted in abandonment
+trauma. Should we formalize this as 'pathological need for control' or refine it?"
 ```
 
-**Template Generated**: `Protagonist.md` with all sections filled
+**Foreman Challenges** (now grounded):
+- "Your notes mention abandonment - how does that connect to this flaw?"
+- "The Lie you described differs from what's in your notebook. Which is correct?"
+
+**Template Generated**: `Protagonist.md` with sections extracted from your research
 
 **Validation**: `StoryBibleService.parse_protagonist()` extracts structured data
 
 ---
 
-### Step 1.2: Beat Sheet Construction (15 Beats)
+### Step 2.2: Beat Sheet Construction (15 Beats)
 
 **What Writer Does**:
 1. Map their story to the 15-beat "Save the Cat!" structure
@@ -262,59 +415,53 @@ Foreman: "That's circumstance. What internal flaw does this poverty trigger? Fea
 
 ---
 
-### Step 1.3: Theme Definition
+### Step 2.3: Theme Definition (Research-Grounded)
 
 **What Writer Does**:
 1. Define the central theme (core idea explored)
 2. Write a theme statement (one-sentence encapsulation)
 
-**Example**:
-- Central Theme: "The cost of vengeance"
-- Theme Statement: "Revenge destroys the avenger more than the target."
+**How NotebookLM Changes This**:
+```
+Writer: "Let's nail down my theme"
+Foreman: [Queries theme notebook: "What is the central argument of this story?"]
+NotebookLM: "Your theme notes explore 'the cost of vengeance' repeatedly. You wrote:
+'I want to show that revenge destroys the avenger more than the target.'"
+Foreman: "Your research clearly points to vengeance as the theme. Should we use
+your statement directly, or do you want to refine it?"
+```
 
 **Template Generated**: `Theme.md`
 
 ---
 
-### Step 1.4: World Rules
+### Step 2.4: World Rules (Research-Grounded)
 
 **What Writer Does**:
 1. Define fundamental rules of the story world
 2. These are non-negotiable laws the AI must respect
 
-**Examples**:
-- "Magic requires a physical toll on the caster"
-- "FTL travel takes 3 weeks minimum"
-- "The dead cannot be brought back"
+**How NotebookLM Changes This**:
+```
+Writer: "What rules govern magic in my world?"
+Foreman: [Queries world notebook: "What are the fundamental rules of magic?"]
+NotebookLM: "Your world-building notes establish: 1) Magic requires physical toll,
+2) No resurrection possible, 3) Magic is inherited, not learned."
+Foreman: "I found 3 rules in your research. Should I add these to World Rules?"
+```
 
 **Template Generated**: `Rules.md`
 
 ---
 
-### Step 1.5: NotebookLM Integration (Optional)
-
-**Purpose**: Writer can register external NotebookLM notebooks as research sources.
-
-**Notebook Roles**:
-- **World Notebooks**: Setting, rules, factions
-- **Character/Voice Notebooks**: Voice samples, real people models
-- **Craft Reference Notebooks**: Favorite novels, films, techniques
-- **Project Notebook**: Final synthesized Story Bible (created last)
-
-**Foreman Actions**:
-```json
-{"action": "query_notebook", "notebook_id": "abc123", "query": "How does the protagonist speak?"}
-```
-
----
-
-### Phase 1 Completion Gate
+### Phase 2 Completion Gate
 
 **Foreman refuses to advance until**:
 - [ ] `Protagonist.md` exists with Fatal Flaw and The Lie defined
 - [ ] `Beat_Sheet.md` has all 15 beats + midpoint type
 - [ ] `Theme.md` has central_theme and theme_statement
 - [ ] `Rules.md` has at least 1 fundamental rule
+- [ ] At least one NotebookLM notebook registered and responsive
 
 **Check Endpoint**: `GET /story-bible/status`
 
@@ -332,7 +479,7 @@ Foreman: "That's circumstance. What internal flaw does this poverty trigger? Fea
 
 ---
 
-## Phase 2: VOICE_CALIBRATION Mode - Finding the Voice
+## Phase 3: VOICE_CALIBRATION Mode - Finding the Voice
 
 ### Overview
 
@@ -477,7 +624,7 @@ Foreman: "That's circumstance. What internal flaw does this poverty trigger? Fea
 
 ---
 
-## Phase 3: DIRECTOR Mode - Drafting Scenes
+## Phase 4: DIRECTOR Mode - Drafting Scenes
 
 ### Overview
 
@@ -704,7 +851,7 @@ Foreman recommends running a **Graph Health Check**.
 
 ---
 
-## Phase 4: EDITOR Mode - Polish & Revision
+## Phase 5: EDITOR Mode - Polish & Revision
 
 ### Overview
 
