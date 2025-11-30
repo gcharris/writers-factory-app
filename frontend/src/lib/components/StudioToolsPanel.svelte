@@ -7,9 +7,17 @@
   - Health Dashboard: Check narrative health
   - Metabolism: Consolidate sessions to graph
   - Scene Multiplier: Generate scene variants
+
+  UPDATED: Now wires existing orphaned components instead of placeholders
 -->
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
+
+  // Import existing components that were orphaned
+  import VoiceTournamentLauncher from './VoiceTournamentLauncher.svelte';
+  import ScaffoldGenerator from './ScaffoldGenerator.svelte';
+  import HealthDashboard from './HealthDashboard.svelte';
+  import SceneVariantGrid from './SceneVariantGrid.svelte';
 
   export let activeTab = 'voice-tournament';
 
@@ -167,53 +175,16 @@
   <!-- Content Area -->
   <div class="studio-content">
     {#if activeTab === 'voice-tournament'}
-      <div class="tool-content">
-        <h2>Voice Tournament</h2>
-        <p class="tool-description">Compare AI-generated voice variants to find the perfect style for your narrative.</p>
-
-        <div class="tool-placeholder">
-          <div class="placeholder-icon">{@html tabIcons.mic}</div>
-          <p>Voice Tournament interface coming soon</p>
-          <p class="placeholder-hint">Run A/B tests between different voice calibrations</p>
-        </div>
-      </div>
+      <!-- Voice Tournament - full component -->
+      <VoiceTournamentLauncher />
 
     {:else if activeTab === 'scaffold-generator'}
-      <div class="tool-content">
-        <h2>Scaffold Generator</h2>
-        <p class="tool-description">Generate story structure scaffolds using AI-powered templates.</p>
-
-        <div class="tool-placeholder">
-          <div class="placeholder-icon">{@html tabIcons.compass}</div>
-          <p>Scaffold Generator interface coming soon</p>
-          <p class="placeholder-hint">Create beat sheets, scene outlines, and structure templates</p>
-        </div>
-      </div>
+      <!-- Scaffold Generator - full component -->
+      <ScaffoldGenerator />
 
     {:else if activeTab === 'health-dashboard'}
-      <div class="tool-content">
-        <h2>Health Dashboard</h2>
-        <p class="tool-description">Check narrative consistency and identify potential issues.</p>
-
-        <div class="health-summary">
-          <div class="health-stat {healthStatus.conflicts > 0 ? 'warning' : 'success'}">
-            <span class="stat-value">{healthStatus.conflicts}</span>
-            <span class="stat-label">Conflicts</span>
-          </div>
-          <div class="health-stat {healthStatus.warnings > 0 ? 'warning' : 'success'}">
-            <span class="stat-value">{healthStatus.warnings}</span>
-            <span class="stat-label">Warnings</span>
-          </div>
-        </div>
-
-        <button class="action-btn" on:click={fetchHealthStatus}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-          Refresh Health Check
-        </button>
-      </div>
+      <!-- Health Dashboard - full component -->
+      <HealthDashboard />
 
     {:else if activeTab === 'metabolism'}
       <div class="tool-content">
@@ -249,16 +220,8 @@
       </div>
 
     {:else if activeTab === 'scene-multiplier'}
-      <div class="tool-content">
-        <h2>Scene Multiplier</h2>
-        <p class="tool-description">Generate multiple scene variants for comparison and selection.</p>
-
-        <div class="tool-placeholder">
-          <div class="placeholder-icon">{@html tabIcons.layers}</div>
-          <p>Scene Multiplier interface coming soon</p>
-          <p class="placeholder-hint">Create and compare multiple scene drafts</p>
-        </div>
-      </div>
+      <!-- Scene Multiplier - full component -->
+      <SceneVariantGrid />
     {/if}
   </div>
 </div>
