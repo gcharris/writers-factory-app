@@ -1,20 +1,10 @@
 # **Course Proposal: “AI and the One-Week Novel”**
 
-
-
 **Format:** 1-week intensive, 40 hours (25 contact, 15 homework)
 
 **Audience:** Masters students + advanced high-school (Gymnasium) students
 
-**Platform:** *Writers Factory* — a “Scrivener meets VS Code meets the writer’s future” hybrid, powered by multi-agent AI (Claude, Gemini, GPT, Qwen, DeepSeek, Olama/Olava local models, etc.)
-
-# **Introduction (No “unfinished,” no “challenge”)**
-
-
-
-
-
-## **0. Introduction**
+**Platform:** *Writers Factory* — a “Scrivener meets VS Code meets the writer’s future” hybrid, powered by multi-agent AI (Claude, Gemini, GPT, Qwen, DeepSeek, Olama/Olava local models, etc.)## **0. Introduction**
 
 **What if writing a novel in one week revealed the fundamental limits of AI?**
 

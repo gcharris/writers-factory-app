@@ -1,3 +1,7 @@
+theme: jekyll-theme-minimal
+title: AI and the One-Week Novel
+description: A course on engineering the muse.
+
 exclude:
   - claude-skills
   - dev_logs
