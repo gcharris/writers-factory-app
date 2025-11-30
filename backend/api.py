@@ -1559,6 +1559,68 @@ async def foreman_advance_to_director():
 
 
 # =============================================================================
+# Debug: Force Mode Advancement (bypasses requirements)
+# =============================================================================
+
+class ForceAdvanceRequest(BaseModel):
+    target_mode: str  # architect, voice_calibration, director, editor
+
+
+@app.post("/foreman/debug/force-mode", summary="[DEBUG] Force change Foreman mode")
+async def foreman_force_mode(request: ForceAdvanceRequest):
+    """
+    DEBUG ENDPOINT: Force the Foreman into any mode without checking requirements.
+
+    Use for testing gated progression. NOT for production use.
+
+    Valid modes: architect, voice_calibration, director, editor
+    """
+    foreman = _get_or_create_foreman()
+
+    valid_modes = ["architect", "voice_calibration", "director", "editor"]
+    if request.target_mode not in valid_modes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid mode. Must be one of: {valid_modes}"
+        )
+
+    # Import ForemanMode enum
+    from agents.foreman import ForemanMode
+
+    # Force the mode change
+    old_mode = foreman.mode.value if foreman.mode else "none"
+    foreman.mode = ForemanMode(request.target_mode)
+
+    if foreman.work_order:
+        foreman.work_order.mode = ForemanMode(request.target_mode)
+
+    logger.warning(f"[DEBUG] Forced Foreman mode change: {old_mode} -> {request.target_mode}")
+
+    return {
+        "success": True,
+        "previous_mode": old_mode,
+        "new_mode": request.target_mode,
+        "warning": "DEBUG MODE - Requirements were bypassed"
+    }
+
+
+@app.get("/foreman/debug/modes", summary="[DEBUG] List all Foreman modes")
+async def foreman_list_modes():
+    """
+    DEBUG ENDPOINT: List all available Foreman modes for the force-mode tool.
+    """
+    return {
+        "modes": [
+            {"id": "architect", "label": "ARCHITECT", "description": "Story Bible creation"},
+            {"id": "voice_calibration", "label": "VOICE_CALIBRATION", "description": "Voice tournament"},
+            {"id": "director", "label": "DIRECTOR", "description": "Scene drafting"},
+            {"id": "editor", "label": "EDITOR", "description": "Polish & revision"}
+        ],
+        "current_mode": _get_or_create_foreman().mode.value if _get_or_create_foreman().mode else "none"
+    }
+
+
+# =============================================================================
 # Stage Detection & Mentions (Assistant Panel Integration)
 # =============================================================================
 

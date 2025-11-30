@@ -148,7 +148,7 @@
   function toggleFolder(node) {
     if (!node.isDirectory) return;
 
-    console.log('[FileTree] toggleFolder called:', node.path, 'currently expanded:', !!expandedFolders[node.path]);
+    console.log('[FileTree] toggleFolder called:', node.path, 'wasExpanded:', !!expandedFolders[node.path]);
 
     if (expandedFolders[node.path]) {
       const { [node.path]: _, ...rest } = expandedFolders;

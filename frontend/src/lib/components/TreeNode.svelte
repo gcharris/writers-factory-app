@@ -17,9 +17,15 @@
   export let toggleFolder;
   export let loadingFile = null;  // Path of file currently being loaded
 
-  $: isExpanded = !!expandedFolders[node.path];
+  // Force re-evaluation when expandedFolders object changes
+  // Note: We spread the object to ensure Svelte sees this as a new reactive dependency
+  $: expandedKeys = Object.keys(expandedFolders);
+  $: isExpanded = expandedKeys.includes(node.path);
   $: isActive = $activeFile === node.path;
   $: isLoading = loadingFile === node.path;
+
+  // Debug: log when isExpanded changes
+  $: console.log('[TreeNode] isExpanded changed for', node.name, ':', isExpanded);
 
   // Get file extension for icon styling
   function getFileType(name) {
@@ -29,7 +35,7 @@
   }
 
   function handleClick() {
-    console.log('[TreeNode] handleClick:', node.name, 'isDirectory:', node.isDirectory);
+    console.log('[TreeNode] handleClick:', node.path, 'isDirectory:', node.isDirectory, 'isExpanded:', isExpanded);
     openFile(node);
   }
 </script>
