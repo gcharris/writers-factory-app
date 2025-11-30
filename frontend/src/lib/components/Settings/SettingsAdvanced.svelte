@@ -30,9 +30,7 @@
   let errorMessage = '';
   let isLoading = true;
 
-  onMount(() => {
-    loadSettings();
-  });
+  // Removed - moved to combined onMount below
 
   async function loadSettings() {
     isLoading = true;
@@ -102,6 +100,66 @@
     defaultModel = 'deepseek-chat';
     expertMode = false;
   }
+
+  // Debug tools state
+  let debugModes = [
+    { id: 'architect', label: 'ARCHITECT', description: 'Story Bible creation' },
+    { id: 'voice_calibration', label: 'VOICE', description: 'Voice tournament' },
+    { id: 'director', label: 'DIRECTOR', description: 'Scene drafting' },
+    { id: 'editor', label: 'EDITOR', description: 'Polish & revision' }
+  ];
+  let currentMode = 'architect';
+  let forceAdvanceMessage = '';
+  let forceAdvanceError = '';
+  let isForcing = false;
+
+  async function loadCurrentMode() {
+    try {
+      const response = await fetch(`${BASE_URL}/foreman/debug/modes`);
+      if (response.ok) {
+        const data = await response.json();
+        currentMode = data.current_mode || 'architect';
+      }
+    } catch (e) {
+      console.warn('Could not load current mode:', e);
+    }
+  }
+
+  async function forceAdvanceMode(targetMode: string) {
+    if (isForcing) return;
+
+    isForcing = true;
+    forceAdvanceMessage = '';
+    forceAdvanceError = '';
+
+    try {
+      const response = await fetch(`${BASE_URL}/foreman/debug/force-mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_mode: targetMode })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to force mode');
+      }
+
+      const result = await response.json();
+      currentMode = result.new_mode;
+      forceAdvanceMessage = `Mode changed: ${result.previous_mode} → ${result.new_mode}`;
+      setTimeout(() => forceAdvanceMessage = '', 5000);
+    } catch (e) {
+      forceAdvanceError = e instanceof Error ? e.message : 'Failed to force mode';
+    } finally {
+      isForcing = false;
+    }
+  }
+
+  // Load current mode when component mounts
+  onMount(() => {
+    loadSettings();
+    loadCurrentMode();
+  });
 
   function getModelDescription(injection: string): string {
     const descriptions = {
@@ -260,6 +318,48 @@
       </div>
       <p class="injection-description">{getModelDescription(context.voice_bundle_injection)}</p>
     </div>
+
+    <!-- Debug Tools (Expert Mode Only) -->
+    {#if expertMode}
+      <div class="section debug-section">
+        <h3>Debug Tools</h3>
+        <p class="section-desc">
+          Development tools for testing. Force mode changes bypass normal requirements.
+        </p>
+
+        <div class="debug-warning">
+          <span class="warning-icon">⚠️</span>
+          <span>Debug mode - requirements are bypassed. Use only for testing.</span>
+        </div>
+
+        <div class="mode-selector">
+          <div class="current-mode">
+            <span class="mode-label">Current Mode:</span>
+            <span class="mode-value">{currentMode.toUpperCase().replace('_', ' ')}</span>
+          </div>
+
+          <div class="mode-buttons">
+            {#each debugModes as mode}
+              <button
+                class="mode-btn {currentMode === mode.id ? 'current' : ''}"
+                on:click={() => forceAdvanceMode(mode.id)}
+                disabled={isForcing || currentMode === mode.id}
+              >
+                <span class="mode-btn-label">{mode.label}</span>
+                <span class="mode-btn-desc">{mode.description}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        {#if forceAdvanceMessage}
+          <div class="debug-message success">{forceAdvanceMessage}</div>
+        {/if}
+        {#if forceAdvanceError}
+          <div class="debug-message error">{forceAdvanceError}</div>
+        {/if}
+      </div>
+    {/if}
 
     <!-- Info Panel -->
     <div class="info-panel">
@@ -717,6 +817,125 @@
   }
 
   .message.error {
+    background: #ff444420;
+    color: #ff4444;
+    border: 1px solid #ff4444;
+  }
+
+  /* Debug Tools */
+  .debug-section {
+    border-color: #ff8c00;
+    background: linear-gradient(135deg, #2d2d2d 0%, #3a2a1a 100%);
+  }
+
+  .debug-section h3 {
+    color: #ff8c00;
+  }
+
+  .debug-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #ff8c0020;
+    border: 1px solid #ff8c0040;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: #ffb347;
+  }
+
+  .warning-icon {
+    font-size: 1.25rem;
+  }
+
+  .mode-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .current-mode {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #1a1a1a;
+    border-radius: 4px;
+  }
+
+  .mode-label {
+    color: #888888;
+    font-size: 0.875rem;
+  }
+
+  .mode-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #ff8c00;
+  }
+
+  .mode-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+
+  .mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    background: #1a1a1a;
+    border: 2px solid #404040;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mode-btn:hover:not(:disabled) {
+    border-color: #ff8c00;
+    transform: translateY(-2px);
+  }
+
+  .mode-btn.current {
+    border-color: #ff8c00;
+    background: #3a2a1a;
+  }
+
+  .mode-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .mode-btn-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #ffffff;
+    margin-bottom: 0.25rem;
+  }
+
+  .mode-btn-desc {
+    font-size: 0.65rem;
+    color: #888888;
+    text-align: center;
+  }
+
+  .debug-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+
+  .debug-message.success {
+    background: #00ff8820;
+    color: #00ff88;
+    border: 1px solid #00ff88;
+  }
+
+  .debug-message.error {
     background: #ff444420;
     color: #ff4444;
     border: 1px solid #ff4444;
