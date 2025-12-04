@@ -1,6 +1,6 @@
 # GraphRAG Enhancement Implementation Plan
 
-**Version**: 1.0
+**Version**: 1.1
 **Status**: Approved for Implementation
 **Date**: December 2025
 **Authors**: Claude Code (Opus 4.5) + Human collaboration
@@ -21,6 +21,190 @@ This document specifies the implementation plan for enhancing Writers Factory's 
 | **Extraction Trigger** | Manuscript promotion + pre-chat | "Working → Manuscript" workflow |
 | **Verification** | Tiered (fast/medium/slow) | Balance UX speed with thoroughness |
 | **Ontology** | Fixed core + configurable | Settings panel for customization |
+
+---
+
+## Part 0: Integration Matrix
+
+This section clarifies how new components integrate with existing services.
+
+### 0.1 Component Integration Map
+
+| New Component | Existing File | Integration Type | Description |
+|---------------|---------------|------------------|-------------|
+| `QueryClassifier` | `foreman.py` | **Calls into** | Called before each Foreman chat to classify user intent and route to appropriate knowledge sources |
+| `ContextAssembler` | `foreman_kb_service.py` | **Replaces** | Replaces `get_context_for_foreman()` with token-aware, priority-based assembly |
+| `ManuscriptService` | `consolidator_service.py` | **Triggers** | Promotion calls `consolidator.extract_from_file()` for graph extraction |
+| `NarrativeExtractor` | `ner_extractor.py` | **Extends** | Adds narrative edge types to existing NER extraction; keeps spaCy for entity detection |
+| `EmbeddingService` | `graph_service.py` | **Adds to** | Adds `embedding` column to Node schema; adds `semantic_search()` method |
+| `EmbeddingIndexService` | `graph_service.py` | **Wraps** | Manages embedding lifecycle; calls graph_service for node CRUD |
+| `KnowledgeRouter` | `foreman.py` | **Called by** | Orchestrates query → classification → retrieval → assembly pipeline |
+| `VerificationService` | `graph_health_service.py` | **Wraps** | Adds tiered execution around existing health checks |
+
+### 0.2 Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              WRITE PATH                                      │
+│                                                                              │
+│   Working/scene.md                                                           │
+│         │                                                                    │
+│         ▼ (User: "finalize this scene")                                     │
+│   ┌─────────────────┐                                                        │
+│   │ ManuscriptService│ ──────────────────────────────────────┐              │
+│   └─────────────────┘                                        │              │
+│         │                                                    │              │
+│         ▼ (promote)                                          ▼              │
+│   Manuscript/Act_1/Ch_1/scene.md              ┌─────────────────────────┐   │
+│         │                                     │ ConsolidatorService     │   │
+│         │                                     │ (extract_from_file)     │   │
+│         │                                     └─────────────────────────┘   │
+│         │                                                    │              │
+│         │                                                    ▼              │
+│         │                                     ┌─────────────────────────┐   │
+│         │                                     │ NarrativeExtractor      │   │
+│         │                                     │ (LLM: llama3.2:3b)      │   │
+│         │                                     └─────────────────────────┘   │
+│         │                                                    │              │
+│         │                                                    ▼              │
+│         │                                     ┌─────────────────────────┐   │
+│         │                                     │ KnowledgeGraphService   │   │
+│         │                                     │ (SQLite + NetworkX)     │   │
+│         │                                     └─────────────────────────┘   │
+│         │                                                    │              │
+│         │                                                    ▼              │
+│         │                                     ┌─────────────────────────┐   │
+│         │                                     │ EmbeddingIndexService   │   │
+│         │                                     │ (index new nodes)       │   │
+│         │                                     └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              READ PATH                                       │
+│                                                                              │
+│   User Query: "How should Mickey react to the betrayal?"                    │
+│         │                                                                    │
+│         ▼                                                                    │
+│   ┌─────────────────┐                                                        │
+│   │ QueryClassifier │ ──► QueryType.CHARACTER_DEEP + QueryType.RELATIONSHIP │
+│   └─────────────────┘     entities: [Mickey]                                │
+│         │                 sources: [graph, story_bible]                      │
+│         ▼                                                                    │
+│   ┌─────────────────┐                                                        │
+│   │ KnowledgeRouter │                                                        │
+│   └─────────────────┘                                                        │
+│         │                                                                    │
+│         ├──► Graph: ego_graph(Mickey, k=2) + semantic_search("betrayal")   │
+│         │                                                                    │
+│         ├──► Story Bible: Character/Mickey.md (Fatal Flaw, The Lie)        │
+│         │                                                                    │
+│         └──► Foreman KB: recent decisions about Mickey                      │
+│         │                                                                    │
+│         ▼                                                                    │
+│   ┌─────────────────┐                                                        │
+│   │ContextAssembler │ ──► Token-counted context block                       │
+│   └─────────────────┘     (Priority: char_core > relationships > beat)      │
+│         │                                                                    │
+│         ▼                                                                    │
+│   ┌─────────────────┐                                                        │
+│   │    Foreman      │ ──► LLM generates response with rich context          │
+│   └─────────────────┘                                                        │
+│         │                                                                    │
+│         ▼                                                                    │
+│   ┌─────────────────┐                                                        │
+│   │VerificationSvc  │ ──► FAST checks inline, MEDIUM checks background      │
+│   └─────────────────┘                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 0.3 Embedding Model Strategy
+
+**Primary Model**: `nomic-embed-text` via Ollama
+- Size: ~274MB download
+- RAM: ~1GB during inference
+- Dimension: 768
+- Quality: Good for semantic similarity
+
+**Fallback Model**: `llama3.2:3b` via Ollama `/api/embeddings`
+- Already installed per CLAUDE.md requirements
+- Dimension: 3072 (larger)
+- Quality: Acceptable, not optimized for embeddings
+
+**Cloud Option**: OpenAI `text-embedding-3-small`
+- Dimension: 1536
+- Quality: Excellent
+- Cost: ~$0.02 per 1M tokens (negligible at novel scale)
+
+**Initialization Logic**:
+
+```python
+# In embedding_service.py
+
+async def _detect_best_ollama_model(self) -> str:
+    """Detect best available Ollama embedding model."""
+    try:
+        # Check for dedicated embedding model
+        response = await self.client.get(f"{self.base_url}/api/tags")
+        models = response.json().get("models", [])
+        model_names = [m["name"] for m in models]
+
+        # Prefer dedicated embedding model
+        if "nomic-embed-text" in model_names:
+            return "nomic-embed-text"
+        if "nomic-embed-text:latest" in model_names:
+            return "nomic-embed-text:latest"
+
+        # Fall back to llama3.2 (required by CLAUDE.md)
+        if "llama3.2:3b" in model_names:
+            logger.info("Using llama3.2:3b for embeddings (nomic-embed-text not found)")
+            return "llama3.2:3b"
+
+        # Last resort: any available model
+        if models:
+            logger.warning(f"Using {models[0]['name']} for embeddings (not recommended)")
+            return models[0]["name"]
+
+        raise RuntimeError("No Ollama models available for embeddings")
+    except Exception as e:
+        logger.error(f"Failed to detect Ollama models: {e}")
+        raise
+
+class OllamaEmbedding(EmbeddingProvider):
+    """Ollama-based embeddings with automatic model detection."""
+
+    def __init__(self, model: str = "auto", base_url: str = "http://localhost:11434"):
+        self.base_url = base_url
+        self.client = httpx.AsyncClient(timeout=30.0)
+        self._model = model
+        self._detected_model: Optional[str] = None
+
+    async def _get_model(self) -> str:
+        """Get model name, detecting if needed."""
+        if self._model != "auto":
+            return self._model
+        if self._detected_model is None:
+            self._detected_model = await self._detect_best_ollama_model()
+        return self._detected_model
+```
+
+### 0.4 Settings Integration Points
+
+New settings under `settings.graph.*`:
+
+| Setting Key | Type | Default | Used By |
+|-------------|------|---------|---------|
+| `graph.edge_types.MOTIVATES` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.HINDERS` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.CHALLENGES` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.FORESHADOWS` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.CALLBACKS` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.CAUSES` | boolean | true | NarrativeExtractor |
+| `graph.edge_types.CONTRADICTS` | boolean | false | NarrativeExtractor |
+| `graph.extraction_triggers.on_manuscript_promote` | boolean | true | ManuscriptService |
+| `graph.extraction_triggers.before_foreman_chat` | boolean | true | Foreman |
+| `graph.extraction_triggers.periodic_minutes` | integer | 0 | Background task |
+| `graph.verification_level` | enum | "standard" | VerificationService |
+| `graph.embedding_provider` | enum | "ollama" | EmbeddingService |
 
 ---
 
@@ -343,17 +527,55 @@ class EmbeddingProvider(ABC):
 
 
 class OllamaEmbedding(EmbeddingProvider):
-    """Ollama-based embeddings using nomic-embed-text or similar."""
+    """Ollama-based embeddings with automatic model detection."""
 
-    def __init__(self, model: str = "nomic-embed-text", base_url: str = "http://localhost:11434"):
-        self.model = model
+    def __init__(self, model: str = "auto", base_url: str = "http://localhost:11434"):
         self.base_url = base_url
         self.client = httpx.AsyncClient(timeout=30.0)
+        self._model = model
+        self._detected_model: Optional[str] = None
+
+    async def _detect_best_model(self) -> str:
+        """Detect best available Ollama embedding model."""
+        try:
+            response = await self.client.get(f"{self.base_url}/api/tags")
+            models = response.json().get("models", [])
+            model_names = [m["name"] for m in models]
+
+            # Prefer dedicated embedding model
+            if "nomic-embed-text" in model_names:
+                return "nomic-embed-text"
+            if "nomic-embed-text:latest" in model_names:
+                return "nomic-embed-text:latest"
+
+            # Fall back to llama3.2 (required by CLAUDE.md)
+            if "llama3.2:3b" in model_names:
+                logger.info("Using llama3.2:3b for embeddings (nomic-embed-text not found)")
+                return "llama3.2:3b"
+
+            # Last resort: any available model
+            if models:
+                logger.warning(f"Using {models[0]['name']} for embeddings")
+                return models[0]["name"]
+
+            raise RuntimeError("No Ollama models available")
+        except Exception as e:
+            logger.error(f"Model detection failed: {e}")
+            return "llama3.2:3b"  # Safe fallback
+
+    async def _get_model(self) -> str:
+        """Get model name, detecting if 'auto'."""
+        if self._model != "auto":
+            return self._model
+        if self._detected_model is None:
+            self._detected_model = await self._detect_best_model()
+        return self._detected_model
 
     async def embed(self, text: str) -> List[float]:
+        model = await self._get_model()
         response = await self.client.post(
             f"{self.base_url}/api/embeddings",
-            json={"model": self.model, "prompt": text}
+            json={"model": model, "prompt": text}
         )
         response.raise_for_status()
         return response.json()["embedding"]
@@ -2063,6 +2285,7 @@ GRAPH_SETTINGS_SCHEMA = {
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | Dec 2025 | Initial approved plan |
+| 1.1 | Dec 2025 | Added Part 0: Integration Matrix with data flow diagrams, embedding model fallback strategy, and settings integration points |
 
 ---
 
