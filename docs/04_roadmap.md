@@ -216,11 +216,34 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 **See:** [PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md](dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md)
 
-## Phase 5: UI/UX Implementation (🚧 40% Complete)
+## Phase 3F: GraphRAG Enhancement (✅ Phase 1 Complete)
+**Goal:** Intelligent knowledge retrieval with query classification and context assembly.
+**Priority:** P1 High - Improves Foreman context quality
+**Status:** Phase 1 Complete (Dec 4, 2025)
+
+### Phase 1: Core Services ✅
+- ✅ **QueryClassifier** - 8 query types (CHARACTER_DEEP, RELATIONSHIP, PLOT_TIMELINE, WORLD_RULES, etc.)
+- ✅ **ContextAssembler** - Token-aware, priority-based context assembly with tiktoken
+- ✅ **ManuscriptService** - Working → Manuscript promotion workflow with graph extraction
+- ✅ **4 API Endpoints** - `/manuscript/working`, `/manuscript/structure`, `/manuscript/promote`, `/knowledge/query`
+
+### Phase 2: Embeddings & Semantic Search (Planned)
+- 🔲 **EmbeddingService** - Ollama `nomic-embed-text` with OpenAI fallback
+- 🔲 **Semantic Search** - Vector similarity for knowledge graph nodes
+- 🔲 **NarrativeExtractor** - Narrative edge types (MOTIVATES, HINDERS, FORESHADOWS)
+
+### Phase 3: Verification & Integration (Planned)
+- 🔲 **VerificationService** - Tiered health checks (fast/medium/slow)
+- 🔲 **KnowledgeRouter** - Full query → classification → retrieval → assembly pipeline
+- 🔲 **Foreman Integration** - Automatic context injection before chat
+
+**See:** [GRAPHRAG_IMPLEMENTATION_PLAN.md](specs/GRAPHRAG_IMPLEMENTATION_PLAN.md)
+
+## Phase 5: UI/UX Implementation (🚧 97% Complete)
 **Goal:** Production-ready user interface with complete feature coverage.
 **Priority:** P0 Critical - Makes backend features accessible
 **Strategy:** 3-Track Parallel Development
-**Status:** Track 1 Complete, Track 3 Phases 1-3 Complete
+**Status:** Track 1 Complete, Track 3 Phases 1-5 Complete, GraphRAG UI Complete
 
 ### Critical Insight: Settings Panel is a Blocker, Not Polish
 **Problem:** 80% of backend features (40+ hours of development) require cloud API keys to function:
@@ -299,8 +322,9 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
    - HealthTrends.svelte (21KB) - SVG trend charts with date picker
    - ThemeOverridePanel.svelte (25KB) - Manual theme score overrides
 
-5. ✅ **Phase 5 (Settings + Polish):** All 9 settings tabs implemented - COMPLETE
-   - SettingsSquad.svelte - Squad selection and tournament models (NEW - Nov 2025)
+5. ✅ **Phase 5 (Settings + Polish):** All 10 settings tabs implemented - COMPLETE
+   - SettingsSquad.svelte - Squad selection with role-based model assignment (ENHANCED - Dec 2025)
+   - SettingsGraph.svelte - Knowledge Graph configuration (NEW - Dec 2025)
    - SettingsAgents.svelte - API key configuration
    - SettingsOrchestrator.svelte - Quality tier selection
    - SettingsScoring.svelte - Scene scoring weights
@@ -312,9 +336,9 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### UI Component Coverage
 **Total Components Required:** 87
-**Completed:** 55+ components (~63%)
+**Completed:** 60+ components (~69%)
 **In Progress:** 0 components
-**Remaining:** ~32 components (37%)
+**Remaining:** ~27 components (31%)
 
 **Completed by Category:**
 - ✅ **Critical UI (Track 1):** 11/11 components (100%)
@@ -322,8 +346,9 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - ✅ **VOICE_CALIBRATION Mode:** 6/6 components (100%)
 - ✅ **DIRECTOR Mode:** 8/8 components (100%)
 - ✅ **Graph Health UI:** 4/4 components (100%)
-- ✅ **Settings Panels:** 9/9 components (100%)
-- ✅ **Squad System UI:** 3/3 components (100%) - NEW Nov 2025
+- ✅ **Settings Panels:** 10/10 components (100%) - +SettingsGraph Dec 2025
+- ✅ **Squad System UI:** 5/5 components (100%) - +RoleModelSelector, HealthCheckModelConfig Dec 2025
+- ✅ **GraphRAG Settings:** 1/1 components (100%) - NEW Dec 2025
 
 **Remaining by Category:**
 - 🔲 **NotebookLM Integration:** 0/3 components (0%)
@@ -360,44 +385,46 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ## Current Status (2025-12-04)
 
-### 🎯 Recent Sprint (Nov 27 - Dec 4) - ✅ COMPLETE
+### 🎯 Recent Sprint (Dec 4) - ✅ COMPLETE
 
 **Major Accomplishments:**
-- ✅ **Key Management & Subscription UI** - Unified configuration, subscription gating (`skoltech2026`), Moonshot fix.
-- ✅ **FileTree File Loading Fix** - Clicking files now correctly loads content into the editor.
-- ✅ **UI Status Report** - Comprehensive audit of UI state and roadmap.
+- ✅ **GraphRAG Phase 1** - QueryClassifier, ContextAssembler, ManuscriptService (+1,390 lines)
+- ✅ **Squad Management UI** - Enhanced SettingsSquad, RoleModelSelector, HealthCheckModelConfig (+728 lines)
+- ✅ **Settings Graph UI** - SettingsGraph.svelte for Knowledge Graph configuration (+683 lines)
+- ✅ **Backend Defaults** - Graph settings added to settings_service.py
 
 **Sprint Metrics:**
-- **Duration:** 1 week
-- **Progress:** 92% → 95% completion
+- **Duration:** 1 day (Dec 4)
+- **Progress:** 95% → 97% completion
+- **Lines Added:** +3,801
 
 ### 📊 Progress Summary
 
-**Overall Progress:** ~95% Complete
+**Overall Progress:** ~97% Complete
 
 **Backend:** 100% ✅
-- All Phases 1-3E complete
-- 8 major services, 11 LLM providers, zero critical bugs
+- All Phases 1-3F complete (GraphRAG Phase 1 NEW)
+- 11 major services, 11 LLM providers, zero critical bugs
+- 4 new API endpoints for manuscript/knowledge
 
-**Frontend:** 95% ✅
+**Frontend:** 97% ✅
 - Critical UI: 11/11 components ✅
-- Feature UI: 70+ components total ✅
-- Key Management: ✅ COMPLETE
-- FileTree: ✅ COMPLETE
+- Feature UI: 75+ components total ✅
+- Settings: 10/10 tabs ✅ (including Graph)
+- Squad System: 5/5 components ✅
 
-**Remaining:** ~25 hours
-- Squad Management UI (High Priority)
-- Voice Settings UI
-- Advanced Settings UI
+**Remaining:** ~15 hours
+- Voice Settings UI (TTS provider selection)
+- Advanced Settings UI (Ollama URL, context window)
 - Polish & UX
 
 ### 🚀 Recent Accomplishments (Dec 2025)
 
-**Dec 1-4 Sprint:**
-- ✅ **Key Management UI** - Renamed from "Premium Keys", added subscription gating.
-- ✅ **Moonshot Integration** - Fixed provider ID mismatch.
-- ✅ **FileTree Fix** - Resolved file loading issue.
-- ✅ **Documentation** - Updated roadmap and status reports.
+**Dec 4 Sprint:**
+- ✅ **GraphRAG Phase 1** - Query classification, context assembly, manuscript workflow
+- ✅ **Squad Management Enhanced** - Role-based model assignment UI (Gemini 3)
+- ✅ **Settings Graph** - Knowledge Graph edge types, extraction triggers, verification levels
+- ✅ **Documentation** - GraphRAG spec v1.1 with integration matrix
 
 **Nov 25-27 Sprint (3 days):**
 - ✅ **CodeMirror Editor** (383 lines) - Replaced Monaco, optimized for prose writing
@@ -410,26 +437,30 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### 📅 Next Milestones
 
-**Dec 4:** ✅ Key Management & FileTree Fix COMPLETE
-**Dec 8:** Squad Management UI & Voice Settings
+**Dec 4:** ✅ GraphRAG Phase 1, Squad UI, Settings Graph - COMPLETE
+**Dec 8:** Voice Settings UI & Advanced Settings
 **Dec 15:** Production Ready (installers, docs, testing)
 
 ### 📝 Documentation
 
 **Status:** [PROJECT_STATUS.md](status/PROJECT_STATUS.md) - Comprehensive project status
 **Tasks:** [tasks/](tasks/) - Ready-to-implement specifications
+**GraphRAG:** [GRAPHRAG_IMPLEMENTATION_PLAN.md](specs/GRAPHRAG_IMPLEMENTATION_PLAN.md) - v1.1 with integration matrix
 
 ### 🎖️ Team Status
 
 **Recent Contributors:**
-- **Antigravity** (Google Deepmind) - ✅ Completed Key Management, Subscription UI, Documentation updates.
-- **funny-wilbur** (Claude Cloud) - ✅ Completed 3-panel layout, Graph Explorer, Session Manager, NotebookLM
-- **xenodochial-borg** (Claude Cloud) - ✅ Completed CodeMirror editor integration
-- **elegant-mendeleev** (Claude Cloud) - ✅ Completed FileTree simplification
+- **Claude Code Desktop (infallible-vaughan)** - ✅ GraphRAG Phase 1 backend services (Dec 4)
+- **Gemini 3 IDE** - ✅ Squad Management UI enhancement (Dec 4)
+- **Claude IDE** - ✅ Settings Graph UI, documentation updates, merge coordination (Dec 4)
+- **Antigravity** (Google Deepmind) - ✅ Key Management, Subscription UI (Dec 1-3)
+- **funny-wilbur** (Claude Cloud) - ✅ 3-panel layout, Graph Explorer, Session Manager
+- **xenodochial-borg** (Claude Cloud) - ✅ CodeMirror editor integration
+- **elegant-mendeleev** (Claude Cloud) - ✅ FileTree simplification
 
 ---
 
-*Roadmap last updated: 2025-12-04 by Antigravity*
+*Roadmap last updated: 2025-12-04 by Claude IDE*
 
 ## Phase 7: The Network (External Integration)
 **Goal:** Connect the Desktop App to the `writerscommunity.app` web platform.

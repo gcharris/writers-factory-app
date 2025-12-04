@@ -1,5 +1,7 @@
 # UI Status Report & Roadmap
 
+*Last Updated: December 4, 2025*
+
 ## ✅ Completed & Working Features
 
 ### 1. Unified AI Model & Key Configuration
@@ -24,19 +26,30 @@
 *   **Sidebar:** Updated labels to "Key Management" and "AI Models" for clarity.
 *   **Navigation:** "Configure" buttons in the AI Models list correctly navigate to the Key Management tab.
 
+### 5. Squad Management (✅ COMPLETE - Dec 4, 2025)
+*   **Enhanced SettingsSquad.svelte:** Refactored with improved layout (~400 lines).
+*   **RoleModelSelector.svelte:** NEW component for per-role model assignment (~300 lines).
+*   **HealthCheckModelConfig.svelte:** NEW component for health check model configuration (~180 lines).
+*   **Tab Rename:** Changed from "Orchestrator" to "Squad" in settings sidebar.
+*   **Features Delivered:**
+    *   Role-based model selection (Editor, Researcher, Writer, Analyst).
+    *   Visual role cards with model dropdowns.
+    *   Health check model configuration.
+
+### 6. Knowledge Graph Settings (✅ COMPLETE - Dec 4, 2025)
+*   **SettingsGraph.svelte:** NEW settings tab for Knowledge Graph configuration (~680 lines).
+*   **Features Delivered:**
+    *   Edge type toggles (MOTIVATES, HINDERS, CHALLENGES, CAUSES, FORESHADOWS, CALLBACKS, KNOWS, CONTRADICTS).
+    *   Extraction trigger configuration (on manuscript promote, before Foreman chat, periodic).
+    *   Verification level selection (minimal, standard, thorough).
+    *   Embedding provider selection (Ollama, OpenAI, none).
+*   **Backend Integration:** Added graph defaults to `settings_service.py`.
+
 ---
 
 ## 🚧 Remaining UI Features & Improvements
 
-### 1. Squad Management (High Priority)
-*   **Current State:** The "Orchestrator" (Squad) settings are likely basic or using old components (`SettingsSquad.svelte`).
-*   **Goal:** Refactor to use a shared, premium UI similar to the new Key Management.
-*   **Features Needed:**
-    *   Visual "Squad" builder (drag-and-drop or card-based).
-    *   Role configuration (Editor, Researcher, Writer).
-    *   Model assignment per agent (e.g., assign Claude to Editor, GPT-4 to Writer).
-
-### 2. Voice Settings
+### 1. Voice Settings (Medium Priority)
 *   **Current State:** Placeholder or basic UI.
 *   **Goal:** Create a dedicated "Voice" settings panel.
 *   **Features Needed:**
@@ -44,7 +57,7 @@
     *   Voice preview/playback.
     *   Speed/Pitch controls.
 
-### 3. Advanced Settings
+### 2. Advanced Settings (Medium Priority)
 *   **Current State:** Placeholder.
 *   **Goal:** Implement advanced configuration options.
 *   **Features Needed:**
@@ -53,11 +66,26 @@
     *   Temperature/Top-P defaults.
     *   Data management (clear cache, export data).
 
-### 4. Backend Integration (Technical Debt)
+### 3. Backend Integration (Technical Debt)
 *   **Subscription Validation:** Move the `skoltech2026` check from client-side to a proper backend endpoint for security.
 *   **Key Validation:** Implement real "Test" buttons for premium keys (currently we have the UI but need to ensure the backend `test_key` endpoint supports all providers).
 
-### 5. Visual Polish
+### 4. Visual Polish (Low Priority)
 *   **Animations:** Add subtle entry animations for lists and modals.
 *   **Mobile Responsiveness:** Verify and improve layout on smaller screens (if applicable).
 *   **Dark/Light Mode:** Ensure consistent theming if light mode is supported (currently optimized for Dark Mode).
+
+---
+
+## 📊 Progress Summary
+
+| Category | Status | Components |
+|----------|--------|------------|
+| Key Management | ✅ Complete | 2 components |
+| AI Models | ✅ Complete | 2 components |
+| Squad Management | ✅ Complete | 3 components |
+| Knowledge Graph Settings | ✅ Complete | 1 component |
+| Voice Settings | 🔲 Pending | 0 components |
+| Advanced Settings | 🔲 Pending | 0 components |
+
+**Total Progress:** 8/10 settings components complete (80%)

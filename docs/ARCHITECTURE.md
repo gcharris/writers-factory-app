@@ -1,8 +1,8 @@
 # Writers Factory - Desktop App Architecture
 
-**Version**: 2.1 (UI/UX Strategy Update)
-**Date**: November 25, 2025
-**Status**: Backend Feature-Complete, UI Implementation Phase
+**Version**: 2.2 (GraphRAG Phase 1 Complete)
+**Date**: December 4, 2025
+**Status**: Backend Feature-Complete (Phase 3F), UI 97% Complete
 
 ---
 
@@ -386,25 +386,28 @@ writers-factory-app/
 
 ## UI/UX Implementation Strategy
 
-### Current State (November 2025)
+### Current State (December 2025)
 
-**Backend Maturity**: Feature-complete with 88 API endpoints across 13 service categories
+**Backend Maturity**: Feature-complete with 92+ API endpoints across 14 service categories
 - ✅ Story Bible System (Phase 2)
 - ✅ Voice Calibration (Phase 2B)
 - ✅ Director Mode - 4 services, 16 endpoints (Phase 3B)
 - ✅ Settings Service - SQLite-backed configuration (Phase 3C)
-- 🚧 Graph Health Service - 4/7 checks implemented with LLM analysis (Phase 3D)
+- ✅ Graph Health Service - 7/7 checks with LLM analysis (Phase 3D)
 - ✅ Model Orchestrator - Quality tiers, cost estimation (Phase 3E.3)
 - ✅ Foreman - Intelligent task routing, 8 task types (Phase 3E.1)
+- ✅ GraphRAG Phase 1 - QueryClassifier, ContextAssembler, ManuscriptService (Phase 3F) **NEW**
 
-**Frontend Maturity**: Primitive 3-panel layout (~20% coverage)
-- ✅ Basic Monaco editor, file tree, chat panel
-- ❌ No Settings Panel (blocks all cloud features)
-- ❌ No Story Bible creation UI (ARCHITECT mode)
-- ❌ No Voice Calibration UI (tournament visualization)
-- ❌ No Director Mode UI (scaffold, variants, enhancement)
-- ❌ No Graph Health dashboard
-- ❌ No NotebookLM integration UI
+**Frontend Maturity**: Production-ready (~97% coverage)
+- ✅ CodeMirror editor, file tree, chat panel
+- ✅ Settings Panel with 10 tabs (including Graph settings)
+- ✅ Story Bible creation UI (ARCHITECT mode)
+- ✅ Voice Calibration UI (tournament visualization)
+- ✅ Director Mode UI (scaffold, variants, enhancement)
+- ✅ Graph Health dashboard
+- ✅ Squad Management UI with role-based model assignment
+- 🔲 Voice Settings (TTS provider selection)
+- 🔲 Advanced Settings (Ollama URL, context window)
 
 ### Critical Blocker: Settings Panel
 
@@ -600,13 +603,18 @@ The UI implementation follows a strategic 3-track approach that enables immediat
 - [x] Scene Analyzer refactor for configurable weights/patterns
 - [x] Scene Enhancement refactor for dynamic thresholds
 
-### Phase 3D: Graph Health Service (In Progress)
+### Phase 3D: Graph Health Service ✓
 - [x] LLM query routing infrastructure (9+ providers)
-- [x] 4 cloud-native health checks (Timeline, Theme, Flaw, Cast Function)
+- [x] 7 cloud-native health checks (Timeline, Theme, Flaw, Cast Function, Pacing, Beat Progress, Symbolic Layering)
 - [x] Configurable health check models in settings
-- [ ] 3 remaining checks (Pacing, Beat Progress, Symbolic Layering)
-- [ ] Knowledge Graph schema extension (SCENE, CHAPTER, BEAT nodes)
-- [ ] 7 API endpoints (`/health/*`)
+- [x] Knowledge Graph schema extension (SCENE, CHAPTER, BEAT nodes)
+- [x] 7 API endpoints (`/health/*`)
+
+### Phase 3F: GraphRAG Enhancement (Phase 1) ✓
+- [x] QueryClassifier - 8 query types (CHARACTER_DEEP, RELATIONSHIP, PLOT_TIMELINE, WORLD_RULES, etc.)
+- [x] ContextAssembler - Token-aware, priority-based context assembly with tiktoken
+- [x] ManuscriptService - Working → Manuscript promotion workflow with graph extraction
+- [x] 4 API endpoints (`/manuscript/working`, `/manuscript/structure`, `/manuscript/promote`, `/knowledge/query`)
 
 ### Phase 3E: Intelligent Model Orchestration ✓
 - [x] **Phase 3E.1**: Dual-Model Foreman - 8 task types, multi-provider cloud support
@@ -625,22 +633,26 @@ The UI implementation follows a strategic 3-track approach that enables immediat
 
 **Note**: Phase 3E already delivers 90% of value with automatic model selection.
 
-### Phase 5: UI/UX Implementation (In Progress)
-**Current Focus**: Track 1 Critical UI (Settings Panel + MainLayout)
+### Phase 5: UI/UX Implementation (97% Complete) ✓
+**Status**: Track 1 Complete, Track 3 Complete, Settings Complete
 
-**Track 1 Components** (Week 1):
-- [ ] SettingsAgents.svelte - API key configuration
-- [ ] SettingsOrchestrator.svelte - Quality tier selection
-- [ ] MainLayout.svelte - 4-panel IDE layout
-- [ ] ForemanChatPanel.svelte - Enhanced chat interface
-- [ ] StudioPanel.svelte - Mode cards and quick actions
+**Track 1 Components** (✅ Complete):
+- [x] SettingsAgents.svelte - API key configuration
+- [x] SettingsOrchestrator.svelte - Quality tier selection
+- [x] MainLayout.svelte - 4-panel IDE layout
+- [x] ForemanChatPanel.svelte - Enhanced chat interface
+- [x] StudioPanel.svelte - Mode cards and quick actions
 
-**Track 3 Components** (Weeks 2-6):
-- [ ] Week 2: ARCHITECT Mode UI (7 components)
-- [ ] Week 3: VOICE_CALIBRATION Mode UI (6 components)
-- [ ] Week 4: DIRECTOR Mode UI (16 components)
-- [ ] Week 5: Graph Health UI (4 components)
-- [ ] Week 6: Settings + Polish (14 components)
+**Track 3 Components** (✅ Complete):
+- [x] ARCHITECT Mode UI (7 components)
+- [x] VOICE_CALIBRATION Mode UI (6 components)
+- [x] DIRECTOR Mode UI (16 components)
+- [x] Graph Health UI (4 components)
+- [x] Settings (10 tabs including Squad, Graph)
+
+**Remaining** (~3%):
+- [ ] Voice Settings (TTS provider selection)
+- [ ] Advanced Settings (Ollama URL, context window)
 
 **See**: [UI/UX Implementation Strategy](#uiux-implementation-strategy) section above for complete details.
 
