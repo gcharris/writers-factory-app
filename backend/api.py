@@ -31,6 +31,9 @@ from backend.services.session_service import SessionService, get_session_service
 from backend.services.consolidator_service import ConsolidatorService, get_consolidator_service
 from backend.services.story_bible_service import StoryBibleService
 from backend.services.settings_service import SettingsService, settings_service
+from backend.services.query_classifier import get_query_classifier, QueryClassifier
+from backend.services.context_assembler import get_context_assembler, ContextAssembler
+from backend.services.manuscript_service import get_manuscript_service, ManuscriptService
 
 # --- SQLAlchemy Imports ---
 from sqlalchemy import create_engine
@@ -5885,6 +5888,202 @@ async def toggle_course_mode(
     except Exception as e:
         logging.error(f"Failed to toggle course mode: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to toggle course mode: {str(e)}")
+
+
+# =============================================================================
+# GRAPHRAG PHASE 1: Manuscript & Knowledge Query Endpoints
+# =============================================================================
+
+class PromoteRequest(BaseModel):
+    """Request to promote a working file to the manuscript."""
+    working_file: str
+    target_path: str
+    extract: bool = True
+
+
+class QueryRequest(BaseModel):
+    """Request for knowledge-augmented query."""
+    query: str
+    model: str = "claude-sonnet-4-5"
+
+
+@app.get("/manuscript/working", summary="List working files")
+async def list_working_files():
+    """
+    List all files in Working/ directory with metadata.
+
+    Returns:
+        List of files with name, word count, and promotion status
+    """
+    try:
+        service = get_manuscript_service()
+        files = service.get_working_files()
+        return {"files": files, "count": len(files)}
+    except Exception as e:
+        logger.error(f"Failed to list working files: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/manuscript/structure", summary="Get manuscript structure")
+async def get_manuscript_structure():
+    """
+    Get hierarchical manuscript structure for file tree display.
+
+    Returns:
+        Nested directory structure of Manuscript/ folder
+    """
+    try:
+        service = get_manuscript_service()
+        structure = service.get_manuscript_structure()
+        return structure
+    except Exception as e:
+        logger.error(f"Failed to get manuscript structure: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/manuscript/promote", summary="Promote working file to manuscript")
+async def promote_to_manuscript(request: PromoteRequest):
+    """
+    Promote a working file to the manuscript.
+
+    Copies the file from Working/ to Manuscript/ with the specified
+    directory structure and optionally triggers graph extraction.
+
+    Args:
+        request: PromoteRequest with working_file, target_path, and extract flag
+
+    Returns:
+        Promotion status with extraction results if triggered
+    """
+    try:
+        service = get_manuscript_service()
+        result = await service.promote_to_manuscript(
+            working_file=request.working_file,
+            target_path=request.target_path,
+            trigger_extraction=request.extract
+        )
+
+        if result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=result.get("error"))
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to promote file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/knowledge/query", summary="Query with automatic classification and routing")
+async def knowledge_query(request: QueryRequest):
+    """
+    Query the knowledge system with automatic classification and context assembly.
+
+    The query is classified to determine the best routing strategy, then
+    context is assembled from relevant sources within the model's token budget.
+
+    Args:
+        request: QueryRequest with query string and target model
+
+    Returns:
+        Assembled context string with metadata about classification and sources
+    """
+    try:
+        # Get the knowledge graph service for entities
+        graph_service = KnowledgeGraphService()
+
+        # Get known entities from the graph
+        try:
+            graph_data = graph_service.get_full_graph()
+            known_entities = {node.get("id") for node in graph_data.get("nodes", [])}
+        except Exception:
+            known_entities = set()
+
+        # Classify the query
+        classifier = get_query_classifier(known_entities)
+        classified = classifier.classify(request.query)
+
+        # Get context from various sources based on classification
+        graph_context = {"characters": {}, "edges": []}
+        story_bible_context = {}
+        kb_context = []
+        notebooklm_results = None
+
+        # Fetch graph context for mentioned entities
+        if classified.entities and 'graph' in classified.sources:
+            try:
+                for entity in classified.entities:
+                    # Try to get node data
+                    node_data = graph_service.get_node(entity)
+                    if node_data:
+                        graph_context["characters"][entity] = {
+                            "description": node_data.get("description", ""),
+                            "type": node_data.get("type", "CHARACTER"),
+                        }
+
+                # Get edges involving entities
+                full_graph = graph_service.get_full_graph()
+                entity_set = {e.lower() for e in classified.entities}
+                graph_context["edges"] = [
+                    edge for edge in full_graph.get("edges", [])
+                    if edge.get("source", "").lower() in entity_set
+                    or edge.get("target", "").lower() in entity_set
+                ]
+            except Exception as e:
+                logger.warning(f"Failed to fetch graph context: {e}")
+
+        # Fetch story bible context if needed
+        if 'story_bible' in classified.sources:
+            try:
+                story_bible_service = StoryBibleService()
+                status = story_bible_service.check_status()
+
+                if status.get("protagonist", {}).get("exists"):
+                    story_bible_context["protagonist"] = story_bible_service.parse_protagonist()
+
+                if status.get("beat_sheet", {}).get("exists"):
+                    beat_data = story_bible_service.parse_beat_sheet()
+                    story_bible_context["beat_sheet"] = beat_data
+            except Exception as e:
+                logger.warning(f"Failed to fetch story bible context: {e}")
+
+        # Fetch KB context if needed
+        if 'foreman_kb' in classified.sources or classified.query_type.value in ('character_deep', 'hybrid'):
+            try:
+                from backend.services.foreman_kb_service import get_foreman_kb_service
+                kb_service = get_foreman_kb_service()
+                # Get recent relevant entries
+                kb_context = kb_service.get_recent_entries(limit=10)
+            except Exception as e:
+                logger.warning(f"Failed to fetch KB context: {e}")
+
+        # Assemble context within token budget
+        assembler = get_context_assembler(request.model)
+        context = assembler.assemble(
+            classified_query=classified,
+            graph_context=graph_context,
+            story_bible_context=story_bible_context,
+            kb_context=kb_context,
+            notebooklm_results=notebooklm_results,
+        )
+
+        return {
+            "context": context,
+            "metadata": {
+                "query_type": classified.query_type.value,
+                "sources": classified.sources,
+                "entities": classified.entities,
+                "keywords": classified.keywords,
+                "confidence": classified.confidence,
+                "requires_semantic": classified.requires_semantic,
+                "model": request.model,
+                "budget_info": assembler.get_budget_info(),
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Knowledge query failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
