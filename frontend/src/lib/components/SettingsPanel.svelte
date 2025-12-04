@@ -13,7 +13,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import SettingsAgents from './Settings/SettingsAgents.svelte';
-  import SettingsOrchestrator from './Settings/SettingsOrchestrator.svelte';
+  import SettingsSquad from './Settings/SettingsSquad.svelte';
   import SettingsVoice from './Settings/SettingsVoice.svelte';
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
   import SettingsAssistant from './Settings/SettingsAssistant.svelte';
@@ -31,7 +31,7 @@
   // Tab order for writers
   const tabs = [
     { id: 'assistant', label: 'Assistant', icon: 'sparkles' },
-    { id: 'orchestrator', label: 'Orchestrator', icon: 'cpu' },
+    { id: 'squad', label: 'Squad', icon: 'users' },
     { id: 'api-keys', label: 'Key Management', icon: 'key' },
     { id: 'models', label: 'AI Models', icon: 'layers' },
     { id: 'voice', label: 'Voice', icon: 'mic' },
@@ -153,8 +153,8 @@
   <div class="settings-content">
     {#if activeTab === 'assistant'}
       <SettingsAssistant />
-    {:else if activeTab === 'orchestrator'}
-      <SettingsOrchestrator />
+    {:else if activeTab === 'squad'}
+      <SettingsSquad />
     {:else if activeTab === 'api-keys'}
       <SettingsAgents />
     {:else if activeTab === 'models'}

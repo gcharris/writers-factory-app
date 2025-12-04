@@ -1,10 +1,12 @@
 <!--
-  SettingsSquad.svelte - Squad settings tab with tournament model picker
+  SettingsSquad.svelte - Squad settings tab with role assignments and tournament model picker
 
   Features:
   - Shows active squad with "Change Squad" button
+  - Role-specific model assignment (Strategic, Coordinator)
+  - Health check model configuration
   - Tournament model picker with checkboxes
-  - Real-time cost estimation
+  - Real-time cost estimation (Fixed + Variable)
   - Reset to defaults functionality
 
   Usage:
@@ -14,6 +16,8 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import type { SquadPreset, TournamentModel, TournamentCostEstimate } from '$lib/api_client';
   import SquadWizard from '../Squads/SquadWizard.svelte';
+  import RoleModelSelector from './RoleModelSelector.svelte';
+  import HealthCheckModelConfig from './HealthCheckModelConfig.svelte';
 
   const BASE_URL = 'http://localhost:8000';
   const dispatch = createEventDispatcher();
@@ -29,8 +33,17 @@
   let loadingModels = false;
   let hasCustomSelection = false;
 
+  // Role assignments state
+  let roleAssignments = {
+    strategic: '',
+    coordinator: '',
+    health_checks: {} as Record<string, string>
+  };
+  let loadingRoles = false;
+
   // Cost estimation state
   let costEstimate: TournamentCostEstimate | null = null;
+  let fixedCostEstimate = 0;
   let loadingCost = false;
 
   // UI state
@@ -48,6 +61,7 @@
   onMount(async () => {
     await loadActiveSquad();
     await loadTournamentModels();
+    await loadRoleAssignments();
   });
 
   async function loadActiveSquad() {
@@ -106,8 +120,54 @@
     }
   }
 
+  async function loadRoleAssignments() {
+    loadingRoles = true;
+    try {
+      // Fetch foreman settings
+      const foremanRes = await fetch(`${BASE_URL}/settings/category/foreman`);
+      const foremanData = foremanRes.ok ? await foremanRes.json() : {};
+
+      // Fetch health check settings
+      const healthRes = await fetch(`${BASE_URL}/settings/category/health_checks`);
+      const healthData = healthRes.ok ? await healthRes.json() : {};
+
+      roleAssignments = {
+        strategic: foremanData['task_models.strategic'] || activeSquad?.default_models.foreman_strategic || 'deepseek-chat',
+        coordinator: foremanData['task_models.coordinator'] || activeSquad?.default_models.foreman_coordinator || 'deepseek-chat',
+        health_checks: {
+          default_model: healthData['models.default_model'] || 'llama3.2',
+          timeline_consistency: healthData['models.timeline_consistency'],
+          theme_resonance: healthData['models.theme_resonance'],
+          flaw_challenges: healthData['models.flaw_challenges'],
+          cast_function: healthData['models.cast_function'],
+          pacing_analysis: healthData['models.pacing_analysis'],
+          beat_progress: healthData['models.beat_progress'],
+          symbolic_layering: healthData['models.symbolic_layering']
+        }
+      };
+    } catch (e) {
+      console.error('Failed to load role assignments:', e);
+    } finally {
+      loadingRoles = false;
+    }
+  }
+
   async function estimateCost() {
     const selectedModels = tournamentModels.filter(m => m.selected).map(m => m.id);
+    
+    // Calculate Fixed Costs (Role Assignments)
+    // Formula: (Strategic * 50) + (Coordinator * 200)
+    const strategicModel = tournamentModels.find(m => m.id === roleAssignments.strategic);
+    const coordinatorModel = tournamentModels.find(m => m.id === roleAssignments.coordinator);
+    
+    const strategicCost = (strategicModel?.cost_per_1m_tokens || 0) * (50 / 1000); // 50 calls, assuming 1k tokens/call avg? No, cost is per 1M. 
+    // Let's assume 1 call = 2k tokens (input+output) for estimation
+    const TOKENS_PER_CALL = 2000;
+    const strategicMonthlyCost = (strategicModel?.cost_per_1m_tokens || 0) * (50 * TOKENS_PER_CALL / 1000000);
+    const coordinatorMonthlyCost = (coordinatorModel?.cost_per_1m_tokens || 0) * (200 * TOKENS_PER_CALL / 1000000);
+    
+    fixedCostEstimate = strategicMonthlyCost + coordinatorMonthlyCost;
+
     if (selectedModels.length === 0) {
       costEstimate = null;
       return;
@@ -133,6 +193,40 @@
       console.error('Failed to estimate cost:', e);
     } finally {
       loadingCost = false;
+    }
+  }
+
+  async function handleRoleChange(role: 'strategic' | 'coordinator', modelId: string) {
+    roleAssignments[role] = modelId;
+    await saveSettings('foreman', { [`task_models.${role}`]: modelId });
+    await estimateCost();
+  }
+
+  async function handleHealthCheckChange(newConfig: Record<string, string>) {
+    roleAssignments.health_checks = newConfig;
+    
+    // Flatten config for API
+    const flatConfig: Record<string, string> = {};
+    for (const [key, value] of Object.entries(newConfig)) {
+      if (value) flatConfig[`models.${key}`] = value;
+    }
+    
+    await saveSettings('health_checks', flatConfig);
+  }
+
+  async function saveSettings(category: string, settings: Record<string, any>) {
+    try {
+      const response = await fetch(`${BASE_URL}/settings/category/${category}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      
+      if (!response.ok) throw new Error('Failed to save settings');
+      
+      // Show subtle success indicator if needed, or just rely on UI update
+    } catch (e) {
+      errorMessage = `Failed to save ${category} settings`;
     }
   }
 
@@ -177,16 +271,25 @@
     errorMessage = '';
 
     try {
+      // Reset tournament models
       const response = await fetch(`${BASE_URL}/squad/tournament-models/custom`, {
         method: 'DELETE'
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to reset selection');
+      if (!response.ok) throw new Error('Failed to reset tournament selection');
+
+      // Reset roles to squad defaults
+      if (activeSquad) {
+        await handleRoleChange('strategic', activeSquad.default_models.foreman_strategic);
+        await handleRoleChange('coordinator', activeSquad.default_models.foreman_coordinator);
+        // Reset health checks (implementation depends on if we want to reset to squad defaults or just clear overrides)
+        // For now, let's just reload to get fresh state
       }
 
-      // Reload models
+      // Reload all
       await loadTournamentModels();
+      await loadRoleAssignments();
+      
       hasCustomSelection = false;
       saveMessage = 'Reset to squad defaults';
       setTimeout(() => saveMessage = '', 3000);
@@ -204,24 +307,12 @@
     // Reload squad info
     loadActiveSquad();
     loadTournamentModels();
+    loadRoleAssignments();
   }
 
   function formatModelName(modelId: string): string {
-    const nameMap: Record<string, string> = {
-      'deepseek-chat': 'DeepSeek V3',
-      'qwen-plus': 'Qwen Plus',
-      'glm-4-flash': 'Zhipu GLM-4',
-      'gemini-2.0-flash': 'Gemini 2.0 Flash',
-      'claude-sonnet-4-20250514': 'Claude Sonnet 4',
-      'gpt-4o': 'GPT-4o',
-      'mistral:7b': 'Mistral 7B',
-      'llama3.2:3b': 'Llama 3.2 3B',
-      'ollama-mistral-7b': 'Mistral 7B (Local)',
-      'ollama-llama-3.2': 'Llama 3.2 (Local)',
-      'ollama-deepseek-r1-7b': 'DeepSeek R1 7B (Local)',
-      'ollama-qwen2.5-7b': 'Qwen 2.5 7B (Local)'
-    };
-    return nameMap[modelId] || modelId;
+    const model = tournamentModels.find(m => m.id === modelId);
+    return model ? model.name : modelId;
   }
 
   function formatCost(cost: number): string {
@@ -232,7 +323,7 @@
   }
 
   function getTierColor(tier: string): string {
-    switch (tier.toLowerCase()) {
+    switch (tier?.toLowerCase()) {
       case 'budget': return 'var(--success, #3fb950)';
       case 'balanced': return 'var(--accent-cyan, #58a6ff)';
       case 'premium': return '#a371f7';
@@ -244,7 +335,7 @@
 <div class="settings-squad">
   <div class="header">
     <h2>Squad Configuration</h2>
-    <p class="subtitle">Manage your AI model squad and tournament settings</p>
+    <p class="subtitle">Manage your AI model squad, role assignments, and tournament settings</p>
   </div>
 
   <!-- Active Squad Section -->
@@ -278,32 +369,59 @@
           </button>
         </div>
 
-        <div class="squad-models">
-          <div class="model-row">
-            <span class="model-role">Strategic</span>
-            <span class="model-value">{formatModelName(activeSquad.default_models.foreman_strategic)}</span>
-          </div>
-          <div class="model-row">
-            <span class="model-role">Coordinator</span>
-            <span class="model-value">{formatModelName(activeSquad.default_models.foreman_coordinator)}</span>
-          </div>
-          <div class="model-row">
-            <span class="model-role">Tournament</span>
-            <span class="model-value">{activeSquad.default_models.tournament.length} models</span>
-          </div>
-        </div>
-
         <div class="squad-cost">
-          <span class="cost-label">Estimated</span>
-          {#if activeSquad.cost_estimate.monthly_usd === 0}
-            <span class="cost-value free">Free</span>
-          {:else}
-            <span class="cost-value">${activeSquad.cost_estimate.monthly_usd.toFixed(2)}/month</span>
-          {/if}
+          <span class="cost-label">Total Estimated Monthly Cost:</span>
+          <span class="cost-value">
+            {formatCost(fixedCostEstimate + (costEstimate?.total_cost || 0))}
+          </span>
+          <span class="cost-detail">
+            (Fixed: {formatCost(fixedCostEstimate)} + Tournament: {formatCost(costEstimate?.total_cost || 0)})
+          </span>
         </div>
       </div>
     {/if}
   </div>
+
+  <!-- Model Assignments Section -->
+  {#if activeSquadId && setupComplete}
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <h3>Model Assignments</h3>
+          <p class="help-text">Assign specific models to key roles in your squad.</p>
+        </div>
+        <button class="btn-secondary btn-sm" on:click={resetToDefaults}>
+          Use Squad Defaults
+        </button>
+      </div>
+
+      <div class="assignments-container">
+        <RoleModelSelector
+          role="strategic"
+          label="Strategic Lead"
+          description="High-level planning, outlining, and decision making."
+          currentModel={roleAssignments.strategic}
+          availableModels={tournamentModels}
+          on:select={(e) => handleRoleChange('strategic', e.detail.modelId)}
+        />
+        
+        <RoleModelSelector
+          role="coordinator"
+          label="Coordinator"
+          description="Task management, context assembly, and file operations."
+          currentModel={roleAssignments.coordinator}
+          availableModels={tournamentModels}
+          on:select={(e) => handleRoleChange('coordinator', e.detail.modelId)}
+        />
+
+        <HealthCheckModelConfig
+          config={roleAssignments.health_checks}
+          availableModels={tournamentModels}
+          on:change={(e) => handleHealthCheckChange(e.detail)}
+        />
+      </div>
+    </div>
+  {/if}
 
   <!-- Tournament Models Section -->
   {#if activeSquadId && setupComplete}
@@ -619,37 +737,12 @@
     color: #00d9ff;
   }
 
-  .squad-models {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem 0;
-    border-top: 1px solid #404040;
-    border-bottom: 1px solid #404040;
-    margin-bottom: 1rem;
-  }
-
-  .model-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .model-role {
-    font-size: 0.875rem;
-    color: #888;
-  }
-
-  .model-value {
-    font-size: 0.875rem;
-    color: #00d9ff;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
   .squad-cost {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #404040;
   }
 
   .cost-label {
@@ -663,8 +756,25 @@
     color: #00d9ff;
   }
 
+  .cost-detail {
+    font-size: 0.8rem;
+    color: #666;
+  }
+
   .cost-value.free {
     color: #00ff88;
+  }
+
+  /* Assignments Container */
+  .assignments-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   /* Tournament Models Grid */
@@ -799,67 +909,58 @@
   }
 
   .cost-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    color: #b0b0b0;
+    font-weight: 500;
   }
 
   .cost-details {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    justify-content: space-between;
     margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #404040;
   }
 
   .cost-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #b0b0b0;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .cost-row span:first-child {
+    font-size: 0.75rem;
+    color: #888;
   }
 
   .cost-number {
     font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
     color: #ffffff;
   }
 
   .cost-number.highlight {
     color: #00d9ff;
-    font-weight: 600;
-    font-size: 1rem;
-  }
-
-  .cost-breakdown details {
-    font-size: 0.8rem;
   }
 
   .cost-breakdown summary {
+    font-size: 0.75rem;
     color: #888;
     cursor: pointer;
-    padding: 0.5rem 0;
-  }
-
-  .cost-breakdown summary:hover {
-    color: #00d9ff;
+    user-select: none;
   }
 
   .breakdown-list {
-    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .breakdown-item {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 1rem;
-    padding: 0.25rem 0;
-    color: #888;
-  }
-
-  .breakdown-item span:last-child {
-    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
     color: #b0b0b0;
   }
 
@@ -867,23 +968,19 @@
   .model-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    padding: 0.625rem 1.25rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
+    gap: 1rem;
+    margin-top: 1.5rem;
   }
 
   .btn-primary {
+    padding: 0.75rem 1.5rem;
     background: #00d9ff;
     color: #1a1a1a;
     border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
   }
 
   .btn-primary:hover:not(:disabled) {
@@ -896,14 +993,19 @@
   }
 
   .btn-secondary {
+    padding: 0.75rem 1.5rem;
     background: transparent;
-    color: #b0b0b0;
     border: 1px solid #404040;
+    color: #b0b0b0;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background: #2d2d2d;
-    color: #ffffff;
+    border-color: #00d9ff;
+    color: #00d9ff;
   }
 
   .btn-secondary:disabled {
@@ -944,22 +1046,22 @@
 
   /* Messages */
   .message {
-    padding: 0.75rem;
+    padding: 1rem;
     border-radius: 4px;
-    font-weight: 500;
     margin-top: 1rem;
+    text-align: center;
   }
 
   .message.success {
-    background: #00ff8820;
-    color: #00ff88;
-    border: 1px solid #00ff88;
+    background: #00d9ff20;
+    color: #00d9ff;
+    border: 1px solid #00d9ff40;
   }
 
   .message.error {
     background: #ff444420;
     color: #ff4444;
-    border: 1px solid #ff4444;
+    border: 1px solid #ff444440;
   }
 
   /* Wizard Modal */
@@ -967,8 +1069,8 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -979,20 +1081,23 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
   }
 
   .wizard-container {
     position: relative;
+    width: 90%;
+    max-width: 1000px;
+    height: 90vh;
     background: #1a1a1a;
-    border: 1px solid #404040;
     border-radius: 12px;
-    width: 95%;
-    max-width: 960px;
-    max-height: 90vh;
-    overflow-y: auto;
+    border: 1px solid #404040;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
   }
 
   .wizard-close {
@@ -1004,39 +1109,12 @@
     color: #888;
     font-size: 1.5rem;
     cursor: pointer;
-    z-index: 10;
-    transition: color 0.2s;
+    z-index: 1002;
+    padding: 0.5rem;
+    line-height: 1;
   }
 
   .wizard-close:hover {
     color: #ffffff;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .settings-squad {
-      padding: 1rem;
-    }
-
-    .squad-header {
-      flex-direction: column;
-    }
-
-    .btn-change {
-      width: 100%;
-    }
-
-    .models-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .model-actions {
-      flex-direction: column;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-      width: 100%;
-    }
   }
 </style>
