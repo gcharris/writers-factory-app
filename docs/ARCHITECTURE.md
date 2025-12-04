@@ -673,6 +673,23 @@ The UI implementation follows a strategic 3-track approach that enables immediat
 - **Packaging:** Zipping PDF + EPUB + Cover
 - **Showcase Update:** Auto-generating the entry for `docs/showcase.md` (Title, Blurb, Link)
 
+### Phase 7: The Network (External Integration)
+*Future Commercial Ecosystem*
+
+**Goal:** The Desktop App remains a focused "Creation Tool". The "Community" is a separate web platform (`writerscommunity.app`). The App simply connects to it.
+
+#### 1. The Bridge (API Client)
+- **Function:** "Publish to Community" button.
+- **Action:** Uploads the PDF/EPUB + Metadata to the web platform via API.
+- **Scope:** The App does *not* host the social feed. It just sends the product.
+
+#### 2. The Student Solution (MVP)
+- **Current State:** We use the **GitHub Repository** as the "Community".
+- **Mechanism:**
+    - **Upload:** Pull Requests (as defined in `submission_guide.md`).
+    - **Showcase:** The `docs/showcase.md` page acts as the "Showroom".
+    - **Feedback:** GitHub Discussions / PR Comments serve as the "Critique Circle".
+
 ---
 
 ## Technical Specifications

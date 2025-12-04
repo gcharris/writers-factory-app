@@ -71,7 +71,10 @@
 
   <!-- CANVAS Panel: Editor -->
   <svelte:fragment slot="canvas">
-    <Editor bind:this={editorRef} />
+    <Editor
+      bind:this={editorRef}
+      on:copyToChat={(e) => foremanPanelRef?.insertTextToChat(e.detail.text)}
+    />
   </svelte:fragment>
 
   <!-- THE FOREMAN Panel: Chat with header buttons -->

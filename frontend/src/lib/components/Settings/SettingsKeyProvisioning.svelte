@@ -37,6 +37,9 @@
   let licenseId = '';
   let showLicenseInput = false;
 
+  // Props
+  export let showUserKeysList = true;
+
   // Provider display names
   const providerNames: Record<string, string> = {
     deepseek: 'DeepSeek',
@@ -162,7 +165,7 @@
   function getSourceLabel(source: string): string {
     switch (source) {
       case 'provisioned': return 'Included';
-      case 'env': return 'Your Key';
+      case 'env': return 'System Key';
       case 'none': return 'Not Available';
       default: return source;
     }
@@ -258,13 +261,13 @@
 
   <!-- Provider Lists -->
   <div class="providers-section">
-    <!-- Included Providers -->
+    <!-- Included / System Providers -->
     <div class="provider-group">
       <h3>
         <span class="group-icon">&#127873;</span>
-        Included Providers
+        System Providers
       </h3>
-      <p class="group-description">These providers are included at no extra cost</p>
+      <p class="group-description">Providers available via Writers Factory or local environment</p>
 
       <div class="provider-list">
         {#each Object.entries(bakedInProviders) as [provider, source]}
@@ -278,27 +281,29 @@
     </div>
 
     <!-- User Providers -->
-    <div class="provider-group">
-      <h3>
-        <span class="group-icon">&#128273;</span>
-        Your API Keys
-      </h3>
-      <p class="group-description">Premium providers require your own API keys</p>
+    {#if showUserKeysList}
+      <div class="provider-group">
+        <h3>
+          <span class="group-icon">&#128273;</span>
+          Your API Keys
+        </h3>
+        <p class="group-description">Premium providers require your own API keys</p>
 
-      <div class="provider-list">
-        {#each Object.entries(userProviders) as [provider, source]}
-          <div class="provider-item">
-            <span class="provider-icon" style="color: {getSourceColor(source)}">{@html getSourceIcon(source)}</span>
-            <span class="provider-name">{providerNames[provider] || provider}</span>
-            <span class="provider-source" style="color: {getSourceColor(source)}">{getSourceLabel(source)}</span>
-          </div>
-        {/each}
+        <div class="provider-list">
+          {#each Object.entries(userProviders) as [provider, source]}
+            <div class="provider-item">
+              <span class="provider-icon" style="color: {getSourceColor(source)}">{@html getSourceIcon(source)}</span>
+              <span class="provider-name">{providerNames[provider] || provider}</span>
+              <span class="provider-source" style="color: {getSourceColor(source)}">{getSourceLabel(source)}</span>
+            </div>
+          {/each}
+        </div>
+
+        <a href="#settings-agents" class="configure-link">
+          Configure your API keys &#8594;
+        </a>
       </div>
-
-      <a href="#settings-agents" class="configure-link">
-        Configure your API keys &#8594;
-      </a>
-    </div>
+    {/if}
   </div>
 
   <!-- Info Box -->

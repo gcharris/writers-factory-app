@@ -5,6 +5,9 @@ export const editorContent = writable("");
 export const activeFile = writable("");
 export const isSaving = writable(false);
 
+// --- File Tree State ---
+export const expandedFolders = writable({});
+
 // --- NotebookLM State ---
 export const notebookStatus = writable("checking");
 export const notebookList = writable([]);

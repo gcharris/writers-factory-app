@@ -88,7 +88,7 @@ BAKED_IN_PROVIDERS = [
 USER_KEY_PROVIDERS = [
     "anthropic",
     "openai",
-    "google",
+    "gemini",
     "xai",
 ]
 
@@ -265,15 +265,18 @@ class KeyEncryption:
 
 
 # --- Service Class ---
+from backend.services.settings_service import settings_service
+
 class KeyProvisioningService:
     """
     Manages provisioned API keys from the key server.
-
+    
     Handles:
     - Requesting keys from server
     - Secure local storage
     - Key refresh and rotation
     - Fallback to env vars for development
+    - Integration with SettingsService for user overrides
     """
 
     def __init__(self):
@@ -462,17 +465,24 @@ class KeyProvisioningService:
         Get an API key for a provider.
 
         Priority:
-        1. Environment variable (for development/user override)
-        2. Provisioned key from database
-        3. None (provider not available)
+        1. Settings Service (User overrides from UI)
+        2. Environment variable (for development/user override)
+        3. Provisioned key from database
+        4. None (provider not available)
         """
-        # Check env var first (allows override)
+        # 1. Check Settings Service (User overrides)
+        settings_key = f"agents.{provider}_api_key"
+        user_key = settings_service.get(settings_key)
+        if user_key and isinstance(user_key, str) and user_key.strip():
+            return user_key.strip()
+
+        # 2. Check env var (allows override if no user setting)
         env_var = f"{provider.upper()}_API_KEY"
         env_key = os.getenv(env_var)
         if env_key:
             return env_key
 
-        # Check provisioned keys
+        # 3. Check provisioned keys
         db: Session = KeysSessionLocal()
         try:
             key_record = db.query(ProvisionedKey).filter(
@@ -603,16 +613,44 @@ class KeyProvisioningService:
         """
         Get all available providers and their key sources.
 
-        Returns dict of provider -> source ("provisioned", "env", "none")
+        Returns dict of provider -> source ("provisioned", "env", "user", "none")
         """
         result = {}
 
         for provider in BAKED_IN_PROVIDERS + USER_KEY_PROVIDERS:
+            # 1. Check Settings (User) - Priority 1
+            settings_key = f"agents.{provider}_api_key"
+            user_key = settings_service.get(settings_key)
+            if user_key and isinstance(user_key, str) and user_key.strip():
+                result[provider] = "user"
+                continue
+
+            # 2. Check Env - Priority 2
             env_var = f"{provider.upper()}_API_KEY"
             if os.getenv(env_var):
                 result[provider] = "env"
-            elif self.get_key(provider):
-                result[provider] = "provisioned"
+                continue
+
+            # 3. Check Provisioned - Priority 3
+            if self.get_key(provider): # This calls get_key which checks DB
+                # But get_key also checks env/settings, so we need to be careful.
+                # Since we already checked env and settings above, if we get here
+                # and get_key returns something, it MUST be from DB (or we missed something).
+                # Actually, get_key checks DB last.
+                
+                # Let's check DB directly to be sure about source
+                db: Session = KeysSessionLocal()
+                try:
+                    key_record = db.query(ProvisionedKey).filter(
+                        ProvisionedKey.provider == provider,
+                        ProvisionedKey.is_active == True,
+                    ).first()
+                    if key_record:
+                        result[provider] = "provisioned"
+                    else:
+                        result[provider] = "none"
+                finally:
+                    db.close()
             else:
                 result[provider] = "none"
 

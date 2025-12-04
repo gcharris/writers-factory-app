@@ -15,12 +15,15 @@ except ImportError:
     def get_embedded_key(provider):
         return None
 
+from backend.services.key_provisioning_service import key_provisioning_service
+
 class LLMService:
     def __init__(self):
         # Helper to get API key with fallback chain:
         # 1. Environment variable (highest priority, allows override)
-        # 2. Embedded key (baked-in for MVP distribution)
-        # 3. "missing-key" placeholder (client initializes but fails on request)
+        # 2. Provisioned key (from key server / local DB)
+        # 3. Embedded key (baked-in for MVP distribution)
+        # 4. "missing-key" placeholder
 
         def get_key(env_var):
             # Try env var first
@@ -28,9 +31,16 @@ class LLMService:
             if env_key and env_key != "missing-key":
                 return env_key
 
-            # Try embedded key (extract provider name from env var)
+            # Extract provider name
             # e.g., "DEEPSEEK_API_KEY" -> "deepseek"
             provider = env_var.replace("_API_KEY", "").lower()
+
+            # Try provisioned key (DB)
+            provisioned = key_provisioning_service.get_key(provider)
+            if provisioned:
+                return provisioned
+
+            # Try embedded key
             embedded = get_embedded_key(provider)
             if embedded:
                 return embedded

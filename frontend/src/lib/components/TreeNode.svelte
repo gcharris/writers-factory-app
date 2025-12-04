@@ -10,22 +10,13 @@
 <script>
   import { activeFile } from '$lib/stores';
 
-  export let node;
-  export let depth = 0;
-  export let expandedFolders;
-  export let openFile;
-  export let toggleFolder;
-  export let loadingFile = null;  // Path of file currently being loaded
+  // Svelte 5 runes for proper reactivity
+  let { node, depth = 0, expandedFolders, openFile, toggleFolder, loadingFile = null } = $props();
 
-  // Force re-evaluation when expandedFolders object changes
-  // Note: We spread the object to ensure Svelte sees this as a new reactive dependency
-  $: expandedKeys = Object.keys(expandedFolders);
-  $: isExpanded = expandedKeys.includes(node.path);
-  $: isActive = $activeFile === node.path;
-  $: isLoading = loadingFile === node.path;
-
-  // Debug: log when isExpanded changes
-  $: console.log('[TreeNode] isExpanded changed for', node.name, ':', isExpanded);
+  // Derived state using Svelte 5 runes
+  let isExpanded = $derived(node.path in expandedFolders);
+  let isActive = $derived($activeFile === node.path);
+  let isLoading = $derived(loadingFile === node.path);
 
   // Get file extension for icon styling
   function getFileType(name) {
@@ -35,7 +26,6 @@
   }
 
   function handleClick() {
-    console.log('[TreeNode] handleClick:', node.path, 'isDirectory:', node.isDirectory, 'isExpanded:', isExpanded);
     openFile(node);
   }
 </script>

@@ -8,7 +8,7 @@
   - No automatic categorization - trust the writer to organize their files
 -->
 <script>
-  import { editorContent, activeFile, workspacePath } from '$lib/stores';
+  import { editorContent, activeFile, workspacePath, expandedFolders } from '$lib/stores';
   import { onMount } from 'svelte';
   import TreeNode from './TreeNode.svelte';
 
@@ -21,10 +21,7 @@
   let fileTree = null;
   let currentPath = "";
   let errorMsg = "";
-  let isLoadingFile = false;  // Loading state for file operations
-
-  // Track expanded folders by path (use object for Svelte reactivity)
-  let expandedFolders = {};
+  let isLoadingFile = false;
 
   $: selectedFile = $activeFile;
 
@@ -89,16 +86,65 @@
     workspacePath.set(path);
 
     try {
-      const entries = await tauriFs.readDir(path, { recursive: true });
-      fileTree = buildTree(entries, path);
+      // Tauri v2 readDir doesn't support recursive - we need to do it manually
+      const tree = await buildTreeRecursive(path, path);
+      fileTree = tree;
       // Auto-expand root
-      expandedFolders = { ...expandedFolders, [path]: true };
-      console.log('[FileTree] Loaded project:', path, 'with', entries.length, 'entries');
+      expandedFolders.update(current => ({ ...current, [path]: true }));
+      console.log('[FileTree] Loaded project:', path);
     } catch (e) {
       console.error('[FileTree] Failed to load project:', e);
       errorMsg = "Cannot read folder. Check permissions.";
       fileTree = null;
     }
+  }
+
+  // Recursively read directory and build tree (Tauri v2 compatible)
+  async function buildTreeRecursive(dirPath, basePath) {
+    const entries = await tauriFs.readDir(dirPath);
+    const children = [];
+
+    for (const entry of entries) {
+      const fullPath = `${dirPath}/${entry.name}`;
+
+      // Filter: only show directories, .md, and .txt files
+      if (!entry.isDirectory && !entry.name.endsWith('.md') && !entry.name.endsWith('.txt')) {
+        continue;
+      }
+
+      const node = {
+        name: entry.name,
+        path: fullPath,
+        isDirectory: entry.isDirectory,
+        children: []
+      };
+
+      // Recursively read subdirectories
+      if (entry.isDirectory) {
+        try {
+          const subTree = await buildTreeRecursive(fullPath, basePath);
+          node.children = subTree.children;
+        } catch (e) {
+          console.warn('[FileTree] Could not read directory:', fullPath, e);
+        }
+      }
+
+      children.push(node);
+    }
+
+    // Sort: folders first, then alphabetically
+    children.sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return {
+      name: dirPath.split('/').pop() || 'Project',
+      path: dirPath,
+      isDirectory: true,
+      children
+    };
   }
 
   // Build hierarchical tree from Tauri readDir entries
@@ -148,16 +194,19 @@
   function toggleFolder(node) {
     if (!node.isDirectory) return;
 
-    console.log('[FileTree] toggleFolder called:', node.path, 'wasExpanded:', !!expandedFolders[node.path]);
+    console.log('[FileTree] toggleFolder called:', node.path, 'wasExpanded:', !!$expandedFolders[node.path]);
 
-    if (expandedFolders[node.path]) {
-      const { [node.path]: _, ...rest } = expandedFolders;
-      expandedFolders = rest;
-      console.log('[FileTree] Collapsed folder, expandedFolders now:', Object.keys(expandedFolders));
-    } else {
-      expandedFolders = { ...expandedFolders, [node.path]: true };
-      console.log('[FileTree] Expanded folder, expandedFolders now:', Object.keys(expandedFolders));
-    }
+    expandedFolders.update(current => {
+      if (current[node.path]) {
+        const { [node.path]: _, ...rest } = current;
+        console.log('[FileTree] Collapsed folder, expandedFolders now:', Object.keys(rest));
+        return rest;
+      } else {
+        const updated = { ...current, [node.path]: true };
+        console.log('[FileTree] Expanded folder, expandedFolders now:', Object.keys(updated));
+        return updated;
+      }
+    });
   }
 
   async function openFile(node) {
@@ -174,10 +223,12 @@
       selectedFile = node.path;
       errorMsg = ""; // Clear any previous error
 
-      // Note: We don't use encodeURIComponent on the full path because FastAPI's
-      // {filepath:path} expects the slashes to be preserved. We only need to handle
-      // special characters in individual path segments if any.
-      const response = await fetch(`http://localhost:8000/files/${node.path}`);
+      // Build the URL - handle absolute paths that start with /
+      const filePath = node.path.startsWith('/') ? node.path : `/${node.path}`;
+      const url = `http://localhost:8000/files${filePath}`;
+      console.log('[FileTree] Opening file:', node.path, '-> URL:', url);
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }));
@@ -225,7 +276,7 @@
         <TreeNode
           {node}
           depth={0}
-          {expandedFolders}
+          expandedFolders={$expandedFolders}
           {openFile}
           {toggleFolder}
           loadingFile={isLoadingFile ? selectedFile : null}

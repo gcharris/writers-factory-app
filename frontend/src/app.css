@@ -283,6 +283,26 @@ body {
   scrollbar-color: var(--border) var(--bg-secondary);
 }
 
+/* Contenteditable elements need explicit scrollbar colors (WebKit bug with CSS vars) */
+[contenteditable]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: #0f1419;
+}
+
+[contenteditable]::-webkit-scrollbar-track {
+  background: #0f1419;
+}
+
+[contenteditable]::-webkit-scrollbar-thumb {
+  background: #2d3a47;
+  border-radius: 3px;
+}
+
+[contenteditable]::-webkit-scrollbar-thumb:hover {
+  background: #3d4752;
+}
+
 /* ============================================
  * FOCUS STATES (Accessibility)
  * ============================================ */

@@ -199,6 +199,11 @@ def manager_status():
 @app.get("/files/{filepath:path}")
 async def read_file(filepath: str):
     """Read a specific file"""
+    # FastAPI's path parameter strips the leading slash, so we need to add it back
+    # for absolute paths (macOS/Linux paths start with /)
+    if not filepath.startswith('/'):
+        filepath = '/' + filepath
+
     # Security check: ensure path is within allowed directories or absolute path if permitted
     # For this dev tool, we allow reading project files
     if not os.path.exists(filepath):
@@ -213,6 +218,10 @@ async def read_file(filepath: str):
 @app.put("/files/{filepath:path}")
 async def save_file(filepath: str, request: FileUpdateRequest):
     """Save content to a file"""
+    # FastAPI's path parameter strips the leading slash
+    if not filepath.startswith('/'):
+        filepath = '/' + filepath
+
     try:
         # Ensure directory exists
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -3763,21 +3772,28 @@ async def get_api_key_status():
     }
     """
     try:
-        from backend.config.embedded_keys import get_key_status, EMBEDDED_PROVIDERS, USER_PROVIDERS
+        from backend.config.embedded_keys import EMBEDDED_PROVIDERS, USER_PROVIDERS
+        from backend.services.key_provisioning_service import key_provisioning_service
 
-        status = get_key_status()
-
-        # Add tier information
-        for provider, info in status.items():
-            info["tier"] = "embedded" if provider in EMBEDDED_PROVIDERS else "user"
+        # Get status from the provisioning service (checks Env, Settings, and DB)
+        raw_status = key_provisioning_service.get_available_providers()
+        
+        status = {}
+        for provider, source in raw_status.items():
+            is_available = source != "none"
+            status[provider] = {
+                "available": is_available,
+                "source": source if is_available else None,
+                "tier": "embedded" if provider in EMBEDDED_PROVIDERS else "user"
+            }
 
         return {
             "providers": status,
             "embedded_providers": EMBEDDED_PROVIDERS,
             "user_providers": USER_PROVIDERS
         }
-    except ImportError:
-        # Fallback if embedded keys module not available
+    except ImportError as e:
+        # Fallback if services not available
         import os
         all_providers = ["deepseek", "qwen", "mistral", "gemini", "openai", "anthropic", "xai"]
         status = {}

@@ -31,8 +31,8 @@
   const tabs = [
     { id: 'assistant', label: 'Assistant', icon: 'sparkles' },
     { id: 'orchestrator', label: 'Orchestrator', icon: 'cpu' },
-    { id: 'agents', label: 'API Keys', icon: 'key' },
-    { id: 'models', label: 'AI Model Configuration', icon: 'layers' },
+    { id: 'api-keys', label: 'Key Management', icon: 'key' },
+    { id: 'models', label: 'AI Models', icon: 'layers' },
     { id: 'voice', label: 'Voice', icon: 'mic' },
     { id: 'advanced', label: 'Advanced', icon: 'settings' },
     { id: 'setup', label: 'Re-run Setup Wizard', icon: 'wand', action: 'openSetupWizard' },
@@ -145,10 +145,10 @@
       <SettingsAssistant />
     {:else if activeTab === 'orchestrator'}
       <SettingsOrchestrator />
-    {:else if activeTab === 'agents'}
+    {:else if activeTab === 'api-keys'}
       <SettingsAgents />
     {:else if activeTab === 'models'}
-      <SettingsModels />
+      <SettingsModels on:navigate={(e) => activeTab = e.detail.tab} />
     {:else if activeTab === 'voice'}
       <SettingsVoice />
     {:else if activeTab === 'advanced'}

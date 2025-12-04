@@ -55,6 +55,22 @@
       showFormatMenu = false;
       showHeadingSubmenu = false;
     }
+    // Don't hide selection popup here - let the selection event handle it
+    // The popup should stay visible as long as there's a selection
+  }
+
+  // Handle mousedown to hide popup when clicking outside both popup AND editor
+  function handleMouseDown(event) {
+    // If clicking inside the selection popup, don't hide it
+    if (event.target.closest('.selection-popup')) {
+      return;
+    }
+    // If clicking inside the editor, don't hide - selection event will handle it
+    if (event.target.closest('.editor-pane')) {
+      return;
+    }
+    // Clicking outside both - hide the popup
+    showSelectionPopup = false;
   }
 
   // Render Markdown to HTML for preview
@@ -244,9 +260,10 @@
   // ============================================
 
   function handleEditorSelection(event) {
-    if (event.detail && event.detail.selectedText) {
+    // Check property exists (not truthiness - empty string '' is falsy!)
+    if (event.detail && 'selectedText' in event.detail) {
       selectedText = event.detail.selectedText;
-      if (selectedText.length > 0) {
+      if (selectedText && selectedText.length > 0) {
         // Position popup near selection
         selectionPopupPos = { x: event.detail.x || 100, y: event.detail.y || 100 };
         showSelectionPopup = true;
@@ -304,7 +321,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:click={handleClickOutside} />
+<svelte:window on:keydown={handleKeydown} on:click={handleClickOutside} on:mousedown={handleMouseDown} />
 
 <div class="editor-wrapper" class:expanded={isExpanded}>
   <!-- Editor Toolbar -->
@@ -571,21 +588,22 @@
   <div
     class="selection-popup"
     style="left: {selectionPopupPos.x}px; top: {selectionPopupPos.y - 40}px;"
+    on:mousedown|stopPropagation
   >
-    <button class="popup-btn" on:click={applyBold} title="Bold">
+    <button class="popup-btn" on:click|stopPropagation={applyBold} title="Bold">
       <strong>B</strong>
     </button>
-    <button class="popup-btn italic" on:click={applyItalic} title="Italic">
+    <button class="popup-btn italic" on:click|stopPropagation={applyItalic} title="Italic">
       <em>I</em>
     </button>
     <span class="popup-sep"></span>
-    <button class="popup-btn" on:click={copyToClipboard} title="Copy">
+    <button class="popup-btn" on:click|stopPropagation={copyToClipboard} title="Copy">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
       </svg>
     </button>
-    <button class="popup-btn chat-btn" on:click={copyToChat} title="Copy to Chat">
+    <button class="popup-btn chat-btn" on:click|stopPropagation={copyToChat} title="Copy to Chat">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>

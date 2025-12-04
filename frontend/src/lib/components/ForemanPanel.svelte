@@ -305,6 +305,25 @@
     foremanChatHistory.set(messages);
   }
 
+  // Insert text into the chat input (e.g., from Editor's "Copy to Chat")
+  export function insertTextToChat(text) {
+    if (inputRef) {
+      // For contenteditable div, append the text
+      const currentText = inputRef.textContent || '';
+      // Add a quote block format for copied text
+      const quotedText = currentText + (currentText ? '\n\n' : '') + '> ' + text.replace(/\n/g, '\n> ');
+      inputRef.textContent = quotedText;
+      // Move cursor to end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(inputRef);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      inputRef.focus();
+    }
+  }
+
   // ============================================
   // Message Action Functions
   // ============================================
@@ -1172,7 +1191,12 @@
     min-height: 20px;
     max-height: 120px;
     overflow-y: auto;
+    overflow-x: hidden;
     outline: none;
+    /* Ensure text wraps properly */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
     /* Critical for dictation support */
     -webkit-user-select: text;
     user-select: text;
@@ -1190,6 +1214,36 @@
   .chat-input-editable[contenteditable="false"] {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  /* Dark theme scrollbar for input - force dark colors */
+  .chat-input-editable {
+    scrollbar-width: thin;
+    scrollbar-color: #2d3a47 #0f1419;
+  }
+
+  .chat-input-editable::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background-color: #0f1419;
+  }
+
+  .chat-input-editable::-webkit-scrollbar-track {
+    background: #0f1419;
+    border-radius: 3px;
+  }
+
+  .chat-input-editable::-webkit-scrollbar-thumb {
+    background: #2d3a47;
+    border-radius: 3px;
+  }
+
+  .chat-input-editable::-webkit-scrollbar-thumb:hover {
+    background: #3d4a57;
+  }
+
+  .chat-input-editable::-webkit-scrollbar-corner {
+    background: #0f1419;
   }
 
   /* Controls row below the input box */

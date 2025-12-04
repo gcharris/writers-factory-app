@@ -171,7 +171,8 @@
   // FORMATTING HELPERS
   // ============================================
 
-  // Wrap selected text with prefix and suffix (e.g., **bold**)
+  // Wrap/unwrap selected text with prefix and suffix (e.g., **bold**)
+  // Toggle behavior: if already wrapped, unwrap it
   function wrapSelection(view, prefix, suffix) {
     const { from, to } = view.state.selection.main;
     const selectedText = view.state.sliceDoc(from, to);
@@ -183,28 +184,59 @@
         selection: { anchor: from + prefix.length },
       });
     } else {
-      // Wrap selection
-      view.dispatch({
-        changes: { from, to, insert: prefix + selectedText + suffix },
-        selection: { anchor: from + prefix.length, head: from + prefix.length + selectedText.length },
-      });
+      // Check if already wrapped - look at characters before and after selection
+      const beforeText = view.state.sliceDoc(Math.max(0, from - prefix.length), from);
+      const afterText = view.state.sliceDoc(to, Math.min(view.state.doc.length, to + suffix.length));
+
+      if (beforeText === prefix && afterText === suffix) {
+        // Already wrapped - UNWRAP by removing the markers
+        // Process from end to start to avoid position shifting issues
+        view.dispatch({
+          changes: [
+            { from: to, to: to + suffix.length, insert: '' },      // Remove suffix first (higher pos)
+            { from: from - prefix.length, to: from, insert: '' }   // Then remove prefix
+          ],
+          selection: { anchor: from - prefix.length, head: to - prefix.length },
+        });
+      } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix) && selectedText.length >= prefix.length + suffix.length) {
+        // Selection includes the markers - unwrap by removing them from selection
+        const unwrapped = selectedText.slice(prefix.length, -suffix.length);
+        view.dispatch({
+          changes: { from, to, insert: unwrapped },
+          selection: { anchor: from, head: from + unwrapped.length },
+        });
+      } else {
+        // Not wrapped - wrap it
+        view.dispatch({
+          changes: { from, to, insert: prefix + selectedText + suffix },
+          selection: { anchor: from + prefix.length, head: from + prefix.length + selectedText.length },
+        });
+      }
     }
     view.focus();
   }
 
-  // Set line prefix (for headings, quotes, etc.)
+  // Set line prefix (for headings, quotes, etc.) with toggle behavior
   function setLinePrefix(view, newPrefix) {
     const { from } = view.state.selection.main;
     const line = view.state.doc.lineAt(from);
     const lineText = line.text;
 
-    // Remove existing heading/quote prefixes
-    const cleanedText = lineText.replace(/^(#{1,6}\s*|>\s*)/, '');
-    const newLineText = newPrefix + cleanedText;
-
-    view.dispatch({
-      changes: { from: line.from, to: line.to, insert: newLineText },
-    });
+    // Check if the line already has the exact prefix we're trying to add (toggle OFF)
+    if (newPrefix && lineText.startsWith(newPrefix)) {
+      // Toggle OFF - remove the prefix
+      const newLineText = lineText.slice(newPrefix.length);
+      view.dispatch({
+        changes: { from: line.from, to: line.to, insert: newLineText },
+      });
+    } else {
+      // Remove existing heading/quote prefixes and add the new one
+      const cleanedText = lineText.replace(/^(#{1,6}\s*|>\s*)/, '');
+      const newLineText = newPrefix + cleanedText;
+      view.dispatch({
+        changes: { from: line.from, to: line.to, insert: newLineText },
+      });
+    }
     view.focus();
   }
 
