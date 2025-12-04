@@ -18,6 +18,7 @@
   import SettingsAdvanced from './Settings/SettingsAdvanced.svelte';
   import SettingsAssistant from './Settings/SettingsAssistant.svelte';
   import SettingsModels from './Settings/SettingsModels.svelte';
+  import SettingsGraph from './Settings/SettingsGraph.svelte';
   import OnboardingWizard from './Onboarding/OnboardingWizard.svelte';
   import { hasCompletedOnboarding } from '$lib/stores';
 
@@ -34,6 +35,7 @@
     { id: 'api-keys', label: 'Key Management', icon: 'key' },
     { id: 'models', label: 'AI Models', icon: 'layers' },
     { id: 'voice', label: 'Voice', icon: 'mic' },
+    { id: 'graph', label: 'Knowledge Graph', icon: 'graph' },
     { id: 'advanced', label: 'Advanced', icon: 'settings' },
     { id: 'setup', label: 'Re-run Setup Wizard', icon: 'wand', action: 'openSetupWizard' },
   ];
@@ -89,6 +91,14 @@
       <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
       <polyline points="2 17 12 22 22 17"></polyline>
       <polyline points="2 12 12 17 22 12"></polyline>
+    </svg>`,
+    graph: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="5" cy="6" r="3"></circle>
+      <circle cx="12" cy="18" r="3"></circle>
+      <circle cx="19" cy="6" r="3"></circle>
+      <line x1="8" y1="6" x2="16" y2="6"></line>
+      <line x1="6.5" y1="8.5" x2="10.5" y2="15.5"></line>
+      <line x1="17.5" y1="8.5" x2="13.5" y2="15.5"></line>
     </svg>`
   };
 
@@ -151,6 +161,8 @@
       <SettingsModels on:navigate={(e) => activeTab = e.detail.tab} />
     {:else if activeTab === 'voice'}
       <SettingsVoice />
+    {:else if activeTab === 'graph'}
+      <SettingsGraph />
     {:else if activeTab === 'advanced'}
       <SettingsAdvanced />
     {/if}

@@ -289,6 +289,27 @@ class DefaultSettings:
         "custom_tournament_models": [],  # User overrides for tournament models
     })
 
+    # --- Knowledge Graph (GraphRAG) ---
+    graph: Dict[str, Any] = field(default_factory=lambda: {
+        "edge_types": {
+            "MOTIVATES": True,
+            "HINDERS": True,
+            "CHALLENGES": True,
+            "CAUSES": True,
+            "FORESHADOWS": True,
+            "CALLBACKS": True,
+            "KNOWS": True,
+            "CONTRADICTS": False,  # Experimental
+        },
+        "extraction_triggers": {
+            "on_manuscript_promote": True,
+            "before_foreman_chat": True,
+            "periodic_minutes": 0,  # 0 = disabled
+        },
+        "verification_level": "standard",  # "minimal" | "standard" | "thorough"
+        "embedding_provider": "ollama",  # "ollama" | "openai" | "none"
+    })
+
     def get_flat_dict(self) -> Dict[str, Any]:
         """
         Convert nested settings to flat key-value pairs.
@@ -299,7 +320,7 @@ class DefaultSettings:
         """
         result = {}
 
-        for category in ["scoring", "anti_patterns", "enhancement", "tournament", "foreman", "context", "health_checks", "orchestrator", "tournament_consensus", "squad"]:
+        for category in ["scoring", "anti_patterns", "enhancement", "tournament", "foreman", "context", "health_checks", "orchestrator", "tournament_consensus", "squad", "graph"]:
             category_data = getattr(self, category)
             self._flatten(category_data, category, result)
 
