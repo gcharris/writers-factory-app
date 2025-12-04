@@ -358,48 +358,46 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ---
 
-## Current Status (2025-11-27)
+## Current Status (2025-12-04)
 
-### 🎯 Recent Sprint (Nov 25-27) - ✅ COMPLETE
+### 🎯 Recent Sprint (Nov 27 - Dec 4) - ✅ COMPLETE
 
 **Major Accomplishments:**
-- ✅ **3-Panel Layout Refactor** - Studio panel removed, Foreman expanded to 400px
-- ✅ **Knowledge Graph Explorer** - 7 components (4,214 lines), full graph visualization
-- ✅ **Session Manager** - 920 lines, chat history persistence
-- ✅ **NotebookLM Panel** - 1,002 lines, research integration
-- ✅ **CodeMirror Editor** - 383 lines, replaced Monaco with prose-optimized editor
-- ✅ **FileTree Simplification** - 329 lines, hierarchical tree structure
-- ✅ **All 3 Critical UI Bugs** - Graph, Sessions, Voice Tournament all fixed
+- ✅ **Key Management & Subscription UI** - Unified configuration, subscription gating (`skoltech2026`), Moonshot fix.
+- ✅ **FileTree File Loading Fix** - Clicking files now correctly loads content into the editor.
+- ✅ **UI Status Report** - Comprehensive audit of UI state and roadmap.
 
 **Sprint Metrics:**
-- **Duration:** 3 days (Nov 25-27)
-- **Commits:** 58 commits
-- **Lines Changed:** +102,477 added, -4,578 removed
-- **Components Added:** 14 new components (5,155 lines)
-- **Backend Endpoints:** 25 new endpoints
-- **Progress:** 85% → 92% completion
+- **Duration:** 1 week
+- **Progress:** 92% → 95% completion
 
 ### 📊 Progress Summary
 
-**Overall Progress:** ~92% Complete
+**Overall Progress:** ~95% Complete
 
 **Backend:** 100% ✅
 - All Phases 1-3E complete
 - 8 major services, 11 LLM providers, zero critical bugs
 
-**Frontend:** 90% ✅
+**Frontend:** 95% ✅
 - Critical UI: 11/11 components ✅
-- Feature UI: 69 components total (40,830 lines) ✅
-- Knowledge Graph Explorer: ✅ COMPLETE (7 components, 4,214 lines)
-- Session Manager: ✅ COMPLETE (920 lines)
-- NotebookLM Panel: ✅ COMPLETE (1,002 lines)
+- Feature UI: 70+ components total ✅
+- Key Management: ✅ COMPLETE
+- FileTree: ✅ COMPLETE
 
-**Remaining:** ~31 hours (~4 days)
-- FileTree file loading fix (3 hours - HIGH priority)
-- Work Orders UI (18 hours)
-- Polish & UX (10 hours)
+**Remaining:** ~25 hours
+- Squad Management UI (High Priority)
+- Voice Settings UI
+- Advanced Settings UI
+- Polish & UX
 
-### 🚀 Recent Accomplishments (Nov 2025)
+### 🚀 Recent Accomplishments (Dec 2025)
+
+**Dec 1-4 Sprint:**
+- ✅ **Key Management UI** - Renamed from "Premium Keys", added subscription gating.
+- ✅ **Moonshot Integration** - Fixed provider ID mismatch.
+- ✅ **FileTree Fix** - Resolved file loading issue.
+- ✅ **Documentation** - Updated roadmap and status reports.
 
 **Nov 25-27 Sprint (3 days):**
 - ✅ **CodeMirror Editor** (383 lines) - Replaced Monaco, optimized for prose writing
@@ -410,17 +408,11 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - ✅ **FileTree Simplification** (329 lines) - Hierarchical tree structure
 - ✅ **All 3 Critical Bugs Fixed** - Graph, Sessions, Voice Tournament
 
-**Earlier (Nov 2025):**
-- ✅ Squad System UI (3 components, 2,937 lines)
-- ✅ All 9 Settings tabs complete
-- ✅ Graph Health UI (4 components)
-- ✅ HTML entity and Squad Configuration fixes
-
 ### 📅 Next Milestones
 
-**Nov 27:** ✅ UX Overhaul COMPLETE (3-panel layout, FileTree, CodeMirror, Graph, Sessions)
-**Dec 1:** Final Polish (FileTree file loading, Work Orders UI, UX refinements) - 4 days (31 hours)
-**Dec 15:** Production Ready (installers, docs, testing) - 2 weeks (40 hours)
+**Dec 4:** ✅ Key Management & FileTree Fix COMPLETE
+**Dec 8:** Squad Management UI & Voice Settings
+**Dec 15:** Production Ready (installers, docs, testing)
 
 ### 📝 Documentation
 
@@ -430,15 +422,14 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 ### 🎖️ Team Status
 
 **Recent Contributors:**
+- **Antigravity** (Google Deepmind) - ✅ Completed Key Management, Subscription UI, Documentation updates.
 - **funny-wilbur** (Claude Cloud) - ✅ Completed 3-panel layout, Graph Explorer, Session Manager, NotebookLM
 - **xenodochial-borg** (Claude Cloud) - ✅ Completed CodeMirror editor integration
 - **elegant-mendeleev** (Claude Cloud) - ✅ Completed FileTree simplification
 
-**Sprint Success:** Nov 25-27 sprint delivered 14 components, resolved all 3 critical bugs, and progressed from 85% to 92% completion in just 3 days.
-
 ---
 
-*Roadmap last updated: 2025-11-27 by Claude Code*
+*Roadmap last updated: 2025-12-04 by Antigravity*
 
 ## Phase 7: The Network (External Integration)
 **Goal:** Connect the Desktop App to the `writerscommunity.app` web platform.
