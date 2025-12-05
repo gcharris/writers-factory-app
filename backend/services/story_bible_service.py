@@ -1076,6 +1076,27 @@ class StoryBibleService:
 
         return status
 
+    # -------------------------------------------------------------------------
+    # Convenience Methods for Prerequisite Checks
+    # -------------------------------------------------------------------------
+
+    def has_protagonist(self) -> bool:
+        """Check if a valid protagonist exists."""
+        protagonist = self.parse_protagonist()
+        return bool(protagonist.name)
+
+    def beat_count(self) -> int:
+        """Return the number of filled beats in the beat sheet."""
+        beat_sheet = self.parse_beat_sheet()
+        if not beat_sheet.beats:
+            return 0
+        return sum(1 for b in beat_sheet.beats if b.content)
+
+    def is_complete(self) -> bool:
+        """Check if the Story Bible is complete for Phase 2."""
+        status = self.validate_story_bible()
+        return status.phase2_complete
+
     def get_validation_report(self) -> dict:
         """
         Generate a human-readable validation report.
@@ -1120,3 +1141,13 @@ class StoryBibleService:
         }
 
         return report
+
+
+# =============================================================================
+# Singleton Instance
+# =============================================================================
+
+# Default content path - can be overridden by setting CONTENT_PATH env var
+import os
+_content_path = Path(os.environ.get('CONTENT_PATH', Path(__file__).parent.parent.parent / 'content'))
+story_bible_service = StoryBibleService(_content_path)

@@ -2206,7 +2206,7 @@ async def foreman_get_mode():
     """
     Get the current Foreman mode and transition eligibility.
     """
-    foreman = _get_or_create_foreman()
+    foreman = get_foreman()
     if not foreman.work_order:
         return {
             "mode": None,
@@ -2228,7 +2228,7 @@ async def foreman_advance_to_voice_calibration():
 
     Requires Story Bible to be complete (all templates marked COMPLETE).
     """
-    foreman = _get_or_create_foreman()
+    foreman = get_foreman()
     if not foreman.work_order:
         raise HTTPException(status_code=400, detail="No active project")
 
@@ -2249,7 +2249,7 @@ async def foreman_advance_to_director():
     - Winner has been selected
     - Voice Bundle has been generated
     """
-    foreman = _get_or_create_foreman()
+    foreman = get_foreman()
     if not foreman.work_order:
         raise HTTPException(status_code=400, detail="No active project")
 
@@ -2295,7 +2295,7 @@ async def request_mode_change(request: ModeTransitionRequest):
     from services.mode_transition_service import mode_transition_service
     from agents.foreman import ForemanMode
 
-    foreman = _get_or_create_foreman()
+    foreman = get_foreman()
     current_mode = foreman.mode.value if foreman.mode else "architect"
 
     # Process the transition request
@@ -2358,7 +2358,7 @@ async def foreman_force_mode(request: ForceAdvanceRequest):
 
     Valid modes: architect, voice_calibration, director, editor
     """
-    foreman = _get_or_create_foreman()
+    foreman = get_foreman()
 
     valid_modes = ["architect", "voice_calibration", "director", "editor"]
     if request.target_mode not in valid_modes:

@@ -113,6 +113,56 @@ class LLMService:
             base_url="https://llm.api.cloud.yandex.net/foundationModels/v1"
         )
 
+        # --- Local Tier ---
+
+        # Ollama (local LLMs)
+        # Uses OpenAI-compatible API at localhost:11434
+        self.ollama_client = AsyncOpenAI(
+            api_key="ollama",  # Ollama doesn't require a real key
+            base_url="http://localhost:11434/v1"
+        )
+
+    async def generate(
+        self,
+        provider: str,
+        model: str,
+        messages: list,
+        temperature: float = 0.7,
+        max_tokens: int = 4096
+    ):
+        """
+        Generate a response using OpenAI-style messages format.
+
+        Args:
+            provider: The LLM provider (e.g., "ollama", "openai")
+            model: The model name
+            messages: List of {"role": str, "content": str} messages
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            Object with .content attribute containing the response
+        """
+        # Extract system and user messages
+        system_role = ""
+        prompt = ""
+
+        for msg in messages:
+            if msg["role"] == "system":
+                system_role = msg["content"]
+            elif msg["role"] == "user":
+                prompt = msg["content"]
+
+        # Call the underlying generate_response method
+        response_text = await self.generate_response(provider, model, system_role, prompt)
+
+        # Return an object with .content attribute for compatibility
+        class Response:
+            def __init__(self, content):
+                self.content = content
+
+        return Response(response_text)
+
     async def generate_response(self, provider: str, model: str, system_role: str, prompt: str) -> str:
         try:
             # --- Big Three ---
@@ -154,6 +204,10 @@ class LLMService:
 
             elif provider == "yandex":
                 return await self._call_yandex(model, system_role, prompt)
+
+            # --- Local Tier ---
+            elif provider == "ollama":
+                return await self._call_openai_compatible(self.ollama_client, model, system_role, prompt)
 
             else:
                 return f"Error: Unknown provider '{provider}'"
@@ -198,3 +252,10 @@ class LLMService:
             temperature=0.7
         )
         return response.choices[0].message.content
+
+
+# =============================================================================
+# Singleton Instance
+# =============================================================================
+
+llm_service = LLMService()

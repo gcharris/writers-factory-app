@@ -416,6 +416,18 @@ SCENE TO WRITE:
         """Get the current status of a tournament."""
         return self._tournaments.get(tournament_id)
 
+    def has_voice_bundle(self) -> bool:
+        """
+        Check if a voice bundle exists (a tournament was completed with a winner selected).
+
+        Returns:
+            True if any tournament has a selected winner
+        """
+        for tournament in self._tournaments.values():
+            if tournament.selected_winner:
+                return True
+        return False
+
     def get_tournament_variants(
         self,
         tournament_id: str,
@@ -935,3 +947,7 @@ def get_voice_calibration_service() -> VoiceCalibrationService:
     if _voice_calibration_service is None:
         _voice_calibration_service = VoiceCalibrationService()
     return _voice_calibration_service
+
+
+# Direct singleton for simpler imports
+voice_calibration_service = get_voice_calibration_service()
