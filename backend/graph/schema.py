@@ -25,6 +25,11 @@ class Node(Base):
     description = Column(String)
     content = Column(String) # Textual content if applicable. Can be used for Scene text, Character bio, etc.
 
+    # Phase 2: Embedding storage for semantic search
+    embedding = Column(JSON, nullable=True)  # Store as JSON array of floats
+    embedding_model = Column(String, nullable=True)  # Track which model generated the embedding
+    embedding_updated_at = Column(DateTime, nullable=True)  # When embedding was last updated
+
     # Backrefs for edges (relationships)
     outgoing_edges = relationship("Edge", back_populates="source_node", foreign_keys="[Edge.source_id]")
     incoming_edges = relationship("Edge", back_populates="target_node", foreign_keys="[Edge.target_id]")

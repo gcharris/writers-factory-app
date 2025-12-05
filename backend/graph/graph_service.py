@@ -91,6 +91,24 @@ class KnowledgeGraphService:
         """
         return self.session.query(Node).filter(Node.name.ilike(f"%{name}%")).first()
 
+    def get_all_nodes(self) -> List[Node]:
+        """
+        Retrieve all nodes from the database.
+
+        Returns:
+            List of all Node objects.
+        """
+        return self.session.query(Node).all()
+
+    def get_all_edges(self) -> List[Edge]:
+        """
+        Retrieve all edges from the database.
+
+        Returns:
+            List of all Edge objects.
+        """
+        return self.session.query(Edge).all()
+
     def update_node(self, node_id: int, updates: dict) -> Optional[Node]:
         """
         Updates a node's attributes in the database and in-memory graph.
@@ -220,3 +238,84 @@ class KnowledgeGraphService:
             'density': nx.density(self.graph) if num_nodes > 1 else 0,
             'avg_degree': sum(dict(self.graph.degree()).values()) / max(num_nodes, 1),
         }
+
+    # ============================================================================
+    # NETWORKX INTEGRATION (Phase 2: GraphRAG)
+    # ============================================================================
+
+    def to_networkx(self) -> nx.DiGraph:
+        """
+        Convert graph to NetworkX DiGraph for advanced algorithms.
+
+        Creates a fresh DiGraph from database nodes and edges.
+        Node names are used as node identifiers for intuitive querying.
+
+        Returns:
+            NetworkX DiGraph with node names as identifiers
+        """
+        G = nx.DiGraph()
+
+        for node in self.get_all_nodes():
+            G.add_node(node.name, **{
+                "id": node.id,
+                "type": node.node_type,
+                "description": node.description,
+                "content": node.content,
+            })
+
+        for edge in self.get_all_edges():
+            source = self.get_node(edge.source_id)
+            target = self.get_node(edge.target_id)
+            if source and target:
+                G.add_edge(source.name, target.name, **{
+                    "id": edge.id,
+                    "relation": edge.relation_type,
+                })
+
+        return G
+
+    def ego_graph(self, entity_name: str, radius: int = 2) -> dict:
+        """
+        Get k-hop ego network around an entity.
+
+        Uses NetworkX ego_graph to extract subgraph centered on entity.
+        Returns all nodes and edges within 'radius' hops.
+
+        Args:
+            entity_name: Name of the center entity
+            radius: Number of hops to include (default 2)
+
+        Returns:
+            Dict with 'center', 'nodes', and 'edges' keys
+        """
+        G = self.to_networkx()
+
+        if entity_name not in G:
+            logger.warning(f"Entity '{entity_name}' not found in graph")
+            return {"center": entity_name, "nodes": [], "edges": []}
+
+        try:
+            # Get ego graph (subgraph within radius hops)
+            ego = nx.ego_graph(G, entity_name, radius=radius)
+
+            nodes = [
+                {"name": n, **G.nodes[n]}
+                for n in ego.nodes()
+            ]
+
+            edges = [
+                {"source": u, "target": v, **G.edges[u, v]}
+                for u, v in ego.edges()
+            ]
+
+            logger.debug(f"Ego graph for '{entity_name}' (r={radius}): {len(nodes)} nodes, {len(edges)} edges")
+            return {
+                "center": entity_name,
+                "radius": radius,
+                "nodes": nodes,
+                "edges": edges
+            }
+
+        except Exception as e:
+            logger.error(f"Error computing ego graph: {e}")
+            return {"center": entity_name, "nodes": [], "edges": [], "error": str(e)}

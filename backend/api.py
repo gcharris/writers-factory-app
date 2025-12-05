@@ -34,6 +34,9 @@ from backend.services.settings_service import SettingsService, settings_service
 from backend.services.query_classifier import get_query_classifier, QueryClassifier
 from backend.services.context_assembler import get_context_assembler, ContextAssembler
 from backend.services.manuscript_service import get_manuscript_service, ManuscriptService
+from backend.services.embedding_service import get_embedding_service
+from backend.services.embedding_index_service import EmbeddingIndexService, get_embedding_index_service
+from backend.services.knowledge_router import KnowledgeRouter, create_knowledge_router
 
 # --- SQLAlchemy Imports ---
 from sqlalchemy import create_engine
@@ -364,6 +367,176 @@ async def export_knowledge_graph():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export graph: {str(e)}")
+
+
+# =============================================================================
+# GRAPH RAG PHASE 2: SEMANTIC SEARCH & EMBEDDINGS
+# =============================================================================
+
+class SemanticSearchRequest(BaseModel):
+    """Request model for semantic search."""
+    query: str
+    node_types: Optional[List[str]] = None
+    top_k: int = 10
+    min_similarity: float = 0.0
+
+
+@app.post("/graph/semantic-search", summary="Semantic search across graph")
+async def semantic_search(request: SemanticSearchRequest):
+    """
+    Search graph nodes by semantic similarity.
+
+    Uses embeddings to find nodes conceptually related to the query,
+    even if exact keywords don't match.
+
+    Returns nodes sorted by similarity score.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            index_service = EmbeddingIndexService(graph_service, get_embedding_service())
+
+            results = await index_service.semantic_search(
+                query=request.query,
+                node_types=request.node_types,
+                top_k=request.top_k,
+                min_similarity=request.min_similarity
+            )
+
+            return {
+                "query": request.query,
+                "results": [
+                    {
+                        "id": node.id,
+                        "name": node.name,
+                        "type": node.node_type,
+                        "description": node.description,
+                        "score": round(score, 4)
+                    }
+                    for node, score in results
+                ],
+                "count": len(results)
+            }
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Semantic search failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Semantic search failed: {str(e)}")
+
+
+@app.get("/graph/ego-network/{entity_name}", summary="Get k-hop subgraph around entity")
+async def get_ego_network(entity_name: str, radius: int = 2):
+    """
+    Get k-hop ego network around an entity.
+
+    Returns all nodes and edges within 'radius' hops of the specified entity.
+    Useful for understanding an entity's local context in the graph.
+
+    Args:
+        entity_name: Name of the center entity
+        radius: Number of hops to include (default 2)
+    """
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            result = graph_service.ego_graph(entity_name, radius=radius)
+            return result
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Ego network failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get ego network: {str(e)}")
+
+
+@app.post("/graph/reindex-embeddings", summary="Regenerate embeddings for all nodes")
+async def reindex_embeddings():
+    """
+    Regenerate embeddings for all nodes in the graph.
+
+    Use after:
+    - Changing embedding provider
+    - Adding many new nodes
+    - Initial setup
+
+    This may take several minutes for large graphs.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            index_service = EmbeddingIndexService(graph_service, get_embedding_service())
+
+            result = await index_service.reindex_all()
+            return result
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Reindexing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Reindexing failed: {str(e)}")
+
+
+@app.get("/graph/embedding-status", summary="Get embedding index status")
+async def get_embedding_status():
+    """
+    Get statistics about the embedding index.
+
+    Returns counts of indexed vs unindexed nodes,
+    coverage percentage, and breakdown by node type.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            index_service = EmbeddingIndexService(graph_service, get_embedding_service())
+
+            return index_service.get_indexing_status()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Failed to get embedding status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get embedding status: {str(e)}")
+
+
+class KnowledgeQueryRequest(BaseModel):
+    """Request model for knowledge routing."""
+    query: str
+    model: str = "claude-sonnet-4-5"
+
+
+@app.post("/graph/knowledge-query", summary="Query knowledge graph with full RAG pipeline")
+async def knowledge_query(request: KnowledgeQueryRequest):
+    """
+    Query the knowledge graph using the full GraphRAG pipeline.
+
+    Classifies the query, retrieves from graph + semantic search + story bible,
+    and assembles context within the target model's token budget.
+
+    Returns assembled context and metadata about what was retrieved.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            index_service = EmbeddingIndexService(graph_service, get_embedding_service())
+            story_bible = StoryBibleService()
+
+            router = create_knowledge_router(
+                graph_service=graph_service,
+                embedding_index=index_service,
+                story_bible=story_bible,
+                model=request.model
+            )
+
+            result = await router.route(request.query, model=request.model)
+            return result
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Knowledge query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Knowledge query failed: {str(e)}")
+
 
 @app.get("/graph/nodes/{node_id}", summary="Get single node details")
 async def get_graph_node(node_id: str):
