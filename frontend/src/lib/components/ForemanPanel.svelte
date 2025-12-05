@@ -10,6 +10,7 @@
 -->
 <script>
   import { onMount, createEventDispatcher } from 'svelte';
+  import { marked } from 'marked';
   import { apiClient } from '$lib/api_client';
   import {
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
@@ -20,6 +21,12 @@
   import MentionPicker from './chat/MentionPicker.svelte';
   import ContextBadge from './chat/ContextBadge.svelte';
   import VoiceInput from './chat/VoiceInput.svelte';
+
+  // Configure marked for chat-style rendering (no unnecessary wrapping)
+  marked.setOptions({
+    breaks: true,  // Convert \n to <br>
+    gfm: true,     // GitHub-flavored markdown
+  });
 
   const dispatch = createEventDispatcher();
 
@@ -623,7 +630,7 @@
               </div>
             {/if}
             <div class="message-content">
-              <div class="message-bubble">{msg.content}</div>
+              <div class="message-bubble markdown-content">{@html marked(msg.content || '')}</div>
 
               {#if msg.role === 'assistant'}
                 <div class="message-actions">
@@ -1045,7 +1052,6 @@
     border-radius: var(--radius-lg);
     font-size: var(--text-sm);
     line-height: var(--leading-relaxed);
-    white-space: pre-wrap;
   }
 
   .message.user .message-bubble {
@@ -1063,6 +1069,52 @@
     color: var(--text-muted);
     font-size: var(--text-xs);
     font-style: italic;
+  }
+
+  /* Markdown content styling */
+  .markdown-content :global(p) {
+    margin: 0 0 0.5em 0;
+  }
+  .markdown-content :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .markdown-content :global(strong) {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+  }
+  .markdown-content :global(em) {
+    font-style: italic;
+  }
+  .markdown-content :global(ul), .markdown-content :global(ol) {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+  }
+  .markdown-content :global(li) {
+    margin: 0.25em 0;
+  }
+  .markdown-content :global(code) {
+    background: var(--bg-elevated);
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+  .markdown-content :global(pre) {
+    background: var(--bg-elevated);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: 0.5em 0;
+  }
+  .markdown-content :global(pre code) {
+    background: transparent;
+    padding: 0;
+  }
+  .markdown-content :global(blockquote) {
+    border-left: 2px solid var(--accent-cyan);
+    padding-left: var(--space-2);
+    margin: 0.5em 0;
+    color: var(--text-secondary);
   }
 
   /* Typing indicator */
