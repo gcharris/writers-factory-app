@@ -407,14 +407,13 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - 11 major services, 11 LLM providers, zero critical bugs
 - 4 new API endpoints for manuscript/knowledge
 
-**Frontend:** 97% ✅
+**Frontend:** 98% ✅
 - Critical UI: 11/11 components ✅
 - Feature UI: 75+ components total ✅
-- Settings: 10/10 tabs ✅ (including Graph)
+- Settings: 10/10 tabs ✅ (including Graph, Voice)
 - Squad System: 5/5 components ✅
 
-**Remaining:** ~15 hours
-- Voice Settings UI (TTS provider selection)
+**Remaining:** ~10 hours
 - Advanced Settings UI (Ollama URL, context window)
 - Polish & UX
 
