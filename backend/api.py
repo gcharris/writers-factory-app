@@ -195,6 +195,72 @@ def list_agents():
     agents = agent_registry.list_enabled_agents()
     return {"agents": agents}
 
+
+# --- Chat Agent Selection (Agent Instruction System) ---
+
+@app.get("/agents/available", summary="List available chat agents")
+def list_available_chat_agents():
+    """
+    List all available chat agents for the agent selector UI.
+
+    Returns agents defined in backend/prompts/agents.yaml with their
+    capabilities, icons, and whether they support modes.
+    """
+    from backend.services.prompt_assembler import get_prompt_assembler
+
+    assembler = get_prompt_assembler()
+    agents = assembler.get_available_agents()
+
+    return {
+        "agents": [
+            {
+                "agent_id": agent.agent_id,
+                "name": agent.name,
+                "description": agent.description,
+                "icon": agent.icon,
+                "has_modes": agent.has_modes,
+                "modes": agent.modes if agent.has_modes else [],
+                "default_mode": agent.default_mode,
+                "capabilities": agent.capabilities,
+                "focus_areas": agent.focus_areas,
+            }
+            for agent in agents
+        ]
+    }
+
+
+@app.get("/agents/{agent_id}/info", summary="Get agent details")
+def get_agent_info(agent_id: str):
+    """
+    Get detailed information about a specific chat agent.
+
+    Args:
+        agent_id: Agent identifier (e.g., "foreman", "character_coach")
+    """
+    from backend.services.prompt_assembler import get_prompt_assembler
+
+    assembler = get_prompt_assembler()
+    agent = assembler.get_agent_config(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
+
+    return {
+        "agent_id": agent.agent_id,
+        "name": agent.name,
+        "description": agent.description,
+        "icon": agent.icon,
+        "has_modes": agent.has_modes,
+        "modes": agent.modes if agent.has_modes else [],
+        "default_mode": agent.default_mode,
+        "capabilities": agent.capabilities,
+        "focus_areas": agent.focus_areas,
+        "identity_file": agent.identity_file,
+        "process_map_file": agent.process_map_file,
+        "mode_files": agent.mode_files if agent.has_modes else {},
+    }
+
+
 @app.get("/manager/status", summary="Check Manager status")
 def manager_status():
     """Simple heartbeat for the Manager agent"""
@@ -1788,8 +1854,9 @@ class ContextItem(BaseModel):
 class ForemanChatRequest(BaseModel):
     message: str
     context: Optional[List[ContextItem]] = None  # Attached context items
-    agent: Optional[str] = "default"  # Agent to route to
+    agent: Optional[str] = "foreman"  # Agent to use (foreman, character_coach, etc.)
     include_open_file: Optional[bool] = False  # Auto-include active file
+    model: Optional[str] = None  # Override model for this request
 
 
 class ForemanNotebookRequest(BaseModel):
@@ -1927,16 +1994,30 @@ _foreman_session_id: Optional[str] = None
 @app.post("/foreman/chat", summary="Chat with the Foreman")
 async def foreman_chat(request: ForemanChatRequest):
     """
-    Send a message to the Foreman and get a response.
+    Send a message to the Foreman (or another agent) and get a response.
 
-    The Foreman will:
+    The agent will:
     - Consider the work order status
     - Review relevant KB entries
     - Process attached context (files, mentions, attachments)
     - Respond with craft-aware guidance
-    - Optionally take actions (query NotebookLM, write templates, etc.)
+    - Optionally take actions based on agent capabilities
+
+    Args:
+        request.agent: Agent to use ("foreman", "character_coach", "plot_doctor", etc.)
+        request.model: Optional model override for this request
     """
     global _foreman_session_id
+
+    # Get agent config (for future agent-specific behavior)
+    agent_id = request.agent or "foreman"
+    from backend.services.prompt_assembler import get_prompt_assembler
+    assembler = get_prompt_assembler()
+    agent_config = assembler.get_agent_config(agent_id)
+
+    if not agent_config:
+        logger.warning(f"Unknown agent '{agent_id}', falling back to foreman")
+        agent_id = "foreman"
 
     try:
         foreman = get_foreman()
@@ -2005,7 +2086,8 @@ async def foreman_chat(request: ForemanChatRequest):
             return {
                 "response": casual_response,
                 "actions_executed": [],
-                "work_order_status": None
+                "work_order_status": None,
+                "agent_id": agent_id,
             }
 
         # Log to session for regular foreman chat
@@ -2014,7 +2096,11 @@ async def foreman_chat(request: ForemanChatRequest):
             service.log_event(_foreman_session_id, "user", message)
             service.log_event(_foreman_session_id, "assistant", response_text)
 
-        return result
+        # Add agent_id to result
+        if isinstance(result, dict):
+            result["agent_id"] = agent_id
+            return result
+        return {"response": str(result), "agent_id": agent_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
 
