@@ -55,7 +55,7 @@
   <div class="role-info">
     <div class="role-header">
       <span class="role-label">{label}</span>
-      {#if showCost && selectedModelObj}
+      {#if showCost && selectedModelObj && selectedModelObj.cost_per_1m_tokens != null}
         <span class="role-cost" title="Cost per 1M tokens">
           ${selectedModelObj.cost_per_1m_tokens.toFixed(2)}/1M
         </span>

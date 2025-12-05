@@ -2228,7 +2228,7 @@ async def foreman_list_modes():
             {"id": "director", "label": "DIRECTOR", "description": "Scene drafting"},
             {"id": "editor", "label": "EDITOR", "description": "Polish & revision"}
         ],
-        "current_mode": _get_or_create_foreman().mode.value if _get_or_create_foreman().mode else "none"
+        "current_mode": get_foreman().mode.value if get_foreman().mode else "none"
     }
 
 
