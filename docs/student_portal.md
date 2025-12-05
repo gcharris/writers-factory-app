@@ -64,10 +64,13 @@ Welcome to the Writers Factory. Choose the path that matches your goals for the 
 
 ### **Day 4: Diagnostics & Polish**
 * **Focus:** Debugging the Narrative.
-* **Activity:** Using "Pacing Graphs" to find flat spots in the tension arc.
+* **Activity:** Using the **Narrative Dashboard** to analyze your story:
+    * **Tension Indicator** shows if your conflict is building or resolving too fast.
+    * **Pacing Analysis** reveals the balance of action vs. setup scenes.
+    * **Community Detection** shows which characters cluster together (subplots!).
 * **Tracks Split:**
-    * *Writers:* Polish a 3-page excerpt for reading.
-    * *Engineers:* Draft a technical proposal for a system improvement (e.g., "Better Graph Pruning").
+    * *Writers:* Use dashboard feedback to polish a 3-page excerpt for reading.
+    * *Engineers:* Draft a technical proposal for a system improvement (e.g., "Custom Edge Types for Genre Fiction").
 
 ### **Day 5: Showcase**
 *   **Morning:** Final assembly. [**👉 Submit Your Work**]({{ '/submission_guide' | relative_url }})
