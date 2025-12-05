@@ -52,11 +52,26 @@ Agents should commit frequently so work isn't lost if the session freezes or err
 
 ## Multi-Agent Coordination (CRITICAL)
 
-This project uses multiple Claude agents working in parallel:
-- **IDE Agent (Claude Code in VSCode)**: Works on `main` branch directly
-- **Cloud Agents (Claude.ai)**: Work in git worktrees (separate directories)
+This project uses multiple AI agents working in parallel:
+- **Claude Code (IDE Agent)**: Works on `main` branch directly, handles commits/pushes
+- **Gemini IDE**: Works in the SAME codebase (not a worktree), creates/edits files directly
+- **Claude Desktop (Cloud)**: Works in git worktrees (separate directories)
 
-### The Worktree Problem
+### Working with Gemini IDE (Same Machine)
+
+Gemini IDE edits files directly in this codebase - no git coordination needed between you.
+
+**Workflow:**
+- Gemini creates/edits files → you see changes immediately
+- You handle all git commits and pushes to GitHub
+- Coordinate to avoid editing the same files simultaneously
+- When Gemini finishes work, commit their files along with yours
+
+**Good tasks for Gemini:** New component files, documentation, isolated features
+**Avoid conflicts:** Don't both edit the same file at the same time
+
+### Working with Claude Desktop (Remote Worktrees)
+
 Cloud agents work in **isolated worktrees** that only see commits pushed to `origin`. They CANNOT see:
 - Files created but not committed
 - Files committed but not pushed
