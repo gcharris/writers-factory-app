@@ -2171,6 +2171,87 @@ async def foreman_advance_to_director():
 
 
 # =============================================================================
+# Mode Transition (Soft Guardrails)
+# =============================================================================
+
+class ModeTransitionRequest(BaseModel):
+    """Request to change Foreman mode with soft guardrails."""
+    target_mode: str  # architect, voice_calibration, director, editor
+
+
+class ModeTransitionResponse(BaseModel):
+    """Response from mode transition request."""
+    allowed: bool
+    new_mode: str | None
+    foreman_message: str
+    missing_prerequisites: list[str]
+    transition_type: str
+
+
+@app.post("/foreman/request-mode-change", response_model=ModeTransitionResponse, summary="Request mode change with soft guardrails")
+async def request_mode_change(request: ModeTransitionRequest):
+    """
+    Handle writer's request to change Foreman mode.
+
+    This implements "soft guardrails" - the Foreman acts as an advisor, not a gatekeeper:
+    - Never blocks mode transitions outright
+    - Always acknowledges the writer's intent
+    - Provides context-aware guidance
+    - Offers alternatives when prerequisites are missing
+
+    The mode may or may not actually change based on context, but the writer
+    always gets a conversational response, never an error modal.
+    """
+    from services.mode_transition_service import mode_transition_service
+    from agents.foreman import ForemanMode
+
+    foreman = _get_or_create_foreman()
+    current_mode = foreman.mode.value if foreman.mode else "architect"
+
+    # Process the transition request
+    result = await mode_transition_service.request_transition(
+        current_mode=current_mode,
+        target_mode=request.target_mode
+    )
+
+    # If transition is allowed, update the Foreman's mode
+    if result["allowed"] and result["new_mode"]:
+        new_mode = result["new_mode"].lower()
+        foreman.mode = ForemanMode(new_mode)
+        if foreman.work_order:
+            foreman.work_order.mode = ForemanMode(new_mode)
+        logger.info(f"Mode changed: {current_mode} -> {new_mode}")
+
+    return ModeTransitionResponse(
+        allowed=result["allowed"],
+        new_mode=result["new_mode"].lower() if result["new_mode"] else None,
+        foreman_message=result["foreman_message"],
+        missing_prerequisites=result["missing_prerequisites"],
+        transition_type=result["transition_type"]
+    )
+
+
+@app.get("/foreman/prerequisites/{mode}", summary="Get prerequisites for a mode")
+async def get_mode_prerequisites(mode: str):
+    """
+    Get the prerequisite status for a specific mode.
+
+    Useful for showing visual indicators of which modes are "ready" vs "skippable".
+    """
+    from services.mode_transition_service import get_mode_prerequisites as get_prereqs
+
+    prereqs = await get_prereqs(mode)
+    all_met = all(p["completed"] for p in prereqs)
+
+    return {
+        "mode": mode.upper(),
+        "prerequisites": prereqs,
+        "all_met": all_met,
+        "ready": all_met or mode.upper() == "ARCHITECT"
+    }
+
+
+# =============================================================================
 # Debug: Force Mode Advancement (bypasses requirements)
 # =============================================================================
 

@@ -26,7 +26,8 @@
     foremanActive,
     showStoryBibleWizard,
     showNotebookRegistration,
-    activeModal
+    activeModal,
+    addForemanMessage
   } from '$lib/stores';
   import Modal from './Modal.svelte';
   import Toast from './Toast.svelte';
@@ -34,6 +35,13 @@
   import SettingsPanel from './SettingsPanel.svelte';
   import StoryBibleWizard from './StoryBibleWizard.svelte';
   import NotebookRegistration from './NotebookRegistration.svelte';
+
+  const BASE_URL = 'http://localhost:8000';
+
+  // Mode transition state
+  /** @type {Record<string, {mode: string, prerequisites: Array<{name: string, completed: boolean}>, all_met: boolean, ready: boolean}>} */
+  let modePrerequisites = {};
+  let isTransitioning = false;
 
   // Panel resize state (widths in pixels)
   let binderWidth = 240;
@@ -98,6 +106,7 @@
   }
 
   // Mode colors
+  /** @type {Record<string, string>} */
   const modeColors = {
     ARCHITECT: 'var(--mode-architect)',
     VOICE: 'var(--mode-voice)',
@@ -107,6 +116,7 @@
   };
 
   // Mode icons
+  /** @type {Record<string, string>} */
   const modeIcons = {
     ARCHITECT: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -148,9 +158,130 @@
   }
 
   // Handle Story Bible completion
+  /** @param {CustomEvent} event */
   function handleStoryBibleComplete(event) {
     closeStoryBibleWizard();
   }
+
+  // ==========================================================================
+  // Mode Transition (Soft Guardrails)
+  // ==========================================================================
+
+  /** @type {Record<string, string>} */
+  const MODE_API_MAP = {
+    'ARCHITECT': 'architect',
+    'VOICE': 'voice_calibration',
+    'VOICE_CALIBRATION': 'voice_calibration',
+    'DIRECTOR': 'director',
+    'EDITOR': 'editor'
+  };
+
+  // Load prerequisites for all modes
+  async function loadAllPrerequisites() {
+    const modes = ['architect', 'voice_calibration', 'director', 'editor'];
+    for (const mode of modes) {
+      try {
+        const response = await fetch(`${BASE_URL}/foreman/prerequisites/${mode}`);
+        if (response.ok) {
+          const data = await response.json();
+          modePrerequisites[mode] = data;
+        }
+      } catch (e) {
+        console.warn(`Failed to load prerequisites for ${mode}:`, e);
+      }
+    }
+    modePrerequisites = modePrerequisites; // Trigger reactivity
+  }
+
+  // Request a mode transition
+  /** @param {string} targetMode */
+  async function requestModeTransition(targetMode) {
+    const apiMode = MODE_API_MAP[targetMode];
+    if (!apiMode) return;
+
+    // Don't transition to current mode (but still allow clicking for feedback)
+    const currentApiMode = $foremanMode ? MODE_API_MAP[$foremanMode] : 'architect';
+
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    try {
+      const response = await fetch(`${BASE_URL}/foreman/request-mode-change`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_mode: apiMode })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Add Foreman's response to the chat
+        if (result.foreman_message && typeof addForemanMessage === 'function') {
+          addForemanMessage(result.foreman_message);
+        }
+
+        // Update mode if transition was allowed
+        if (result.allowed && result.new_mode) {
+          // Map API mode back to display mode
+          const displayMode = result.new_mode.toUpperCase() === 'VOICE_CALIBRATION'
+            ? 'VOICE'
+            : result.new_mode.toUpperCase();
+          foremanMode.set(displayMode);
+        }
+
+        // Refresh prerequisites after mode change
+        await loadAllPrerequisites();
+      }
+    } catch (e) {
+      console.error('Mode transition request failed:', e);
+    } finally {
+      isTransitioning = false;
+    }
+  }
+
+  // Get tooltip for a mode button
+  /** @param {string} mode */
+  function getModeTooltip(mode) {
+    const apiMode = MODE_API_MAP[mode];
+    if (!apiMode) return `Switch to ${mode} mode`;
+
+    const currentApiMode = $foremanMode ? MODE_API_MAP[$foremanMode] : 'architect';
+    if (apiMode === currentApiMode) {
+      return `Currently in ${mode} mode`;
+    }
+
+    const prereqs = modePrerequisites[apiMode];
+    if (!prereqs || !prereqs.prerequisites?.length) {
+      return `Switch to ${mode} mode`;
+    }
+
+    const missing = prereqs.prerequisites.filter(/** @param {{completed: boolean, name: string}} p */ p => !p.completed);
+    if (!missing.length) {
+      return `Ready for ${mode} mode`;
+    }
+
+    return `${mode} mode\nMissing: ${missing.map(/** @param {{name: string}} p */ p => p.name.replace(/_/g, ' ')).join(', ')}`;
+  }
+
+  // Check if mode prerequisites are met
+  /** @param {string} mode */
+  function areModePrereqsMet(mode) {
+    const apiMode = MODE_API_MAP[mode];
+    if (!apiMode || apiMode === 'architect') return true;
+
+    const prereqs = modePrerequisites[apiMode];
+    if (!prereqs || !prereqs.prerequisites?.length) return true;
+
+    return prereqs.all_met;
+  }
+
+  // Load prerequisites on mount
+  onMount(() => {
+    loadAllPrerequisites();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadAllPrerequisites, 30000);
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="layout-container">
@@ -171,8 +302,11 @@
         {#each ['ARCHITECT', 'VOICE', 'DIRECTOR', 'EDITOR'] as mode}
           <button
             class="mode-tab {$foremanMode === mode ? 'active' : ''}"
+            class:prereqs-met={areModePrereqsMet(mode)}
+            class:transitioning={isTransitioning}
             style="--mode-color: {modeColors[mode]}"
-            disabled={mode !== $foremanMode}
+            on:click={() => requestModeTransition(mode)}
+            title={getModeTooltip(mode)}
           >
             <span class="mode-icon">{@html modeIcons[mode]}</span>
             <span class="mode-name">{mode}</span>
@@ -365,27 +499,40 @@
     gap: var(--space-1);
     padding: var(--space-1) var(--space-3);
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     color: var(--text-muted);
     font-size: var(--text-xs);
     font-weight: var(--font-medium);
     cursor: pointer;
     transition: all var(--transition-fast);
+    opacity: 0.5;
   }
 
-  .mode-tab:disabled {
-    cursor: default;
+  /* Prerequisites met - more visible */
+  .mode-tab.prereqs-met {
+    opacity: 0.8;
+    border-color: var(--border);
   }
 
-  .mode-tab:hover:not(.active):not(:disabled) {
+  /* Transitioning state - show loading */
+  .mode-tab.transitioning {
+    cursor: wait;
+  }
+
+  .mode-tab:hover:not(.active) {
+    opacity: 1;
     color: var(--text-secondary);
+    border-color: var(--mode-color);
+    transform: translateY(-1px);
   }
 
   .mode-tab.active {
     background: var(--bg-secondary);
     color: var(--mode-color);
+    border-color: var(--mode-color);
     box-shadow: var(--shadow-sm);
+    opacity: 1;
   }
 
   .mode-icon {
