@@ -104,9 +104,13 @@
       if (!response.ok) throw new Error('Failed to fetch API status');
 
       const apiStatus = await response.json();
+      // API returns { providers: { openai: { available: true }, ... } }
+      const providersData = apiStatus.providers || apiStatus;
       const configuredProviders = new Set(
-        Object.entries(apiStatus)
-          .filter(([_, status]) => status === 'configured' || status === true)
+        Object.entries(providersData)
+          .filter(([_, info]: [string, any]) =>
+            info === true || info === 'configured' || info?.available === true
+          )
           .map(([provider]) => provider.toLowerCase())
       );
 
