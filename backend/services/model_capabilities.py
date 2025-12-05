@@ -90,6 +90,17 @@ class ModelCapabilities:
     # Context window (useful for long-form writing)
     max_context_tokens: int = 8192
 
+    # === Agent Instruction System Fields ===
+
+    # XML output reliability (0-10, 10 = follows XML format perfectly)
+    xml_reliability: int = 7
+
+    # Instruction following quality (0-10, how well it follows complex prompts)
+    instruction_following: int = 7
+
+    # Prompt tier: "full" (128K+ context), "medium" (32K-128K), "minimal" (<32K)
+    prompt_tier: str = "medium"
+
 
 # Model registry with complete capability profiles
 MODEL_REGISTRY: List[ModelCapabilities] = [
@@ -112,7 +123,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "fr", "de", "es"],
         multilingual_quality=6,
         best_for=["coordination", "quick_drafts", "local_privacy"],
-        max_context_tokens=32768
+        max_context_tokens=32768,
+        xml_reliability=6,
+        instruction_following=6,
+        prompt_tier="medium"
     ),
 
     ModelCapabilities(
@@ -131,7 +145,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "es", "pt"],
         multilingual_quality=5,
         best_for=["brainstorming", "character_checks", "prototyping"],
-        max_context_tokens=128000
+        max_context_tokens=128000,
+        xml_reliability=5,
+        instruction_following=5,
+        prompt_tier="minimal"
     ),
 
     # ============================================================
@@ -159,7 +176,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "zh"],
         multilingual_quality=9,  # Excellent Chinese
         best_for=["strategic_analysis", "plot_structure", "dark_themes", "mature_content"],
-        max_context_tokens=64000
+        max_context_tokens=64000,
+        xml_reliability=7,
+        instruction_following=8,
+        prompt_tier="medium"
     ),
 
     ModelCapabilities(
@@ -317,7 +337,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "fr", "de", "es", "ja", "ko"],
         multilingual_quality=8,
         best_for=["research", "fact_checking", "long_context"],
-        max_context_tokens=1000000  # 1M context!
+        max_context_tokens=1000000,  # 1M context!
+        xml_reliability=6,  # Prefers JSON
+        instruction_following=8,
+        prompt_tier="full"
     ),
 
     # === Chinese AI Models (Excellent for Multilingual) ===
@@ -419,7 +442,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "fr", "de", "es"],
         multilingual_quality=8,
         best_for=["prose_quality", "emotional_depth", "internal_monologue", "nuance"],
-        max_context_tokens=200000
+        max_context_tokens=200000,
+        xml_reliability=10,
+        instruction_following=10,
+        prompt_tier="full"
     ),
 
     ModelCapabilities(
@@ -472,7 +498,10 @@ MODEL_REGISTRY: List[ModelCapabilities] = [
         primary_languages=["en", "fr", "de", "es", "ru", "ja"],
         multilingual_quality=8,
         best_for=["thematic_analysis", "dialogue", "structure", "genre_fiction"],
-        max_context_tokens=128000
+        max_context_tokens=128000,
+        xml_reliability=9,
+        instruction_following=10,
+        prompt_tier="full"
     ),
 
     ModelCapabilities(
