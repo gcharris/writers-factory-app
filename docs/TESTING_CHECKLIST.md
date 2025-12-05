@@ -207,14 +207,44 @@
 
 ---
 
-## 13. Voice Calibration
+## 13. Voice Calibration UI (VoiceCalibration.svelte)
 
+### 13.1 Enter Voice Mode
 | # | Test | How to Test | Status |
 |---|------|-------------|--------|
-| 13.1 | Tournament start | Start voice tournament | |
-| 13.2 | Sample comparison | Compare two voice samples | |
-| 13.3 | Winner selection | Select preferred voice | |
-| 13.4 | Calibration save | Voice profile saved | |
+| 13.1.1 | Access via Studio Tools | Click Studio Tools → Voice Tournament | |
+| 13.1.2 | See launcher | Voice Calibration Tournament launcher visible | |
+
+### 13.2 Setup Tournament
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 13.2.1 | Agent selection | Select 3+ agents (Claude, GPT-4o, Mistral) | |
+| 13.2.2 | Enter prompt | Type: "A detective walks into a rainy diner" | |
+| 13.2.3 | Enter context | Type: "Noir atmosphere, tired protagonist" | |
+| 13.2.4 | Start tournament | Click Start Tournament | |
+
+### 13.3 Run Tournament
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 13.3.1 | Running state | View changes to spinner with "Tournament in Progress" | |
+| 13.3.2 | Status polling | Status text updates (check Network tab) | |
+| 13.3.3 | Wait for completion | Allow 1-2 minutes for generation | |
+
+### 13.4 Review Variants
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 13.4.1 | Grid view | See cards for each agent's variants | |
+| 13.4.2 | Preview | Click card to see full text in modal | |
+| 13.4.3 | Compare | Select 2 cards → Click Compare | |
+
+### 13.5 Select Winner & Generate Bundle
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 13.5.1 | Select winner | Click Select as Winner on preferred variant | |
+| 13.5.2 | Configure voice | Set POV, Tense, metadata in VoiceVariantSelector | |
+| 13.5.3 | Confirm | Click Confirm & Save | |
+| 13.5.4 | Bundle generated | See list of generated files (Voice-Gold-Standard.md, etc.) | |
+| 13.5.5 | Enter Director | Click Enter Director Mode → context changes | |
 
 ---
 
