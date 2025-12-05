@@ -590,7 +590,7 @@ class Foreman:
     # Conversation
     # -------------------------------------------------------------------------
 
-    async def chat(self, user_message: str) -> Dict:
+    async def chat(self, user_message: str, use_xml_parser: bool = True) -> Dict:
         """
         Send a message to the Foreman and get a response.
 
@@ -601,6 +601,11 @@ class Foreman:
         4. Optionally take actions (query, write, etc.)
 
         Phase 3E: Now uses intelligent model routing based on task complexity.
+        Phase 5: Now uses XML ResponseParser for structured output.
+
+        Args:
+            user_message: The writer's message
+            use_xml_parser: If True, parse XML-structured responses (default True)
 
         Returns:
             Dict with response, any actions taken, and updated work order
@@ -639,14 +644,54 @@ class Foreman:
             task_type=task_type  # Triggers automatic model selection
         )
 
-        # Add assistant response to conversation
-        self.conversation.append(ConversationMessage(role="assistant", content=response_text))
+        # Parse response (Phase 5: XML parser integration)
+        parsed_response = None
+        user_facing_message = response_text
+        actions_taken = []
 
-        # Parse and execute any actions
-        actions_taken = await self._parse_and_execute_actions(response_text)
+        if use_xml_parser:
+            try:
+                from backend.services.response_parser import get_response_parser
 
-        return {
-            "response": response_text,
+                parser = get_response_parser()
+                parsed_response = parser.parse(response_text)
+
+                # Use the message from parsed response for user-facing output
+                if parsed_response.message:
+                    user_facing_message = parsed_response.message
+
+                # Execute parsed actions (if any)
+                for action in parsed_response.actions:
+                    action_dict = {"action": action.action_type, **action.params}
+                    if action.action_type in self._action_handlers:
+                        result = await self._action_handlers[action.action_type](action_dict)
+                        actions_taken.append({
+                            "action": action.action_type,
+                            "data": action_dict,
+                            "result": result,
+                        })
+
+                # Handle content updates
+                for update in parsed_response.content_updates:
+                    actions_taken.append({
+                        "action": "content_update",
+                        "target": update.target,
+                        "content": update.content,
+                    })
+
+            except Exception as e:
+                logger.warning(f"XML parser failed, falling back to JSON action parsing: {e}")
+                # Fallback to legacy JSON action parsing
+                actions_taken = await self._parse_and_execute_actions(response_text)
+        else:
+            # Legacy JSON action parsing
+            actions_taken = await self._parse_and_execute_actions(response_text)
+
+        # Add assistant response to conversation (store the user-facing message)
+        self.conversation.append(ConversationMessage(role="assistant", content=user_facing_message))
+
+        result = {
+            "response": user_facing_message,
             "actions": actions_taken,
             "work_order": self.work_order.to_dict(),
             "kb_entries_pending": len(self.kb_entries),
@@ -655,6 +700,12 @@ class Foreman:
                 "is_advisor_task": task_type != "coordinator"
             }
         }
+
+        # Include parsed thinking if available (for debug/logging)
+        if parsed_response and parsed_response.thinking:
+            result["_thinking"] = parsed_response.thinking
+
+        return result
 
     def _build_context(self) -> List[Dict]:
         """Build the context window for Ollama."""
@@ -681,13 +732,69 @@ class Foreman:
 
         return messages
 
-    def _get_system_prompt(self) -> str:
-        """Get the system prompt for the current mode."""
+    def _get_system_prompt(self, use_assembler: bool = True) -> str:
+        """
+        Get the system prompt for the current mode.
+
+        Args:
+            use_assembler: If True, uses PromptAssembler for modular prompts.
+                          If False, falls back to embedded prompts.
+
+        Returns:
+            Complete system prompt string
+        """
+        # Try PromptAssembler first (Phase 5 integration)
+        if use_assembler:
+            try:
+                from backend.services.prompt_assembler import get_prompt_assembler, AssemblyConfig
+
+                assembler = get_prompt_assembler()
+                mode_str = self.mode.value.lower() if self.mode else 'architect'
+
+                config = AssemblyConfig(
+                    agent_id="foreman",
+                    model_id=self.model,
+                    mode=mode_str,
+                    max_kb_entries=10,
+                    max_conversation_turns=10,
+                    include_voice_bundle=(mode_str in ['director', 'editor']),
+                    include_guardrails=(mode_str in ['director', 'editor']),
+                )
+
+                # Get KB entries for session state
+                kb_entries = []
+                if self.work_order:
+                    try:
+                        entries = self.kb_service.get_decisions(
+                            project_id=self.work_order.project_title
+                        )
+                        # Convert ForemanKBEntry objects to dicts for assembler
+                        kb_entries = [
+                            {"category": e.category, "key": e.key, "value": e.value}
+                            for e in entries[:config.max_kb_entries]
+                        ]
+                    except Exception as kb_error:
+                        logger.warning(f"Failed to get KB entries: {kb_error}")
+
+                # Assemble the prompt
+                result = assembler.assemble(
+                    config=config,
+                    work_order=self.work_order,
+                    kb_entries=kb_entries,
+                )
+
+                logger.info(f"PromptAssembler: tier={result.tier.value}, sections={result.included_sections}, tokens~{result.token_estimate}")
+                return result.system_prompt
+
+            except Exception as e:
+                logger.warning(f"PromptAssembler failed, falling back to embedded prompts: {e}")
+
+        # Fallback to embedded prompts
         prompts = {
             ForemanMode.ARCHITECT: ARCHITECT_SYSTEM_PROMPT,
             ForemanMode.VOICE_CALIBRATION: VOICE_CALIBRATION_SYSTEM_PROMPT,
             ForemanMode.DIRECTOR: DIRECTOR_SYSTEM_PROMPT,
-            ForemanMode.EDITOR: DIRECTOR_SYSTEM_PROMPT,  # TODO: Add EDITOR prompt
+            ForemanMode.EDITOR: DIRECTOR_SYSTEM_PROMPT,
         }
         return prompts.get(self.mode, ARCHITECT_SYSTEM_PROMPT)
 
