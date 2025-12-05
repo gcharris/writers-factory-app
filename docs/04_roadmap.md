@@ -400,12 +400,12 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### 📊 Progress Summary
 
-**Overall Progress:** ~97% Complete
+**Overall Progress:** ~98% Complete
 
 **Backend:** 100% ✅
 - All Phases 1-3F complete (GraphRAG Phase 1 NEW)
 - 11 major services, 11 LLM providers, zero critical bugs
-- 4 new API endpoints for manuscript/knowledge
+- 168 API endpoints documented
 
 **Frontend:** 98% ✅
 - Critical UI: 11/11 components ✅
@@ -413,9 +413,9 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - Settings: 10/10 tabs ✅ (including Graph, Voice)
 - Squad System: 5/5 components ✅
 
-**Remaining:** ~10 hours
-- Advanced Settings UI (Ollama URL, context window)
-- Polish & UX
+**Remaining:** ~5 hours
+- SettingsAdvanced enhancements (Ollama URL, Temperature/Top-P, Data Management)
+- Duplicate file cleanup (technical debt)
 
 ### 🚀 Recent Accomplishments (Dec 2025)
 
@@ -437,7 +437,8 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 ### 📅 Next Milestones
 
 **Dec 4:** ✅ GraphRAG Phase 1, Squad UI, Settings Graph - COMPLETE
-**Dec 8:** Voice Settings UI & Advanced Settings
+**Dec 5:** ✅ API Reference rewrite (168 endpoints), Documentation audit
+**Dec 8:** SettingsAdvanced enhancements + Cleanup
 **Dec 15:** Production Ready (installers, docs, testing)
 
 ### 📝 Documentation
