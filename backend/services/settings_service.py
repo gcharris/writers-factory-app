@@ -307,7 +307,7 @@ class DefaultSettings:
             "periodic_minutes": 0,  # 0 = disabled
         },
         "verification_level": "standard",  # "minimal" | "standard" | "thorough"
-        "embedding_provider": "ollama",  # "ollama" | "openai" | "none"
+        "embedding_provider": "ollama",  # "ollama" | "openai" | "cohere" | "none"
     })
 
     def get_flat_dict(self) -> Dict[str, Any]:
@@ -399,6 +399,11 @@ class SettingsValidator:
         "health_checks.timeline.confidence_threshold": {"type": float, "min": 0.5, "max": 0.95},
         "health_checks.reporting.retention_days": {"type": int, "min": 30, "max": 730},
         "health_checks.reporting.notification_mode": {"type": str, "choices": ["foreman_proactive", "silent", "always"]},
+
+        # Graph settings (Phase 5)
+        "graph.verification_level": {"type": str, "choices": ["minimal", "standard", "thorough"]},
+        "graph.embedding_provider": {"type": str, "choices": ["ollama", "openai", "cohere", "none"]},
+        "graph.extraction_triggers.periodic_minutes": {"type": int, "min": 0, "max": 60},
     }
 
     @classmethod
@@ -700,3 +705,18 @@ class SettingsService:
 
 # Singleton instance
 settings_service = SettingsService()
+
+
+def get_graph_settings(project_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get all graph-related settings.
+
+    Convenience function for GraphRAG Phase 5.
+
+    Args:
+        project_id: Optional project ID for project-specific settings
+
+    Returns:
+        Dict with all graph settings
+    """
+    return settings_service.get_category("graph", project_id)

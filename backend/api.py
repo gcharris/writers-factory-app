@@ -765,6 +765,206 @@ async def run_all_verification(request: VerificationRequest):
         raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
 
 
+# =============================================================================
+# GRAPH RAG PHASE 5: GRAPH ANALYSIS & ENHANCEMENTS
+# =============================================================================
+
+@app.get("/graph/analysis/communities", summary="Detect character communities")
+async def get_communities():
+    """
+    Detect character communities using Louvain algorithm.
+
+    Communities often represent:
+    - Subplots
+    - Character factions
+    - Thematic clusters
+
+    Returns:
+        Dict mapping community names to lists of character names
+    """
+    from backend.graph.graph_analysis import get_graph_analyzer
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            analyzer = get_graph_analyzer(graph_service)
+            return analyzer.detect_communities()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Community detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Community detection failed: {str(e)}")
+
+
+@app.get("/graph/analysis/bridges", summary="Find bridge characters")
+async def get_bridge_characters(top_k: int = 5):
+    """
+    Find characters that connect multiple communities.
+
+    These are often:
+    - Protagonists (connect all threads)
+    - Plot catalysts (bring groups together)
+    - Antagonists (create conflict between groups)
+
+    Args:
+        top_k: Number of bridge characters to return (default: 5)
+
+    Returns:
+        List of bridge characters with centrality scores and inferred roles
+    """
+    from backend.graph.graph_analysis import get_graph_analyzer
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            analyzer = get_graph_analyzer(graph_service)
+            return {"bridge_characters": analyzer.find_bridge_characters(top_k)}
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Bridge detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Bridge detection failed: {str(e)}")
+
+
+@app.get("/graph/analysis/tension", summary="Calculate narrative tension")
+async def get_tension():
+    """
+    Calculate current narrative tension based on graph structure.
+
+    Tension indicators:
+    - Active HINDERS edges
+    - Unresolved FORESHADOWS
+    - CONTRADICTS edges
+    - Flaw CHALLENGES
+
+    Returns:
+        Tension score (0-1), level (low/medium/high), and breakdown
+    """
+    from backend.graph.graph_analysis import get_graph_analyzer
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            analyzer = get_graph_analyzer(graph_service)
+            return analyzer.calculate_tension()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Tension calculation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Tension calculation failed: {str(e)}")
+
+
+@app.get("/graph/analysis/pacing", summary="Analyze narrative pacing")
+async def get_pacing():
+    """
+    Analyze narrative pacing based on edge type distribution.
+
+    Returns:
+        Pacing type (fast/slow/balanced/concluding), ratios, and recommendations
+    """
+    from backend.graph.graph_analysis import get_graph_analyzer
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            analyzer = get_graph_analyzer(graph_service)
+            return analyzer.analyze_pacing()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Pacing analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Pacing analysis failed: {str(e)}")
+
+
+@app.get("/graph/analysis/summary", summary="Get narrative structure summary")
+async def get_narrative_summary():
+    """
+    Get comprehensive narrative structure analysis.
+
+    Includes:
+    - Character communities
+    - Bridge characters
+    - Tension analysis
+    - Pacing analysis
+    - Graph statistics
+    - Health indicators
+
+    Returns:
+        Complete narrative summary
+    """
+    from backend.graph.graph_analysis import get_graph_analyzer
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            analyzer = get_graph_analyzer(graph_service)
+            return analyzer.get_narrative_summary()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Narrative summary failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Narrative summary failed: {str(e)}")
+
+
+@app.get("/settings/graph", summary="Get graph settings")
+async def get_graph_settings_endpoint(project_id: Optional[str] = None):
+    """
+    Get all graph-related settings.
+
+    Args:
+        project_id: Optional project ID for project-specific settings
+
+    Returns:
+        Dict with all graph settings
+    """
+    from backend.services.settings_service import get_graph_settings
+
+    try:
+        return get_graph_settings(project_id)
+    except Exception as e:
+        logger.error(f"Failed to get graph settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get settings: {str(e)}")
+
+
+class GraphSettingsUpdate(BaseModel):
+    """Request model for updating graph settings."""
+    settings: Dict[str, Any]
+    project_id: Optional[str] = None
+
+
+@app.put("/settings/graph", summary="Update graph settings")
+async def update_graph_settings_endpoint(request: GraphSettingsUpdate):
+    """
+    Update graph-related settings.
+
+    Args:
+        settings: Dict of settings to update
+        project_id: Optional project ID for project-specific settings
+
+    Returns:
+        Dict with updated settings
+    """
+    from backend.services.settings_service import settings_service
+
+    try:
+        updated = {}
+        for key, value in request.settings.items():
+            # Ensure key is prefixed with "graph."
+            full_key = f"graph.{key}" if not key.startswith("graph.") else key
+            settings_service.set(full_key, value, request.project_id, category="graph")
+            updated[key] = value
+
+        return {"updated": updated, "project_id": request.project_id}
+    except Exception as e:
+        logger.error(f"Failed to update graph settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+
 @app.get("/graph/nodes/{node_id}", summary="Get single node details")
 async def get_graph_node(node_id: str):
     """

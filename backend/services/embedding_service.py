@@ -249,6 +249,88 @@ class OpenAIEmbedding(EmbeddingProvider):
         await self.client.aclose()
 
 
+class CohereEmbedding(EmbeddingProvider):
+    """Cohere-based embeddings (alternative cloud option)."""
+
+    def __init__(self, model: str = "embed-english-v3.0", api_key: Optional[str] = None):
+        """
+        Initialize Cohere embedding provider.
+
+        Args:
+            model: Cohere embedding model name
+            api_key: Cohere API key (uses COHERE_API_KEY env var if not provided)
+        """
+        self._model = model
+        self.api_key = api_key or os.getenv("COHERE_API_KEY")
+        if not self.api_key:
+            raise ValueError("Cohere API key required (set COHERE_API_KEY or pass api_key)")
+
+        self.client = httpx.AsyncClient(
+            timeout=60.0,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+        )
+
+        # Dimensions by model
+        self._dimensions = {
+            "embed-english-v3.0": 1024,
+            "embed-multilingual-v3.0": 1024,
+            "embed-english-light-v3.0": 384,
+            "embed-multilingual-light-v3.0": 384,
+        }
+        logger.info(f"CohereEmbedding initialized (model={model})")
+
+    @property
+    def provider_name(self) -> str:
+        return f"cohere:{self._model}"
+
+    @property
+    def dimension(self) -> int:
+        return self._dimensions.get(self._model, 1024)
+
+    async def embed(self, text: str) -> List[float]:
+        """Generate embedding for a single text."""
+        try:
+            response = await self.client.post(
+                "https://api.cohere.ai/v1/embed",
+                json={
+                    "model": self._model,
+                    "texts": [text],
+                    "input_type": "search_document"
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["embeddings"][0]
+        except httpx.HTTPError as e:
+            logger.error(f"Cohere embedding request failed: {e}")
+            raise RuntimeError(f"Failed to generate embedding: {e}")
+
+    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for multiple texts (batch API)."""
+        try:
+            response = await self.client.post(
+                "https://api.cohere.ai/v1/embed",
+                json={
+                    "model": self._model,
+                    "texts": texts,
+                    "input_type": "search_document"
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["embeddings"]
+        except httpx.HTTPError as e:
+            logger.error(f"Cohere batch embedding request failed: {e}")
+            raise RuntimeError(f"Failed to generate embeddings: {e}")
+
+    async def close(self):
+        """Close the HTTP client."""
+        await self.client.aclose()
+
+
 class EmbeddingService:
     """
     Unified embedding service interface.
@@ -265,13 +347,15 @@ class EmbeddingService:
         Initialize embedding service with specified provider.
 
         Args:
-            provider: "ollama" or "openai"
+            provider: "ollama", "openai", or "cohere"
             **kwargs: Provider-specific arguments
         """
         if provider == "ollama":
             self._provider = OllamaEmbedding(**kwargs)
         elif provider == "openai":
             self._provider = OpenAIEmbedding(**kwargs)
+        elif provider == "cohere":
+            self._provider = CohereEmbedding(**kwargs)
         else:
             raise ValueError(f"Unknown embedding provider: {provider}")
 
