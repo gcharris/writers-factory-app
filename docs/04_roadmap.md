@@ -216,10 +216,10 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 **See:** [PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md](dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md)
 
-## Phase 3F: GraphRAG Enhancement (✅ Phase 1 Complete)
+## Phase 3F: GraphRAG Enhancement (✅ Complete)
 **Goal:** Intelligent knowledge retrieval with query classification and context assembly.
 **Priority:** P1 High - Improves Foreman context quality
-**Status:** Phase 1 Complete (Dec 4, 2025)
+**Status:** All Phases Complete (Dec 2025)
 
 ### Phase 1: Core Services ✅
 - ✅ **QueryClassifier** - 8 query types (CHARACTER_DEEP, RELATIONSHIP, PLOT_TIMELINE, WORLD_RULES, etc.)
@@ -227,15 +227,15 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - ✅ **ManuscriptService** - Working → Manuscript promotion workflow with graph extraction
 - ✅ **4 API Endpoints** - `/manuscript/working`, `/manuscript/structure`, `/manuscript/promote`, `/knowledge/query`
 
-### Phase 2: Embeddings & Semantic Search (Planned)
-- 🔲 **EmbeddingService** - Ollama `nomic-embed-text` with OpenAI fallback
-- 🔲 **Semantic Search** - Vector similarity for knowledge graph nodes
-- 🔲 **NarrativeExtractor** - Narrative edge types (MOTIVATES, HINDERS, FORESHADOWS)
+### Phase 2: Embeddings & Semantic Search ✅
+- ✅ **EmbeddingService** - Ollama `nomic-embed-text` with OpenAI fallback
+- ✅ **EmbeddingIndexService** - Vector similarity for knowledge graph nodes
+- ✅ **NarrativeExtractor** - Narrative edge types (MOTIVATES, HINDERS, FORESHADOWS)
 
-### Phase 3: Verification & Integration (Planned)
-- 🔲 **VerificationService** - Tiered health checks (fast/medium/slow)
-- 🔲 **KnowledgeRouter** - Full query → classification → retrieval → assembly pipeline
-- 🔲 **Foreman Integration** - Automatic context injection before chat
+### Phase 3: Verification & Integration ✅
+- ✅ **VerificationService** - Tiered health checks (fast/medium/slow)
+- ✅ **KnowledgeRouter** - Full query → classification → retrieval → assembly pipeline
+- ✅ **Foreman Integration** - Automatic context injection before chat
 
 **See:** [GRAPHRAG_IMPLEMENTATION_PLAN.md](specs/GRAPHRAG_IMPLEMENTATION_PLAN.md)
 
