@@ -105,6 +105,8 @@ We treat scene creation like a manufacturing pipeline:
 4.  **Analysis**: Every scene is scored on a **100-Point Rubric** (Voice Authenticity, Character Consistency, Metaphor Discipline).
 5.  **Verification**: **[GraphRAG](graphrag)** checks for contradictions, ensures callbacks to earlier setups, and updates the knowledge graph.
 
+**[→ Director Mode Deep Dive](director_mode)**
+
 ---
 
 ![Engineering the Muse](assets/images/engineering-the-muse.png)
@@ -129,4 +131,5 @@ This is the simplified course version. For complete technical details:
 | Complete Writer's Journey | [WRITERS_JOURNEY.md](WRITERS_JOURNEY.md) |
 | GraphRAG System | [GraphRAG: The Living Brain](graphrag) |
 | Voice Calibration | [Voice Calibration System](voice_calibration) |
+| Director Mode | [Director Mode Pipeline](director_mode) |
 | How Systems Integrate | [Systems Integration](systems_integration) |
