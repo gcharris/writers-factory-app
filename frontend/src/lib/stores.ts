@@ -1,4 +1,61 @@
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
+
+// --- Type Definitions ---
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface WorkOrder {
+  id: string;
+  type: 'voice_tournament' | 'scene_generation' | 'story_bible' | 'health_check' | 'consolidation';
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  progress: { current: number; total: number } | null;
+  message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  result: unknown | null;
+  error: string | null;
+}
+
+export interface VerificationNotification {
+  id: string;
+  check_name: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  suggestion: string | null;
+  scene_id: string | null;
+  timestamp: string;
+}
+
+export interface NotebookInfo {
+  id: string;
+  name: string;
+  role?: string;
+}
+
+export interface VerificationIssue {
+  check_name?: string;
+  check?: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  suggestion?: string | null;
+}
+
+export interface VerificationResult {
+  issues?: VerificationIssue[];
+  [key: string]: unknown;
+}
+
+export interface VerificationSettings {
+  enabled: boolean;
+  autoVerifyOnGenerate: boolean;
+  showNotifications: boolean;
+  minSeverity: 'info' | 'warning' | 'critical';
+}
 
 // --- Editor State ---
 export const editorContent = writable("");
@@ -10,22 +67,19 @@ export const expandedFolders = writable({});
 
 // --- NotebookLM State ---
 export const notebookStatus = writable("checking");
-export const notebookList = writable([]);
+export const notebookList = writable<NotebookInfo[]>([]);
 export const selectedNotebookId = writable("");
 export const notebookLoading = writable(false);
 export const notebookError = writable("");
-export const notebookResult = writable(null);
+export const notebookResult = writable<unknown>(null);
 
 // --- Session State (The Workbench) ---
 // These stores persist chat history across page refreshes
 
 /**
  * Helper: Create a store that syncs with localStorage
- * @param {string} key - localStorage key
- * @param {any} initialValue - default value if not in localStorage
- * @returns {import('svelte/store').Writable<any>}
  */
-function persistentWritable(key, initialValue) {
+function persistentWritable<T>(key: string, initialValue: T): Writable<T> {
     // Check if we're in browser environment
     const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
@@ -73,7 +127,7 @@ export const activeProjectName = persistentWritable('wf_active_project', null);
 export const sessionId = persistentWritable('wf_session_id', null);
 
 // Chat history - mirrors backend but also cached locally for fast UI
-export const chatHistory = writable([]);
+export const chatHistory = writable<ChatMessage[]>([]);
 
 // Session metadata
 export const sessionSceneId = persistentWritable('wf_session_scene_id', null);
@@ -90,15 +144,13 @@ export const foremanProtagonist = writable(null);
 export const foremanWorkOrder = writable(null);
 
 // Foreman chat history (separate from manager)
-export const foremanChatHistory = writable([]);
+export const foremanChatHistory = writable<ChatMessage[]>([]);
 
 /**
  * Helper to add a Foreman message to the chat
- * @param {string} content - The message content
- * @param {'user' | 'assistant'} [role='assistant'] - The message role
  */
-export function addForemanMessage(content, role = 'assistant') {
-  foremanChatHistory.update(/** @param {Array<{role: string, content: string, timestamp: string}>} history */ history => [
+export function addForemanMessage(content: string, role: 'user' | 'assistant' = 'assistant'): void {
+  foremanChatHistory.update(history => [
     ...history,
     {
       role,
@@ -128,7 +180,7 @@ export const wizardStep = writable(0); // 0: Start, 1: Protagonist, 2: Beats, 3:
 
 // --- NotebookLM Integration State ---
 export const notebookLMConnected = writable(false);
-export const registeredNotebooks = writable([]); // Array of { id, name, role }
+export const registeredNotebooks = writable<NotebookInfo[]>([]); // Array of { id, name, role }
 export const showNotebookRegistration = writable(false);
 
 // --- UI Modal State ---
@@ -231,6 +283,25 @@ export const defaultChatModel = persistentWritable('wf_default_chat_model', 'dee
 // Currently selected model for next message (session only, not persisted)
 export const selectedChatModel = writable(null); // null means use defaultChatModel
 
+// --- Agent Selection ---
+
+// Agent type definition
+export type AgentId = 'foreman' | 'character_coach' | 'plot_doctor' | 'voice_stylist' | 'research_assistant';
+
+export interface AgentInfo {
+  id: AgentId;
+  name: string;
+  description: string;
+  icon?: string;
+  available_actions?: string[];
+}
+
+// Currently selected agent (persisted across sessions)
+export const selectedAgent = persistentWritable<AgentId>('wf_selected_agent', 'foreman');
+
+// Available agents (loaded from /agents/available)
+export const availableAgents = writable<AgentInfo[]>([]);
+
 // Writing stage (auto-detected, manually overridable)
 export const currentStage = persistentWritable('wf_current_stage', 'conception');
 
@@ -289,21 +360,18 @@ export const pinnedNodes = writable(new Set());
  */
 
 // All work orders (history + active)
-export const workOrders = persistentWritable('wf_work_orders', []);
+export const workOrders = persistentWritable<WorkOrder[]>('wf_work_orders', []);
 
 // Currently active work order (null if idle)
-export const activeWorkOrder = writable(null);
+export const activeWorkOrder = writable<WorkOrder | null>(null);
 
 // Work order history visibility
 export const showWorkOrderHistory = writable(false);
 
 /**
  * Helper: Create a new work order
- * @param {string} type - Work order type
- * @param {string} name - Human-readable name
- * @returns {object} New work order object
  */
-export function createWorkOrder(type, name) {
+export function createWorkOrder(type: WorkOrder['type'], name: string): WorkOrder {
   return {
     id: `wo_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     type,
@@ -320,10 +388,8 @@ export function createWorkOrder(type, name) {
 
 /**
  * Helper: Update work order in store
- * @param {string} id - Work order ID
- * @param {object} updates - Fields to update
  */
-export function updateWorkOrder(id, updates) {
+export function updateWorkOrder(id: string, updates: Partial<WorkOrder>): void {
   workOrders.update(orders => {
     const idx = orders.findIndex(o => o.id === id);
     if (idx >= 0) {
@@ -343,10 +409,9 @@ export function updateWorkOrder(id, updates) {
 
 /**
  * Helper: Start a work order
- * @param {object} workOrder - Work order to start
  */
-export function startWorkOrder(workOrder) {
-  const startedOrder = {
+export function startWorkOrder(workOrder: WorkOrder): WorkOrder {
+  const startedOrder: WorkOrder = {
     ...workOrder,
     status: 'running',
     started_at: new Date().toISOString()
@@ -360,11 +425,9 @@ export function startWorkOrder(workOrder) {
 
 /**
  * Helper: Complete a work order
- * @param {string} id - Work order ID
- * @param {any} result - Result data
  */
-export function completeWorkOrder(id, result = null) {
-  const updates = {
+export function completeWorkOrder(id: string, result: unknown = null): void {
+  const updates: Partial<WorkOrder> = {
     status: 'completed',
     completed_at: new Date().toISOString(),
     result
@@ -382,11 +445,9 @@ export function completeWorkOrder(id, result = null) {
 
 /**
  * Helper: Fail a work order
- * @param {string} id - Work order ID
- * @param {string} error - Error message
  */
-export function failWorkOrder(id, error) {
-  const updates = {
+export function failWorkOrder(id: string, error: string): void {
+  const updates: Partial<WorkOrder> = {
     status: 'failed',
     completed_at: new Date().toISOString(),
     error
@@ -404,10 +465,9 @@ export function failWorkOrder(id, error) {
 
 /**
  * Helper: Cancel a work order
- * @param {string} id - Work order ID
  */
-export function cancelWorkOrder(id) {
-  const updates = {
+export function cancelWorkOrder(id: string): void {
+  const updates: Partial<WorkOrder> = {
     status: 'cancelled',
     completed_at: new Date().toISOString()
   };
@@ -424,9 +484,8 @@ export function cancelWorkOrder(id) {
 
 /**
  * Helper: Clear completed/failed work orders older than N days
- * @param {number} days - Days to keep (default 7)
  */
-export function clearOldWorkOrders(days = 7) {
+export function clearOldWorkOrders(days: number = 7): void {
   const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
 
   workOrders.update(orders =>
@@ -454,30 +513,33 @@ export function clearOldWorkOrders(days = 7) {
  */
 
 // Pending verification notifications (not yet dismissed)
-export const verificationNotifications = writable([]);
+export const verificationNotifications = writable<VerificationNotification[]>([]);
 
 // Verification loading state
 export const verificationLoading = writable(false);
 
 // Last verification result (full response)
-export const lastVerificationResult = writable(null);
+export const lastVerificationResult = writable<VerificationResult | null>(null);
 
 // Auto-verification settings
-export const verificationSettings = persistentWritable('wf_verification_settings', {
+export const verificationSettings = persistentWritable<VerificationSettings>('wf_verification_settings', {
   enabled: true,
   autoVerifyOnGenerate: true,
   showNotifications: true,
-  minSeverity: 'warning' // 'info' | 'warning' | 'critical'
+  minSeverity: 'warning'
 });
 
 /**
  * Helper: Add a verification notification
- * @param {object} notification - Notification to add
  */
-export function addVerificationNotification(notification) {
-  const notif = {
-    ...notification,
+export function addVerificationNotification(notification: Partial<VerificationNotification>): void {
+  const notif: VerificationNotification = {
     id: notification.id || `vn_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    check_name: notification.check_name || 'unknown_check',
+    severity: notification.severity || 'info',
+    message: notification.message || '',
+    suggestion: notification.suggestion || null,
+    scene_id: notification.scene_id || null,
     timestamp: notification.timestamp || new Date().toISOString()
   };
 
@@ -493,9 +555,8 @@ export function addVerificationNotification(notification) {
 
 /**
  * Helper: Dismiss a verification notification
- * @param {string} id - Notification ID to dismiss
  */
-export function dismissVerificationNotification(id) {
+export function dismissVerificationNotification(id: string): void {
   verificationNotifications.update(notifications =>
     notifications.filter(n => n.id !== id)
   );
@@ -504,27 +565,25 @@ export function dismissVerificationNotification(id) {
 /**
  * Helper: Dismiss all verification notifications
  */
-export function dismissAllVerificationNotifications() {
+export function dismissAllVerificationNotifications(): void {
   verificationNotifications.set([]);
 }
 
 /**
  * Helper: Process verification result and create notifications
- * @param {object} result - Verification result from API
- * @param {string} sceneId - Scene ID being verified
  */
-export function processVerificationResult(result, sceneId = null) {
+export function processVerificationResult(result: VerificationResult | null, sceneId: string | null = null): void {
   lastVerificationResult.set(result);
 
   if (!result || !result.issues) return;
 
   // Get current settings
-  let settings;
+  let settings: VerificationSettings | undefined;
   verificationSettings.subscribe(s => settings = s)();
 
-  if (!settings.showNotifications) return;
+  if (!settings || !settings.showNotifications) return;
 
-  const severityOrder = { 'info': 0, 'warning': 1, 'critical': 2 };
+  const severityOrder: Record<string, number> = { 'info': 0, 'warning': 1, 'critical': 2 };
   const minLevel = severityOrder[settings.minSeverity] || 1;
 
   for (const issue of result.issues) {

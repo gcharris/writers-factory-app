@@ -3,9 +3,11 @@
   import { apiClient } from '$lib/api_client';
   import {
     foremanActive, foremanMode, foremanProjectTitle, foremanProtagonist,
-    foremanWorkOrder, foremanChatHistory, selectedChatModel, defaultChatModel
+    foremanWorkOrder, foremanChatHistory, selectedChatModel, defaultChatModel,
+    selectedAgent, availableAgents
   } from '$lib/stores';
   import ModelSelector from './chat/ModelSelector.svelte';
+  import AgentDropdown from './chat/AgentDropdown.svelte';
   import ForemanAction from './chat/ForemanAction.svelte';
 
   const BASE_URL = 'http://localhost:8000';
@@ -148,17 +150,18 @@
     const currentInput = input;
     input = "";
 
-    // Get the model to use for this message
+    // Get the model and agent to use for this message
     const modelToUse = $selectedChatModel || $defaultChatModel;
+    const agentToUse = $selectedAgent || 'foreman';
 
-    const userMsg = { role: 'user', text: currentInput, modelRequested: modelToUse };
+    const userMsg = { role: 'user', text: currentInput, modelRequested: modelToUse, agent: agentToUse };
     messages = [...messages, userMsg];
 
     // Reset selected model after sending (per-message selection)
     selectedChatModel.set(null);
 
     try {
-      const data = await apiClient.foremanChat(currentInput, modelToUse);
+      const data = await apiClient.foremanChat(currentInput, modelToUse, agentToUse);
 
       // Extract model routing information if available
       if (data.model_used) {
@@ -170,6 +173,7 @@
         role: 'assistant',
         text: data.response,
         modelUsed: data.model_used,
+        agent: agentToUse,
         // Store full action objects for rich rendering
         actions: data.actions || [],
       };
@@ -421,13 +425,14 @@
   <!-- Chat Messages -->
   <div class="messages-container">
     {#each messages as msg}
+      {@const msgAgent = $availableAgents.find(a => a.id === msg.agent)}
       <div class="message {msg.role}">
         <div class="message-header">
           <span class="message-role">
             {#if msg.role === 'user'}
               👤 You
             {:else if msg.role === 'assistant'}
-              🤖 Foreman
+              {msgAgent?.icon || '🤖'} {msgAgent?.name || 'Foreman'}
             {:else}
               ℹ️ System
             {/if}
@@ -456,9 +461,10 @@
     {/each}
 
     {#if isLoading}
+      {@const currentAgentInfo = $availableAgents.find(a => a.id === $selectedAgent)}
       <div class="message assistant loading">
         <div class="message-header">
-          <span class="message-role">🤖 Foreman</span>
+          <span class="message-role">{currentAgentInfo?.icon || '🤖'} {currentAgentInfo?.name || 'Foreman'}</span>
         </div>
         <div class="message-content">
           <span class="typing-indicator">
@@ -474,12 +480,15 @@
   <!-- Chat Input -->
   {#if !showStartProject}
     <div class="chat-input">
-      <div class="input-row">
+      <div class="input-selectors">
+        <AgentDropdown />
         <ModelSelector />
+      </div>
+      <div class="input-row">
         <textarea
           bind:value={input}
           on:keydown={handleKeydown}
-          placeholder="Chat with Foreman..."
+          placeholder="Chat with {$availableAgents.find(a => a.id === $selectedAgent)?.name || 'Foreman'}..."
           class="input-field"
           disabled={isLoading}
           rows="2"
@@ -997,6 +1006,12 @@
     background: #2d2d2d;
     border-top: 1px solid #404040;
     flex-shrink: 0;
+  }
+
+  .input-selectors {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .input-row {

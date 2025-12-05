@@ -87,6 +87,7 @@ export interface ForemanStartRequest {
 export interface ForemanChatRequest {
     message: string;
     model?: string;
+    agent?: string;  // Agent ID (default: "foreman")
 }
 
 export interface ForemanNotebookRequest {
@@ -350,17 +351,52 @@ export class WritersFactoryAPI {
     }
 
     /**
-     * Chat with the Foreman.
+     * Chat with the Foreman (or another selected agent).
      * @param message The user's message.
      * @param model Optional model ID to use for this message (overrides default).
+     * @param agent Optional agent ID (default: "foreman"). See /agents/available for options.
      */
-    async foremanChat(message: string, model?: string): Promise<ForemanChatResponse> {
+    async foremanChat(message: string, model?: string, agent?: string): Promise<ForemanChatResponse> {
         const body: ForemanChatRequest = { message };
         if (model) body.model = model;
+        if (agent) body.agent = agent;
         return this._request('/foreman/chat', {
             method: 'POST',
             body: JSON.stringify(body),
         });
+    }
+
+    /**
+     * Get list of available chat agents.
+     * Returns agents defined in agents.yaml with their capabilities.
+     */
+    async getAvailableAgents(): Promise<Array<{
+        id: string;
+        name: string;
+        description: string;
+        icon: string;
+        has_modes: boolean;
+        capabilities: string[];
+    }>> {
+        return this._request('/agents/available');
+    }
+
+    /**
+     * Get detailed info about a specific agent.
+     * @param agentId The agent ID (e.g., "foreman", "character_coach")
+     */
+    async getAgentInfo(agentId: string): Promise<{
+        id: string;
+        name: string;
+        description: string;
+        icon: string;
+        has_modes: boolean;
+        modes?: string[];
+        current_mode?: string;
+        capabilities: string[];
+        focus_areas?: string[];
+    }> {
+        return this._request(`/agents/${agentId}/info`);
     }
 
     /**
