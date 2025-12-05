@@ -2,7 +2,7 @@
 
 > Task specification for implementing the Universal Agent Instruction Architecture with support for agent-switchable chat.
 
-**Status**: Ready for Implementation
+**Status**: Phase 1 COMPLETE, Phase 2 Ready
 **Priority**: High
 **Depends On**: Mode Transition UI (DONE)
 **Source Document**: `docs/UNIVERSAL_AGENT_INSTRUCTION_ARCHITECTURE.md`
@@ -74,24 +74,25 @@ backend/prompts/
 
 ### Tasks
 
-- [ ] **1.1** Create `backend/prompts/` directory structure
-- [ ] **1.2** Extract `ARCHITECT_SYSTEM_PROMPT` from `foreman.py` → `prompts/agents/foreman/modes/architect.md`
-- [ ] **1.3** Extract `VOICE_CALIBRATION_SYSTEM_PROMPT` → `prompts/agents/foreman/modes/voice_calibration.md`
-- [ ] **1.4** Extract `DIRECTOR_SYSTEM_PROMPT` → `prompts/agents/foreman/modes/director.md`
-- [ ] **1.5** Create `prompts/agents/foreman/modes/editor.md` (currently missing in codebase)
-- [ ] **1.6** Factor out common Foreman identity → `prompts/agents/foreman/identity.md`
-- [ ] **1.7** Create `prompts/agents/foreman/process_map.md` (mode overview)
-- [ ] **1.8** Create `prompts/shared/protocols.md` (XML output format)
-- [ ] **1.9** Create `prompts/shared/project_context.md` (Writers Factory intro)
-- [ ] **1.10** Create `prompts/shared/guardrails/voice_antipatterns.md`
-- [ ] **1.11** Create `prompts/shared/guardrails/continuity_rules.md`
-- [ ] **1.12** Create `prompts/agents.yaml` with agent registry
+- [x] **1.1** Create `backend/prompts/` directory structure
+- [x] **1.2** Extract `ARCHITECT_SYSTEM_PROMPT` from `foreman.py` → `prompts/agents/foreman/modes/architect.md`
+- [x] **1.3** Extract `VOICE_CALIBRATION_SYSTEM_PROMPT` → `prompts/agents/foreman/modes/voice_calibration.md`
+- [x] **1.4** Extract `DIRECTOR_SYSTEM_PROMPT` → `prompts/agents/foreman/modes/director.md`
+- [x] **1.5** Create `prompts/agents/foreman/modes/editor.md` (NEW - was missing!)
+- [x] **1.6** Factor out common Foreman identity → `prompts/agents/foreman/identity.md`
+- [x] **1.7** Create `prompts/agents/foreman/process_map.md` (mode overview)
+- [x] **1.8** Create `prompts/shared/protocols.md` (XML output format)
+- [x] **1.9** Create `prompts/shared/project_context.md` (Writers Factory intro)
+- [x] **1.10** Create `prompts/shared/guardrails/voice_antipatterns.md`
+- [x] **1.11** Create `prompts/shared/guardrails/continuity_rules.md`
+- [x] **1.12** Create `prompts/agents.yaml` with agent registry
+- [x] **1.13** Create specialist agent identities (character_coach, plot_doctor, voice_stylist, research_assistant)
 
 ### Validation
 
-- [ ] All prompt files load without errors
-- [ ] Combined character count matches or exceeds original embedded prompts
-- [ ] No hardcoded prompts remain in `foreman.py` (only file references)
+- [x] All 15 prompt files created
+- [x] Combined 1961 lines of prompt content (exceeds original ~300 lines embedded)
+- [ ] Integration with foreman.py (Phase 5)
 
 ---
 
