@@ -326,8 +326,8 @@ class GraphAnalyzer:
             "tension": tension,
             "pacing": pacing,
             "graph_stats": {
-                "total_nodes": graph.get_node_count(),
-                "total_edges": graph.get_edge_count(),
+                "total_nodes": graph.get_stats()["nodes"],
+                "total_edges": graph.get_stats()["edges"],
                 **node_counts
             },
             "health_indicators": {
