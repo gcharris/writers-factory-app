@@ -164,23 +164,44 @@ Do NOT use phrases like "I understand" or "Great choice".
 """
 
     try:
-        # Use local model for quick response
         from backend.services.llm_service import llm_service
 
-        response = await llm_service.generate(
-            provider="ollama",
-            model="llama3.2:3b",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"I want to switch to {target_mode} mode."}
-            ],
-            temperature=0.7,
-            max_tokens=150
-        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"I want to switch to {target_mode} mode."}
+        ]
 
-        return response.content
+        # Try cloud model first (DeepSeek is fast and cheap)
+        try:
+            response = await llm_service.generate(
+                provider="deepseek",
+                model="deepseek-chat",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=150
+            )
+            return response.content
+        except Exception:
+            pass  # Fall through to Ollama
+
+        # Fallback to local Ollama if cloud fails
+        try:
+            response = await llm_service.generate(
+                provider="ollama",
+                model="llama3.2:3b",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=150
+            )
+            return response.content
+        except Exception:
+            pass  # Fall through to canned response
+
+        # Final fallback to canned response
+        return _get_fallback_response(transition_type, target_mode, missing_prerequisites)
+
     except Exception as e:
-        # Fallback to canned response if LLM fails
+        # Fallback to canned response if everything fails
         print(f"Warning: LLM response generation failed: {e}")
         return _get_fallback_response(transition_type, target_mode, missing_prerequisites)
 
