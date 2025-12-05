@@ -538,6 +538,112 @@ async def knowledge_query(request: KnowledgeQueryRequest):
         raise HTTPException(status_code=500, detail=f"Knowledge query failed: {str(e)}")
 
 
+# =============================================================================
+# GRAPH RAG PHASE 3: NARRATIVE EXTRACTION
+# =============================================================================
+
+class NarrativeExtractionRequest(BaseModel):
+    """Request model for narrative extraction."""
+    content: str
+    scene_id: str = "manual"
+    current_beat: str = "Unknown"
+
+
+@app.post("/graph/extract-narrative", summary="Extract narrative elements from text")
+async def extract_narrative(request: NarrativeExtractionRequest):
+    """
+    Extract narrative elements from provided text.
+
+    Uses LLM (Ollama llama3.2:3b) with narrative-aware prompts to detect:
+    - Characters, locations, objects, events
+    - Story-driving relationships (MOTIVATES, HINDERS, CHALLENGES, etc.)
+    - Flaw challenges and beat alignment
+
+    Useful for testing extraction or manual ingestion.
+    """
+    from backend.graph.narrative_extractor import NarrativeExtractor
+    from backend.graph.graph_service import KnowledgeGraphService
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            extractor = NarrativeExtractor(graph_service)
+
+            result = await extractor.extract_and_merge(
+                scene_content=request.content,
+                scene_id=request.scene_id,
+                current_beat=request.current_beat
+            )
+
+            if result.get("error"):
+                raise HTTPException(status_code=500, detail=result["error"])
+
+            return result
+        finally:
+            db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Narrative extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+
+@app.get("/graph/edge-types", summary="Get available narrative edge types")
+async def get_edge_types():
+    """
+    Get list of narrative edge types and their enabled status.
+
+    Edge types include:
+    - MOTIVATES: What drives a character toward their goal
+    - HINDERS: What blocks or impedes a goal
+    - CHALLENGES: Scene that tests a character's weakness/flaw
+    - FORESHADOWS: Sets up future events
+    - CALLBACKS: References earlier events
+    - And more...
+    """
+    from backend.graph.narrative_ontology import get_all_edge_types
+
+    return {
+        "edge_types": get_all_edge_types()
+    }
+
+
+@app.post("/graph/extract-from-file", summary="Extract narrative from a file")
+async def extract_from_file(filepath: str, current_beat: str = "Unknown"):
+    """
+    Extract narrative elements from a file path.
+
+    Triggers the full extraction pipeline including:
+    1. Read file content
+    2. Extract entities and relationships via LLM
+    3. Merge into knowledge graph
+    4. Index embeddings (if Phase 2 available)
+
+    Args:
+        filepath: Path to the file to extract from
+        current_beat: Expected story beat (e.g., "Midpoint")
+    """
+    from backend.services.consolidator_service import get_consolidator_service
+
+    try:
+        consolidator = get_consolidator_service()
+        result = await consolidator.extract_from_file(
+            filepath=filepath,
+            current_beat=current_beat
+        )
+
+        if result.get("status") == "error":
+            raise HTTPException(status_code=500, detail=result.get("error"))
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"File extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+
 @app.get("/graph/nodes/{node_id}", summary="Get single node details")
 async def get_graph_node(node_id: str):
     """

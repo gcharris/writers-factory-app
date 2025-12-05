@@ -109,6 +109,18 @@ class KnowledgeGraphService:
         """
         return self.session.query(Edge).all()
 
+    def get_nodes_by_type(self, node_type: str) -> List[Node]:
+        """
+        Retrieve all nodes of a specific type.
+
+        Args:
+            node_type: The type of nodes to retrieve (e.g., 'CHARACTER', 'LOCATION')
+
+        Returns:
+            List of Node objects of the specified type.
+        """
+        return self.session.query(Node).filter(Node.node_type == node_type).all()
+
     def update_node(self, node_id: int, updates: dict) -> Optional[Node]:
         """
         Updates a node's attributes in the database and in-memory graph.

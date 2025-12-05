@@ -622,6 +622,89 @@ Be precise. Extract only explicitly stated facts. Ignore speculation."""
         }
 
 
+    # =========================================================================
+    # Narrative Extraction (Phase 3: GraphRAG Integration)
+    # =========================================================================
+
+    async def extract_from_file(
+        self,
+        filepath: str,
+        current_beat: str = "Unknown"
+    ) -> Dict[str, Any]:
+        """
+        Extract narrative elements from a file using NarrativeExtractor.
+
+        Called by ManuscriptService after file promotion.
+
+        Args:
+            filepath: Path to the file to extract from
+            current_beat: Expected beat alignment (e.g., "Midpoint")
+
+        Returns:
+            Extraction result with merge stats
+        """
+        from backend.graph.narrative_extractor import NarrativeExtractor
+        from backend.graph.graph_service import KnowledgeGraphService
+        from backend.graph.schema import SessionLocal
+
+        # Read file content
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as e:
+            logger.error(f"Failed to read file {filepath}: {e}")
+            return {"status": "error", "error": str(e)}
+
+        if not content.strip():
+            return {"status": "skipped", "reason": "empty_file"}
+
+        # Create services with database session
+        try:
+            db = SessionLocal()
+            graph_service = KnowledgeGraphService(db)
+            extractor = NarrativeExtractor(graph_service)
+
+            scene_id = os.path.basename(filepath)
+
+            # Extract narrative elements
+            result = await extractor.extract_and_merge(
+                scene_content=content,
+                scene_id=scene_id,
+                current_beat=current_beat
+            )
+
+            # Index embeddings for newly created nodes if Phase 2 is available
+            if result.get("status") == "success":
+                try:
+                    from backend.services.embedding_index_service import EmbeddingIndexService
+                    from backend.services.embedding_service import get_embedding_service
+
+                    index_service = EmbeddingIndexService(graph_service, get_embedding_service())
+                    await index_service.index_unindexed()
+                except ImportError:
+                    logger.debug("Embedding service not available - skipping indexing")
+                except Exception as e:
+                    logger.warning(f"Embedding indexing failed: {e}")
+
+            db.close()
+
+            return {
+                "status": result.get("status", "success"),
+                "scene_id": scene_id,
+                "entities_found": len(result.get("extraction", {}).get("entities", [])),
+                "relationships_found": len(result.get("extraction", {}).get("relationships", [])),
+                "nodes_created": result.get("merge_stats", {}).get("nodes_created", 0),
+                "edges_created": result.get("merge_stats", {}).get("edges_created", 0),
+                "conflicts": result.get("merge_stats", {}).get("conflicts", []),
+                "flaw_challenged": result.get("merge_stats", {}).get("flaw_challenged", False),
+                "beat_aligned": result.get("extraction", {}).get("beat_alignment", {}).get("aligned", True)
+            }
+
+        except Exception as e:
+            logger.error(f"Extraction failed for {filepath}: {e}")
+            return {"status": "error", "error": str(e)}
+
+
 # --- Convenience function ---
 def get_consolidator_service() -> ConsolidatorService:
     """Get a ConsolidatorService instance."""

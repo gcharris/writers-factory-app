@@ -325,81 +325,41 @@ class ManuscriptService:
 
     async def _trigger_extraction(self, filepath: str) -> Dict[str, Any]:
         """
-        Trigger graph extraction for a single file.
+        Trigger narrative extraction for a promoted file.
 
-        Uses the GraphIngestor to extract entities from the promoted file.
+        Uses ConsolidatorService.extract_from_file() which leverages
+        the NarrativeExtractor for story-aware entity extraction.
+
+        Phase 3 Enhancement: Uses narrative-aware prompts that detect
+        MOTIVATES, HINDERS, CHALLENGES, FORESHADOWS, CALLBACKS relationships.
         """
         try:
-            # Import here to avoid circular imports
-            from backend.ingestor import GraphIngestor
+            from backend.services.consolidator_service import get_consolidator_service
 
-            # Read file content
-            with open(filepath, 'r', encoding='utf-8') as f:
-                content = f.read()
+            consolidator = get_consolidator_service()
 
-            if not content.strip():
-                return {
-                    "status": "skipped",
-                    "reason": "empty_file",
-                }
+            # Get current beat from story bible if available
+            current_beat = await self._get_current_beat()
 
-            # Create ingestor and extract from this single file
-            ingestor = GraphIngestor()
-            filename = os.path.basename(filepath)
+            result = await consolidator.extract_from_file(
+                filepath=filepath,
+                current_beat=current_beat
+            )
 
-            # Extract entities from the text
-            extracted = await ingestor.extract_graph_from_text(content, filename)
-
-            nodes = extracted.get("nodes", [])
-            edges = extracted.get("edges", [])
-
-            if not nodes and not edges:
+            # Map result fields to expected format for backwards compatibility
+            if result.get("status") == "success":
                 return {
                     "status": "success",
-                    "nodes_extracted": 0,
-                    "edges_extracted": 0,
-                    "message": "No entities found in file",
+                    "nodes_extracted": result.get("nodes_created", 0),
+                    "edges_extracted": result.get("edges_created", 0),
+                    "entities_found": result.get("entities_found", 0),
+                    "relationships_found": result.get("relationships_found", 0),
+                    "flaw_challenged": result.get("flaw_challenged", False),
+                    "beat_aligned": result.get("beat_aligned", True),
+                    "conflicts": result.get("conflicts", []),
                 }
 
-            # Merge into the knowledge graph
-            # Load existing graph
-            graph_path = ingestor.output_path
-            if os.path.exists(graph_path):
-                with open(graph_path, 'r') as f:
-                    graph = json.load(f)
-            else:
-                graph = {"metadata": {}, "nodes": [], "edges": []}
-
-            # Merge nodes (by ID)
-            existing_ids = {n.get("id") for n in graph.get("nodes", [])}
-            new_nodes = [n for n in nodes if n.get("id") not in existing_ids]
-            graph["nodes"] = graph.get("nodes", []) + new_nodes
-
-            # Merge edges (by source-target-relation)
-            def edge_key(e):
-                return (e.get("source"), e.get("target"), e.get("relation"))
-
-            existing_edges = {edge_key(e) for e in graph.get("edges", [])}
-            new_edges = [e for e in edges if edge_key(e) not in existing_edges]
-            graph["edges"] = graph.get("edges", []) + new_edges
-
-            # Update metadata
-            graph["metadata"]["updated_at"] = datetime.now(timezone.utc).isoformat()
-            graph["metadata"]["last_extraction_source"] = filepath
-
-            # Save
-            with open(graph_path, 'w') as f:
-                json.dump(graph, f, indent=2)
-
-            logger.info(f"Extracted {len(new_nodes)} nodes, {len(new_edges)} edges from {filename}")
-
-            return {
-                "status": "success",
-                "nodes_extracted": len(new_nodes),
-                "edges_extracted": len(new_edges),
-                "total_nodes": len(graph["nodes"]),
-                "total_edges": len(graph["edges"]),
-            }
+            return result
 
         except Exception as e:
             logger.error(f"Extraction error: {e}")
@@ -407,6 +367,30 @@ class ManuscriptService:
                 "status": "error",
                 "error": str(e),
             }
+
+    async def _get_current_beat(self) -> str:
+        """
+        Get current beat from story bible.
+
+        Returns the name of the current beat (e.g., "Midpoint")
+        for narrative extraction context.
+        """
+        try:
+            from backend.services.story_bible_service import StoryBibleService
+
+            svc = StoryBibleService()
+            status = svc.get_status()
+
+            if status.beat_sheet and status.beat_sheet.beats:
+                current = status.beat_sheet.current_beat
+                beats = status.beat_sheet.beats
+                if current <= len(beats):
+                    return beats[current - 1].name
+
+            return "Unknown"
+        except Exception as e:
+            logger.debug(f"Could not get current beat: {e}")
+            return "Unknown"
 
     def get_promotion_status(self, working_file: str) -> Optional[Dict[str, Any]]:
         """
