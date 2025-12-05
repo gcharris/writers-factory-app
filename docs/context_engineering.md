@@ -89,6 +89,7 @@ Want to understand the specific systems that power the Context Engine?
 |--------|--------------|------------|
 | **GraphRAG** | Turns your story into a computable graph of relationships. Calculates tension, tracks setups and payoffs, detects contradictions. | [GraphRAG: The Living Brain](graphrag) |
 | **Voice Calibration** | Runs a tournament where AI models compete to match your voice. The winner becomes your permanent style reference. | [Voice Calibration System](voice_calibration) |
-| **Narrative Dashboard** | Real-time visualization of tension levels and pacing. Tells you when your story needs more conflict or resolution. | *Coming in Director Mode* |
+| **Narrative Dashboard** | Real-time visualization of tension levels and pacing. Tells you when your story needs more conflict or resolution. | [Narrative Dashboard](tasks/NARRATIVE_DASHBOARD_UI) |
+| **Director Mode** | The 6-step scene creation pipeline: Scaffold → Structure → Generate → Compare → Enhance → Complete. | [Director Mode Pipeline](tasks/DIRECTOR_MODE_UI) |
 
-These three systems work together during every scene generation, ensuring consistency across all dimensions: facts (Graph), voice (Calibration), and structure (Dashboard).
+These systems work together during every scene generation, ensuring consistency across all dimensions: facts (Graph), voice (Calibration), structure (Dashboard), and workflow (Director).
