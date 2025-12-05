@@ -83,9 +83,11 @@ The Foreman guides you through required templates (Protagonist, Beat Sheet, Them
 The #1 problem with AI is that it sounds generic. We solve this with Darwinian selection:
 
 1.  **The Input:** You write a ~500-word test passage.
-2.  **The Tournament:** 3+ AI models compete to rewrite it, guided by your *Craft Notebook*.
-3.  **The Selection:** You pick the winner.
-4.  **The Output:** A **Voice Bundle**—a mathematical profile of your style that governs all future generation.
+2.  **The Tournament:** 3+ AI models compete to rewrite it, each using 5 different strategies (Action, Character, Dialogue, Brainstorming, Balanced).
+3.  **The Selection:** You review 15-25 variants and pick the winner.
+4.  **The Output:** A **Voice Bundle**—reference files that govern all future generation.
+
+**[→ Voice Calibration Deep Dive](voice_calibration)**
 
 ---
 
@@ -101,6 +103,7 @@ We treat scene creation like a manufacturing pipeline:
 2.  **Variants**: Multiple approaches (Action-heavy vs. Dialogue-heavy).
 3.  **Tournament**: Models compete to draft the scene.
 4.  **Analysis**: Every scene is scored on a **100-Point Rubric** (Voice Authenticity, Character Consistency, Metaphor Discipline).
+5.  **Verification**: **[GraphRAG](graphrag)** checks for contradictions, ensures callbacks to earlier setups, and updates the knowledge graph.
 
 ---
 
@@ -119,6 +122,11 @@ The suit doesn't replace your judgment—it amplifies it. It doesn't write your 
 
 ## Full Technical Documentation
 
-This is the simplified course version. For complete technical details, testing checklists, and API references:
+This is the simplified course version. For complete technical details:
 
-**[→ Full Writers Journey Documentation](WRITERS_JOURNEY.md)**
+| Topic | Document |
+|-------|----------|
+| Complete Writer's Journey | [WRITERS_JOURNEY.md](WRITERS_JOURNEY.md) |
+| GraphRAG System | [GraphRAG: The Living Brain](graphrag) |
+| Voice Calibration | [Voice Calibration System](voice_calibration) |
+| How Systems Integrate | [Systems Integration](systems_integration) |

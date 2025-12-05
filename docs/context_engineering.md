@@ -78,3 +78,17 @@ We are not just writing prompts. We are building a **Context Engine**.
 **The result?** The AI doesn't hallucinate. It doesn't forget your main character's name. It writes like *you*, because we engineered the context to make it impossible for it to be anyone else.
 
 > **"You are Tony Stark. The Context Engine is the suit."**
+
+---
+
+## Deep Dive: The Systems Behind the Magic
+
+Want to understand the specific systems that power the Context Engine?
+
+| System | What It Does | Learn More |
+|--------|--------------|------------|
+| **GraphRAG** | Turns your story into a computable graph of relationships. Calculates tension, tracks setups and payoffs, detects contradictions. | [GraphRAG: The Living Brain](graphrag) |
+| **Voice Calibration** | Runs a tournament where AI models compete to match your voice. The winner becomes your permanent style reference. | [Voice Calibration System](voice_calibration) |
+| **Narrative Dashboard** | Real-time visualization of tension levels and pacing. Tells you when your story needs more conflict or resolution. | *Coming in Director Mode* |
+
+These three systems work together during every scene generation, ensuring consistency across all dimensions: facts (Graph), voice (Calibration), and structure (Dashboard).

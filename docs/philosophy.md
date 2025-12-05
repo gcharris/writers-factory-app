@@ -25,7 +25,8 @@ To write a novel, a human uses distinct cognitive functions. Standard AI chat in
 | **Short-Term Memory** (Working thoughts, scratching ideas)   | **The Context Window** (Limited. Once filled, earlier ideas fall off the cliff.) | **The Session (Workbench)** A "sandbox" for ideation. Nothing here is permanent until you say so. |
 | **Long-Term Memory** (Facts about the world & story)         | **Hallucination** (The AI guesses based on probability, not fact.) | **The Knowledge Graph** A rigid, mathematical map of Truth. (Nodes & Edges). |
 | **Sleep & Digestion** (Consolidating memories, resolving conflicts) | **None** (Data is appended endlessly until the system bloats.) | **The Metabolic Engine** A background process (Llama 3.2) that cleans, merges, and organizes facts while you write. |
-| **Muscle Memory** (Your unique voice and style)              | **Regression to the Mean** (Sounds like a generic corporate email.) | **Style Vectors** Mathematical extraction of *your* voice from your emails/diaries. |
+| **Muscle Memory** (Your unique voice and style)              | **Regression to the Mean** (Sounds like a generic corporate email.) | **[Voice Calibration](voice_calibration)** Tournament-based extraction of *your* voice through AI competition. |
+| **Narrative Intuition** (Tension, pacing, story physics)     | **None** (No awareness of narrative structure or drama.)     | **[GraphRAG](graphrag)** Computes tension from conflict edges, tracks setup→payoff, detects plot holes. |
 | **The Senses** (Research, reading books)                     | **Training Data Cutoff** (Outdated knowledge.)               | **The Oracle (NotebookLM)** A bridge to your specific PDFs and research materials. |
 
 ---
