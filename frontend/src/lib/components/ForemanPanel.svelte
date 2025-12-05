@@ -70,7 +70,7 @@
     if (messages.length === 0) {
       messages = [{
         role: 'system',
-        text: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
+        content: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
       }];
     }
     // Scroll to bottom after initial load
@@ -141,7 +141,7 @@
       // Don't clear messages - keep chat history
       const systemMsg = {
         role: 'system',
-        text: 'Project context cleared. I\'m still here to help!'
+        content: 'Project context cleared. I\'m still here to help!'
       };
       messages = [...messages, systemMsg];
       foremanChatHistory.set(messages);
@@ -162,7 +162,7 @@
       inputRef.textContent = '';
     }
 
-    const userMsg = { role: 'user', text: currentInput };
+    const userMsg = { role: 'user', content: currentInput };
     messages = [...messages, userMsg];
 
     try {
@@ -191,14 +191,14 @@
       contextItems = [];
 
       if (data.response) {
-        const assistantMsg = { role: 'assistant', text: data.response };
+        const assistantMsg = { role: 'assistant', content: data.response };
         messages = [...messages, assistantMsg];
       } else if (data.error) {
-        const errorMsg = { role: 'system', text: `Backend error: ${data.error}` };
+        const errorMsg = { role: 'system', content: `Backend error: ${data.error}` };
         messages = [...messages, errorMsg];
       } else {
         // Response exists but has unexpected format
-        const infoMsg = { role: 'system', text: `Unexpected response format: ${JSON.stringify(data)}` };
+        const infoMsg = { role: 'system', content: `Unexpected response format: ${JSON.stringify(data)}` };
         messages = [...messages, infoMsg];
       }
 
@@ -209,7 +209,7 @@
       if (data.actions_executed && data.actions_executed.length > 0) {
         const actionsMsg = {
           role: 'system',
-          text: `Actions: ${data.actions_executed.join(', ')}`
+          content: `Actions: ${data.actions_executed.join(', ')}`
         };
         messages = [...messages, actionsMsg];
       }
@@ -227,7 +227,7 @@
         errorText = 'Backend error. Check if Ollama is running: `ollama serve`';
       }
 
-      const errorMsg = { role: 'system', text: `Error: ${errorText}` };
+      const errorMsg = { role: 'system', content: `Error: ${errorText}` };
       messages = [...messages, errorMsg];
       status = "Error";
     } finally {
@@ -288,7 +288,7 @@
   function clearChat() {
     messages = [{
       role: 'system',
-      text: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
+      content: `Hello! I'm ${$assistantName}, your writing assistant. How can I help you today?`
     }];
     foremanChatHistory.set(messages);
   }
@@ -300,7 +300,7 @@
       .filter(e => e.role !== 'system')
       .map(e => ({
         role: e.role,
-        text: e.content
+        content: e.content
       }));
     foremanChatHistory.set(messages);
   }
@@ -352,7 +352,7 @@
         foremanChatHistory.set(messages);
 
         // Re-send the user message
-        input = userMsg.text;
+        input = userMsg.content;
         messages = messages.slice(0, msgIndex - 1); // Also remove the user message since sendMessage will add it
         await sendMessage();
       }
@@ -488,7 +488,7 @@
   function handleVoiceError(e) {
     const { error } = e.detail;
     // Show error as system message
-    const errorMsg = { role: 'system', text: `Voice input: ${error}` };
+    const errorMsg = { role: 'system', content: `Voice input: ${error}` };
     messages = [...messages, errorMsg];
   }
 
@@ -623,13 +623,13 @@
               </div>
             {/if}
             <div class="message-content">
-              <div class="message-bubble">{msg.text}</div>
+              <div class="message-bubble">{msg.content}</div>
 
               {#if msg.role === 'assistant'}
                 <div class="message-actions">
                   <button
                     class="action-btn"
-                    on:click={() => copyToClipboard(msg.text)}
+                    on:click={() => copyToClipboard(msg.content)}
                     title="Copy to clipboard"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -640,7 +640,7 @@
 
                   <button
                     class="action-btn"
-                    on:click={() => insertToEditor(msg.text)}
+                    on:click={() => insertToEditor(msg.content)}
                     title="Insert to editor"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
