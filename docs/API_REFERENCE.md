@@ -3,346 +3,54 @@
 > Complete reference for all backend API endpoints.
 
 **Base URL:** `http://localhost:8000`
+**Total Endpoints:** 168
+**Last Updated:** December 5, 2025
 
 ---
 
 ## Table of Contents
 
-- [System](#system)
-- [Settings & Configuration](#settings--configuration)
-  - [API Key Management](#api-key-management)
-  - [Settings Management](#settings-management)
-- [The Foreman](#the-foreman)
+- [System & Manager](#system--manager)
 - [File Management](#file-management)
 - [Knowledge Graph](#knowledge-graph)
+  - [Ingestion & Export](#ingestion--export)
+  - [Semantic Search & Embeddings](#semantic-search--embeddings)
+  - [Narrative Extraction](#narrative-extraction)
+  - [Node & Relationship Management](#node--relationship-management)
+  - [Analysis (GraphRAG)](#analysis-graphrag)
+- [Verification Service](#verification-service)
 - [Session Management](#session-management)
 - [Consolidator](#consolidator)
 - [Health Dashboard](#health-dashboard)
 - [NotebookLM Integration](#notebooklm-integration)
 - [Story Bible System](#story-bible-system)
-- [Project & Tournament](#project--tournament)
+- [The Foreman](#the-foreman)
+- [Voice Calibration](#voice-calibration)
+- [Director Mode](#director-mode)
+  - [Scaffold Generation](#scaffold-generation)
+  - [Scene Writing](#scene-writing)
+  - [Scene Analysis](#scene-analysis)
+  - [Scene Enhancement](#scene-enhancement)
+- [Settings & Configuration](#settings--configuration)
+- [API Key Management](#api-key-management)
+- [Model Orchestrator](#model-orchestrator)
+- [Tournament System](#tournament-system)
+- [Squad System](#squad-system)
+- [Usage Tracking](#usage-tracking)
+- [Key Provisioning](#key-provisioning)
+- [System & Hardware](#system--hardware)
+- [Workspace Management](#workspace-management)
+- [Manuscript & Knowledge Query](#manuscript--knowledge-query)
 
 ---
 
-## System
+## System & Manager
 
 ### `GET /agents`
-List all configured AI agents.
-
-**Response:**
-```json
-{
-  "agents": [
-    {"id": "drafter-1", "enabled": true, "use_cases": ["tournament"]},
-    {"id": "critic-1", "enabled": true, "use_cases": ["evaluation"]}
-  ]
-}
-```
+List all configured AI agents from `agents.yaml`.
 
 ### `GET /manager/status`
 Health check for the Manager agent.
-
-**Response:**
-```json
-{"status": "online"}
-```
-
----
-
-## Settings & Configuration
-
-### API Key Management
-
-#### `POST /api-keys/test`
-Validate an API key by making a real API call to the provider.
-
-**Supported Providers:**
-- `google` / `gemini` - Google Gemini API
-- `deepseek` - DeepSeek API
-- `openai` - OpenAI API
-- `anthropic` - Anthropic Claude API
-- `qwen` - Alibaba Qwen API
-- `xai` / `grok` - xAI Grok API
-- `mistral` - Mistral API
-
-**Request Body:**
-```json
-{
-  "provider": "google",
-  "api_key": "AIza..."
-}
-```
-
-**Success Response:**
-```json
-{
-  "valid": true,
-  "provider": "google"
-}
-```
-
-**Error Response:**
-```json
-{
-  "valid": false,
-  "error": "API returned 401: Unauthorized"
-}
-```
-
-**Example Usage:**
-```bash
-# Test Google Gemini API key
-curl -X POST http://localhost:8000/api-keys/test \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "gemini", "api_key": "AIza..."}'
-
-# Test DeepSeek API key
-curl -X POST http://localhost:8000/api-keys/test \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "deepseek", "api_key": "sk-..."}'
-```
-
-**Notes:**
-- Returns 200 status even for invalid keys (check `valid` field)
-- Makes minimal API calls (e.g., listing models)
-- Provider aliases: `gemini` → `google`, `grok` → `xai`
-- Empty or whitespace-only keys return `"error": "API key is empty"`
-
-**Test Coverage:** See [test_api_key_validation.py](../backend/tests/test_api_key_validation.py) - 20/20 tests passing
-
----
-
-### Settings Management
-
-#### `GET /settings`
-Get all settings (global and project-specific).
-
-**Query Parameters:**
-- `project_id` (optional): Filter settings for a specific project
-
-**Response:**
-```json
-{
-  "global": {
-    "foreman.coordinator_model": "mistral:7b",
-    "scoring.voice_authenticity_weight": 30
-  },
-  "project_123": {
-    "squad.active_squad": "hybrid"
-  }
-}
-```
-
-#### `GET /settings/category/{category}`
-Get settings for a specific category.
-
-**Categories:**
-- `foreman` - Foreman coordinator settings
-- `scoring` - Scene scoring weights
-- `voice` - Voice calibration settings
-- `enhancement` - Enhancement thresholds
-- `health_checks` - Health check model assignments
-- `tournament` - Tournament configuration
-- `squad` - Squad System settings
-
-**Query Parameters:**
-- `project_id` (optional): Get project-specific settings
-
-**Response:**
-```json
-{
-  "foreman.coordinator_model": "mistral:7b",
-  "foreman.proactiveness": "high",
-  "foreman.challenge_intensity": "medium"
-}
-```
-
-#### `PUT /settings/category/{category}`
-Update settings for a specific category.
-
-**Request Body:**
-```json
-{
-  "coordinator_model": "mistral:7b",
-  "proactiveness": "high"
-}
-```
-
-**Query Parameters:**
-- `project_id` (optional): Save settings for a specific project
-
-**Response:**
-```json
-{
-  "success": true,
-  "updated_settings": {
-    "foreman.coordinator_model": "mistral:7b",
-    "foreman.proactiveness": "high"
-  }
-}
-```
-
-**Notes:**
-- Keys are automatically prefixed with category name
-- Request body key `"coordinator_model"` becomes `"foreman.coordinator_model"` when category is `foreman`
-- Settings cascade: project → global → default
-
-**Example Usage:**
-```bash
-# Update scoring weights globally
-curl -X PUT http://localhost:8000/settings/category/scoring \
-  -H "Content-Type: application/json" \
-  -d '{
-    "voice_authenticity_weight": 35,
-    "character_consistency_weight": 25
-  }'
-
-# Update squad for a specific project
-curl -X PUT "http://localhost:8000/settings/category/squad?project_id=my_novel" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "active_squad": "pro",
-    "setup_complete": true
-  }'
-```
-
----
-
-## The Foreman
-
-The Foreman is the intelligent creative writing partner powered by Ollama (Llama 3.2). These endpoints manage the Foreman's lifecycle and conversation.
-
-> **Full Documentation:** See [BACKEND_SERVICES.md](BACKEND_SERVICES.md#1-the-foreman-intelligent-creative-partner) and [specs/STORY_BIBLE_ARCHITECT.md](specs/STORY_BIBLE_ARCHITECT.md)
-
-### `POST /foreman/start`
-Initialize a new project with the Foreman.
-
-**Request Body:**
-```json
-{
-  "project_title": "Big Brain",
-  "protagonist_name": "Mickey Bardot"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "started",
-  "work_order": {
-    "project_title": "Big Brain",
-    "protagonist_name": "Mickey Bardot",
-    "mode": "architect",
-    "templates": [
-      {"name": "Protagonist", "status": "not_started", "required_fields": ["fatal_flaw", "the_lie", "arc_start", "arc_resolution"]},
-      {"name": "Beat Sheet", "status": "not_started", "required_fields": ["beat_1", "beat_2", "...", "beat_15", "midpoint_type"]},
-      {"name": "Theme", "status": "not_started", "required_fields": ["central_theme", "theme_statement"]},
-      {"name": "World Rules", "status": "not_started", "required_fields": ["fundamental_rules"]}
-    ],
-    "notebooks": {},
-    "completion_percentage": 0.0,
-    "is_complete": false,
-    "created_at": "2025-11-23T08:17:19.799329+00:00"
-  },
-  "message": "Project 'Big Brain' initialized. Ready to build Story Bible."
-}
-```
-
-### `POST /foreman/chat`
-Send a message to the Foreman and get a response.
-
-The Foreman will:
-- Consider the work order status
-- Apply craft knowledge (Fatal Flaw, The Lie, 15-beat structure)
-- Query NotebookLM notebooks if needed
-- Challenge weak structural choices
-- Track decisions in Knowledge Base
-
-**Request Body:**
-```json
-{
-  "message": "Mickey's fatal flaw is his intellectual arrogance - he believes he can solve any problem with pure logic."
-}
-```
-
-**Response:**
-```json
-{
-  "response": "That's a strong Fatal Flaw! Intellectual arrogance creates rich story potential...",
-  "actions": [
-    {"action": "save_decision", "category": "character", "key": "mickey_fatal_flaw", "result": "saved"}
-  ],
-  "work_order": {
-    "completion_percentage": 12.5,
-    "templates": [...]
-  },
-  "kb_entries_pending": 1
-}
-```
-
-### `POST /foreman/notebook`
-Register a NotebookLM notebook for the Foreman to use.
-
-**Request Body:**
-```json
-{
-  "notebook_id": "abc123xyz",
-  "role": "world"
-}
-```
-
-**Role Options:**
-- `"world"` - World-building, setting, factions
-- `"voice"` - Character voice, dialogue style
-- `"craft"` - Narrative techniques, reference works
-
-**Response:**
-```json
-{
-  "status": "registered",
-  "notebook_id": "abc123xyz",
-  "role": "world"
-}
-```
-
-### `GET /foreman/status`
-Get current Foreman state without making a chat request.
-
-**Response:**
-```json
-{
-  "active": true,
-  "mode": "architect",
-  "work_order": {...},
-  "conversation_length": 4,
-  "kb_entries_pending": 2
-}
-```
-
-### `POST /foreman/flush-kb`
-Flush pending Knowledge Base entries and return them for persistence.
-
-**Response:**
-```json
-{
-  "flushed_count": 3,
-  "entries": [
-    {"category": "character", "key": "mickey_fatal_flaw", "value": "...", "timestamp": "..."},
-    {"category": "constraint", "key": "no_personal_trauma", "value": "...", "timestamp": "..."}
-  ]
-}
-```
-
-### `POST /foreman/reset`
-Reset the Foreman to start a new project.
-
-**Response:**
-```json
-{
-  "status": "reset",
-  "message": "Foreman reset. Ready for new project."
-}
-```
 
 ---
 
@@ -351,743 +59,421 @@ Reset the Foreman to start a new project.
 ### `GET /files/{filepath}`
 Read a file by path.
 
-**Parameters:**
-- `filepath` (path): Full path to the file
-
-**Response:**
-```json
-{"content": "File contents here..."}
-```
-
 ### `PUT /files/{filepath}`
 Save content to a file.
-
-**Request Body:**
-```json
-{"content": "New file contents"}
-```
-
-**Response:**
-```json
-{"status": "success", "message": "File saved"}
-```
 
 ---
 
 ## Knowledge Graph
 
-### `POST /graph/ingest`
-Trigger full graph ingestion from content folder.
+### Ingestion & Export
 
-Uses **LOCAL Llama 3.2 via Ollama** (zero cost).
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ingest` | POST | Legacy ingestion endpoint |
+| `/graph/ingest` | POST | Full graph ingestion from content folder |
+| `/graph/ingest/test` | POST | Quick test: Ingest 2 files only |
+| `/graph/view` | GET | Get current graph state (nodes, edges) |
+| `/graph/stats` | GET | Get graph statistics |
+| `/graph/export` | GET | Export full knowledge graph |
 
-**Parameters:**
-- `max_files` (query, optional): Limit files to process
+### Semantic Search & Embeddings
 
-**Response:**
-```json
-{
-  "status": "Ingestion complete",
-  "engine": "ollama/llama3.2",
-  "nodes_extracted": 42,
-  "edges_extracted": 18,
-  "metadata": {}
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/semantic-search` | POST | Semantic search across graph nodes |
+| `/graph/ego-network/{entity_name}` | GET | Get k-hop subgraph around entity |
+| `/graph/reindex-embeddings` | POST | Regenerate embeddings for all nodes |
+| `/graph/embedding-status` | GET | Get embedding index status |
+| `/graph/knowledge-query` | POST | Query with full RAG pipeline |
 
-### `POST /graph/ingest/test`
-Quick test: Ingest just 2 files to verify the pipeline.
+### Narrative Extraction
 
-**Response:**
-```json
-{
-  "status": "Test ingestion complete",
-  "nodes_extracted": 5,
-  "edges_extracted": 2,
-  "files_processed": 2
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/extract-narrative` | POST | Extract narrative elements from text |
+| `/graph/edge-types` | GET | Get available narrative edge types (17 types) |
+| `/graph/extract-from-file` | POST | Extract narrative from a file |
 
-### `GET /graph/view`
-Returns the current state of the knowledge graph.
+**Narrative Edge Types:**
+`MOTIVATES`, `HINDERS`, `FORESHADOWS`, `CALLBACKS`, `CHALLENGES`, `SUPPORTS`, `REVEALS`, `CONCEALS`, `TRANSFORMS`, `PARALLELS`, `CONTRASTS`, `ESCALATES`, `RESOLVES`, `COMPLICATES`, `ENABLES`, `PREVENTS`, `SYMBOLIZES`
 
-**Response:**
-```json
-{
-  "status": "ok",
-  "nodes": [{"id": 1, "name": "Mickey", "type": "character"}],
-  "edges": [{"source": 1, "target": 2, "relation": "KNOWS"}],
-  "metadata": {"last_update": "2025-01-15T..."}
-}
-```
+### Node & Relationship Management
 
-### `GET /graph/context/{scene_id}`
-Get ACE scaffold data for a scene.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/nodes/{node_id}` | GET | Get single node details |
+| `/graph/nodes/{node_id}` | PUT | Update node properties |
+| `/graph/relationships` | POST | Create a new relationship |
+| `/graph/relationships/{edge_id}` | PUT | Update a relationship |
+| `/graph/relationships/{edge_id}` | DELETE | Delete a relationship |
 
-**Parameters:**
-- `scene_id` (path): Integer scene ID
+### Analysis (GraphRAG)
 
-**Response:**
-```json
-{"scaffold": "# Scene Scaffold\n..."}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/analysis/communities` | GET | Detect character communities (Louvain) |
+| `/graph/analysis/bridges` | GET | Find bridge characters |
+| `/graph/analysis/tension` | GET | Calculate narrative tension |
+| `/graph/analysis/pacing` | GET | Analyze narrative pacing |
+| `/graph/analysis/summary` | GET | Get narrative structure summary |
+
+### Settings
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/settings/graph` | GET | Get graph settings |
+| `/settings/graph` | PUT | Update graph settings |
+
+---
+
+## Verification Service
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/verification/run` | POST | Run verification checks on content |
+| `/verification/notifications` | GET | Get pending verification notifications |
+| `/verification/run-all` | POST | Run all verification tiers |
+
+**Verification Tiers:**
+- **FAST**: Dead character check, anti-pattern scan, POV consistency
+- **MEDIUM**: Flaw challenge, beat alignment, timeline coherence
+- **SLOW**: Full voice authenticity, semantic consistency
 
 ---
 
 ## Session Management
 
-### `POST /session/new`
-Create a new chat session.
-
-**Request Body (optional):**
-```json
-{"scene_id": "1.5.2"}
-```
-
-**Response:**
-```json
-{"session_id": "uuid-here", "scene_id": "1.5.2"}
-```
-
-### `POST /session/{session_id}/message`
-Log a message to a session.
-
-**Parameters:**
-- `session_id` (path): Session UUID
-
-**Request Body:**
-```json
-{
-  "role": "user",
-  "content": "Help me revise this scene",
-  "scene_id": "1.5.2"
-}
-```
-
-**Response:**
-```json
-{"status": "logged", "event_id": 42, "token_count": 15}
-```
-
-### `GET /session/{session_id}/history`
-Retrieve chat history for a session.
-
-**Parameters:**
-- `session_id` (path): Session UUID
-- `limit` (query): Max events to return (default: 50)
-
-**Response:**
-```json
-{
-  "session_id": "uuid",
-  "events": [
-    {"id": 1, "role": "user", "content": "...", "timestamp": "..."}
-  ]
-}
-```
-
-### `GET /session/{session_id}/stats`
-Get session statistics for compaction decisions.
-
-**Response:**
-```json
-{
-  "total_events": 42,
-  "total_tokens": 5000,
-  "uncommitted_count": 3
-}
-```
-
-### `GET /sessions/active`
-List recently active sessions.
-
-**Parameters:**
-- `limit` (query): Max sessions (default: 20)
-
-**Response:**
-```json
-{"sessions": [{"session_id": "...", "last_activity": "..."}]}
-```
-
-### `GET /session/{session_id}/uncommitted`
-Get events not yet digested by the Consolidator.
-
-### `POST /session/commit`
-Mark events as digested by the Consolidator.
-
-**Request Body:**
-```json
-[1, 2, 3, 4]  // Event IDs
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/session/new` | POST | Create a new chat session |
+| `/session/{session_id}/message` | POST | Log a message to session |
+| `/session/{session_id}/history` | GET | Get session chat history |
+| `/session/{session_id}/stats` | GET | Get session statistics |
+| `/sessions/active` | GET | List active sessions |
+| `/session/{session_id}/rename` | POST | Rename a session |
+| `/session/{session_id}/uncommitted` | GET | Get uncommitted events for Consolidator |
+| `/session/commit` | POST | Mark events as digested |
 
 ---
 
 ## Consolidator
 
-### `POST /graph/consolidate/{session_id}`
-Digest a specific session into the knowledge graph.
-
-Extracts entities from chat events and merges them using **local Llama 3.2**.
-
-**Parameters:**
-- `session_id` (path): Session UUID
-- `dry_run` (query): If true, extract but don't save
-
-**Response:**
-```json
-{
-  "session_id": "uuid",
-  "entities_extracted": 5,
-  "merged_count": 3,
-  "conflicts": []
-}
-```
-
-### `POST /graph/consolidate`
-Digest ALL uncommitted events across all sessions.
-
-### `GET /graph/conflicts`
-View detected conflicts from consolidation.
-
-**Response:**
-```json
-{
-  "conflicts": [
-    {"entity": "Mickey", "field": "age", "old": "35", "new": "40"}
-  ],
-  "count": 1
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/consolidate/{session_id}` | POST | Digest session into knowledge graph |
+| `/graph/consolidate` | POST | Digest all uncommitted events |
+| `/graph/conflicts` | GET | View detected conflicts |
 
 ---
 
 ## Health Dashboard
 
-### `GET /health/status`
-Combined health endpoint for the dashboard.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health/status` | GET | Combined health endpoint |
+| `/health/check` | POST | Run health checks on manuscript |
+| `/health/report/{report_id}` | GET | Retrieve stored health report |
+| `/health/export` | POST | Export health report (markdown/JSON) |
+| `/health/trends/{metric}` | GET | Get historical trend data |
+| `/health/reports` | GET | List all health reports |
+| `/health/export/{report_id}` | GET | Export specific report |
+| `/health/theme/override` | POST | Manually override theme score |
+| `/health/theme/overrides` | GET | Get all theme overrides |
 
-Returns graph stats, conflicts, and uncommitted events in one call.
-
-**Response:**
-```json
-{
-  "graph_stats": {
-    "node_count": 42,
-    "edge_count": 18,
-    "recent_nodes": [...]
-  },
-  "conflicts": [...],
-  "conflict_count": 0,
-  "uncommitted_count": 5,
-  "timestamp": "2025-01-15T..."
-}
-```
-
----
-
-## Graph Health Service (Phase 3D)
-
-Comprehensive manuscript health validation with LLM-powered analysis.
-
-### `POST /health/check`
-Run health checks on manuscript structure.
-
-**Request Body:**
-```json
-{
-  "project_id": "my_project",
-  "scope": "manuscript",  // "chapter", "act", or "manuscript"
-  "chapter_id": "1.2",    // Required if scope="chapter"
-  "act_number": 2         // Required if scope="act"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "complete",
-  "report": {
-    "report_id": "uuid",
-    "project_id": "my_project",
-    "scope": "manuscript",
-    "overall_score": 85,
-    "warnings": [
-      {
-        "type": "PACING_PLATEAU",
-        "severity": "warning",
-        "message": "Tension plateau detected...",
-        "recommendation": "Add conflict escalation",
-        "chapters": ["1.3", "1.4", "1.5"],
-        "data": {"tension_scores": [5.0, 5.1, 5.0]}
-      }
-    ],
-    "timestamp": "2025-01-15T..."
-  },
-  "markdown": "# Health Report..."
-}
-```
-
-**Health Checks Run:**
-- Pacing Plateau Detection (LLM-powered intent analysis)
-- Beat Progress Validation (15-beat Save the Cat! structure)
-- Timeline Consistency (semantic conflict detection)
-- Fatal Flaw Challenge Monitoring
-- Cast Function Verification
-- Symbolic Layering (symbol recurrence and evolution)
-- Theme Resonance (hybrid LLM + manual override)
-
-### `GET /health/report/{report_id}`
-Retrieve a previously stored health report.
-
-**Parameters:**
-- `report_id` (path): UUID of the report
-
-**Response:**
-```json
-{
-  "status": "found",
-  "report": {
-    "report_id": "uuid",
-    "project_id": "my_project",
-    "scope": "manuscript",
-    "overall_score": 85,
-    "warnings": [...],
-    "timestamp": "2025-01-15T..."
-  }
-}
-```
-
-### `GET /health/reports`
-List all health reports for a project with pagination.
-
-**Parameters:**
-- `project_id` (query, required): Project ID
-- `limit` (query): Max reports (default: 20)
-- `offset` (query): Pagination offset (default: 0)
-
-**Response:**
-```json
-{
-  "reports": [
-    {
-      "report_id": "uuid",
-      "timestamp": "2025-01-15T...",
-      "scope": "manuscript",
-      "overall_score": 85,
-      "warning_count": 3,
-      "overall_health": "good"
-    }
-  ],
-  "total": 47,
-  "limit": 20,
-  "offset": 0
-}
-```
-
-### `GET /health/trends/{metric}`
-Get historical trend data for a specific health metric.
-
-**Parameters:**
-- `metric` (path): "overall_score", "pacing_issues", "beat_deviations", etc.
-- `project_id` (query, required): Project ID
-- `start_date` (query, optional): ISO 8601 date
-- `end_date` (query, optional): ISO 8601 date
-
-**Response:**
-```json
-{
-  "metric": "overall_score",
-  "project_id": "my_project",
-  "data": [
-    {"timestamp": "2025-01-14T...", "value": 82},
-    {"timestamp": "2025-01-15T...", "value": 85}
-  ],
-  "count": 2
-}
-```
-
-### `POST /health/theme/override`
-Manually override an LLM-generated theme resonance score.
-
-**Request Body:**
-```json
-{
-  "project_id": "my_project",
-  "beat_id": 9,
-  "theme_id": "main_theme",
-  "manual_score": 80,
-  "reason": "LLM missed subtle symbolism in mirror scene"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "override_set",
-  "project_id": "my_project",
-  "beat_id": 9,
-  "theme_id": "main_theme",
-  "manual_score": 80,
-  "message": "Theme score override saved."
-}
-```
-
-### `GET /health/theme/overrides`
-Get all manual theme score overrides for a project.
-
-**Parameters:**
-- `project_id` (query, required): Project ID
-
-**Response:**
-```json
-{
-  "project_id": "my_project",
-  "overrides": [
-    {
-      "beat_id": 9,
-      "theme_id": "main_theme",
-      "llm_score": 65,
-      "manual_score": 80,
-      "reason": "LLM missed subtle symbolism",
-      "timestamp": "2025-01-15T..."
-    }
-  ],
-  "count": 1
-}
-```
-
-### `GET /health/export/{report_id}`
-Export a health report as JSON or markdown.
-
-**Parameters:**
-- `report_id` (path): UUID of the report
-- `format` (query): "json" or "markdown" (default: "json")
-
-**Response (JSON format):**
-```json
-{
-  "format": "json",
-  "filename": "health_report_uuid.json",
-  "content": {...}
-}
-```
-
-**Response (Markdown format):**
-```json
-{
-  "format": "markdown",
-  "filename": "health_report_uuid.md",
-  "content": "# Health Report\n\n## Overview\n..."
-}
-```
+**7 Health Checks:**
+1. Timeline Consistency
+2. Theme Resonance
+3. Fatal Flaw Challenge
+4. Cast Function
+5. Pacing Analysis
+6. Beat Alignment
+7. Symbolic Layering
 
 ---
 
 ## NotebookLM Integration
 
-### `GET /notebooklm/status`
-Check if NotebookLM MCP server is available.
-
-**Response:**
-```json
-{"status": "ready"}  // or "offline"
-```
-
-### `GET /notebooklm/auth`
-Trigger the authentication flow (opens browser for Google login).
-
-**Response:**
-```json
-{"status": "Auth flow triggered. Check for browser window."}
-```
-
-### `GET /notebooklm/notebooks`
-List configured notebooks.
-
-**Response:**
-```json
-{"configured": [{"id": "abc123", "title": "My Novel Research"}]}
-```
-
-### `POST /notebooklm/query`
-Query a notebook with a question.
-
-**Request Body:**
-```json
-{
-  "query": "What is Mickey's fatal flaw?",
-  "notebook_id": "abc123"
-}
-```
-
-**Response:**
-```json
-{
-  "answer": "Mickey's fatal flaw is...",
-  "sources": [{"title": "Character Notes", "page": 3}],
-  "notebook_id": "abc123",
-  "query": "What is Mickey's fatal flaw?"
-}
-```
-
-### `POST /notebooklm/character-profile`
-Extract a character profile from notebook.
-
-**Request Body:**
-```json
-{
-  "character_name": "Mickey Bardot",
-  "notebook_id": "abc123"
-}
-```
-
-### `POST /notebooklm/world-building`
-Extract world-building information.
-
-**Request Body:**
-```json
-{
-  "aspect": "quantum consciousness technology",
-  "notebook_id": "abc123"
-}
-```
-
-### `POST /notebooklm/context`
-Get context for a specific entity.
-
-**Request Body:**
-```json
-{
-  "entity_name": "Noni",
-  "entity_type": "character",
-  "notebook_id": "abc123"
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/notebooklm/status` | GET | Check MCP server availability |
+| `/notebooklm/auth` | GET | Trigger authentication flow |
+| `/notebooklm/notebooks` | GET | List configured notebooks |
+| `/notebooklm/query` | POST | Query a notebook |
+| `/notebooklm/character-profile` | POST | Extract character profile |
+| `/notebooklm/world-building` | POST | Extract world-building info |
+| `/notebooklm/context` | POST | Get context for entity |
 
 ---
 
 ## Story Bible System
 
-> **Phase 2 Implementation** - Enforces "Structure Before Freedom" methodology.
-
-### `GET /story-bible/status`
-Run Level 2 Health Checks on Story Bible.
-
-Returns completion status, parsed data, and blocking issues.
-
-**Response:**
-```json
-{
-  "phase2_complete": false,
-  "completion_score": 71.4,
-  "checks": [
-    {"name": "Protagonist file exists", "passed": true, "status": "✓"},
-    {"name": "Protagonist has Fatal Flaw defined", "passed": false, "status": "✗"}
-  ],
-  "protagonist": {
-    "name": "Mickey Bardot",
-    "fatal_flaw": "",
-    "the_lie": "",
-    "contradiction_score": 0.3
-  },
-  "beat_sheet": {
-    "title": "Big Brain",
-    "completion": 60.0,
-    "current_beat": 1
-  },
-  "blocking_issues": ["Protagonist has Fatal Flaw defined"]
-}
-```
-
-### `POST /story-bible/scaffold`
-Create Story Bible directory structure and template files.
-
-**Request Body:**
-```json
-{
-  "project_title": "Big Brain",
-  "protagonist_name": "Mickey Bardot",
-  "pre_filled": {
-    "protagonist": {"fatal_flaw": "Addiction to escape"},
-    "beat_sheet": {"beat_1": "Opening in Vegas casino..."}
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Story Bible scaffolding created for 'Big Brain'",
-  "created_files": [
-    "content/Characters/Mickey_Bardot.md",
-    "content/Story Bible/Structure/Beat_Sheet.md"
-  ]
-}
-```
-
-### `GET /story-bible/protagonist`
-Parse and return structured protagonist data.
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "protagonist": {
-    "name": "Mickey Bardot",
-    "true_character": "A con man who secretly craves connection",
-    "characterization": "Charming, quick-witted, cynical",
-    "fatal_flaw": "Pathological aversion to genuine connection",
-    "the_lie": "Believes intimacy is a weakness to exploit",
-    "arc": {
-      "start": "Creature of the immediate, superficial",
-      "midpoint": "Forced radical honesty during transfer",
-      "resolution": "Hybrid being who chooses to warn humanity"
-    },
-    "relationships": [
-      {"character": "Noni", "function": "Harmonic anchor, co-conspirator"}
-    ],
-    "contradiction_score": 0.8,
-    "is_valid": true
-  }
-}
-```
-
-### `GET /story-bible/beat-sheet`
-Parse and return structured beat sheet data.
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "beat_sheet": {
-    "title": "Big Brain",
-    "current_beat": 5,
-    "midpoint_type": "false_victory",
-    "theme_stated": "Do you keep your mind, or does someone else run it?",
-    "completion_percentage": 100.0,
-    "is_valid": true,
-    "beats": [
-      {"number": 1, "name": "Opening Image", "percentage": "1%", "description": "...", "is_complete": true}
-    ]
-  }
-}
-```
-
-### `POST /story-bible/ensure-structure`
-Create Story Bible directory structure if it doesn't exist.
-
-**Response:**
-```json
-{
-  "status": "success",
-  "directories": {
-    "story_bible": "content/Story Bible",
-    "characters": "content/Characters",
-    "story_structure": "content/Story Bible/Structure"
-  },
-  "created": ["themes", "research"]
-}
-```
-
-### `GET /story-bible/can-execute`
-Simple boolean check: Can we proceed to Phase 3 (Execution)?
-
-**Response:**
-```json
-{
-  "can_execute": true,
-  "completion_score": 85.7,
-  "blocking_issues": []
-}
-```
-
-### `POST /story-bible/smart-scaffold`
-**AI-powered Story Bible generation from NotebookLM.**
-
-This is the "AI Scaffolding Agent" that:
-1. Queries NotebookLM for protagonist data (Fatal Flaw, The Lie, Arc)
-2. Queries NotebookLM for 15-beat structure
-3. Queries NotebookLM for themes and world rules
-4. Synthesizes responses into Story Bible templates
-5. Validates completeness
-
-**Prerequisites:**
-- NotebookLM authenticated (`GET /notebooklm/auth`)
-- Notebook with uploaded research materials
-
-**Request Body:**
-```json
-{
-  "notebook_id": "abc123",
-  "project_title": "Big Brain",
-  "protagonist_name": "Mickey Bardot"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Story Bible generated from NotebookLM",
-  "workflow": {
-    "workflow": "SmartScaffoldWorkflow",
-    "success": true,
-    "duration_ms": 45000,
-    "steps": [
-      {"name": "Query Protagonist Data", "status": "completed", "duration_ms": 8000},
-      {"name": "Query Beat Sheet", "status": "completed", "duration_ms": 10000},
-      {"name": "Synthesize Story Bible", "status": "completed", "duration_ms": 5000}
-    ]
-  }
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/story-bible/status` | GET | Get Story Bible validation status |
+| `/story-bible/scaffold` | POST | Create Story Bible scaffolding |
+| `/story-bible/protagonist` | GET | Get parsed protagonist data |
+| `/story-bible/beat-sheet` | GET | Get parsed beat sheet data |
+| `/story-bible/ensure-structure` | POST | Ensure directory structure exists |
+| `/story-bible/can-execute` | GET | Check if ready for Phase 3 |
+| `/story-bible/smart-scaffold` | POST | AI-powered generation from NotebookLM |
 
 ---
 
-## Project & Tournament
+## The Foreman
 
-### `POST /project/init`
-Initialize a new student project with the Setup Wizard.
+The intelligent creative writing partner powered by Ollama.
 
-**Request Body:**
-```json
-{
-  "project_name": "my_novel",
-  "voice_sample": "Sample text in the writer's voice...",
-  "protagonist_name": "Mickey Bardot"
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/foreman/start` | POST | Initialize new project |
+| `/foreman/chat` | POST | Chat with the Foreman |
+| `/foreman/notebook` | POST | Register NotebookLM notebook |
+| `/foreman/status` | GET | Get Foreman status |
+| `/foreman/flush-kb` | POST | Flush KB entries |
+| `/foreman/reset` | POST | Reset the Foreman |
+| `/foreman/mode` | GET | Get current Foreman mode |
+| `/foreman/mode/voice-calibration` | POST | Advance to Voice Calibration |
+| `/foreman/mode/director` | POST | Advance to Director mode |
+| `/foreman/debug/force-mode` | POST | [DEBUG] Force change mode |
+| `/foreman/debug/modes` | GET | [DEBUG] List all modes |
+| `/foreman/stage` | GET | Get current writing stage |
+| `/foreman/stage` | POST | Manually change stage |
+| `/foreman/stage` | DELETE | Reset stage to auto-detection |
 
-### `POST /tournament/run`
-Run a scene drafting tournament.
+**Foreman Modes:** `ARCHITECT`, `VOICE_CALIBRATION`, `DIRECTOR`, `EDITOR`
 
-**Request Body:**
-```json
-{"scaffold": "# ACE Scaffold\n..."}
-```
+---
 
-**Response:**
-```json
-{
-  "drafts": [
-    {"agent_id": "drafter-1", "text": "...", "score": 8.5},
-    {"agent_id": "drafter-2", "text": "...", "score": 7.2}
-  ],
-  "winner": "drafter-1"
-}
-```
+## Voice Calibration
 
-### `POST /scene/save`
-Save the winning text and trigger graph ingestion.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/voice-calibration/agents` | GET | Get available tournament agents |
+| `/voice-calibration/tournament/start` | POST | Start voice tournament |
+| `/voice-calibration/tournament/{id}/status` | GET | Get tournament status |
+| `/voice-calibration/tournament/{id}/variants` | GET | Get tournament variants |
+| `/voice-calibration/tournament/{id}/select` | POST | Select winning variant |
+| `/voice-calibration/generate-bundle/{project_id}` | POST | Generate Voice Bundle |
+| `/voice-calibration/{project_id}` | GET | Get voice calibration for project |
 
-**Request Body:**
-```json
-{
-  "scene_id": 1,
-  "winning_text": "# Chapter 1\n\nMickey stood at the edge..."
-}
-```
+**Tournament Strategies:** `ACTION_EMPHASIS`, `CHARACTER_DEPTH`, `DIALOGUE_FOCUS`, `BRAINSTORMING`, `BALANCED`
+
+---
+
+## Director Mode
+
+### Scaffold Generation
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/director/scaffold/draft-summary` | POST | Generate draft summary (Stage 1) |
+| `/director/scaffold/enrich` | POST | Fetch enrichment from NotebookLM |
+| `/director/scaffold/generate` | POST | Generate full scaffold (Stage 2) |
+
+### Scene Writing
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/director/scene/structure-variants` | POST | Generate 5 structure variants |
+| `/director/scene/generate-variants` | POST | Run multi-model tournament (15 variants) |
+| `/director/scene/create-hybrid` | POST | Create hybrid from multiple variants |
+| `/director/scene/quick-generate` | POST | Quick single-model generation |
+
+### Scene Analysis
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/director/scene/analyze` | POST | Full 5-category analysis (100-point rubric) |
+| `/director/scene/compare` | POST | Compare multiple scene variants |
+| `/director/scene/detect-patterns` | POST | Detect anti-patterns only |
+| `/director/scene/analyze-metaphors` | POST | Analyze metaphor usage only |
+
+**100-Point Rubric:**
+| Category | Points |
+|----------|--------|
+| Voice Authenticity | 30 |
+| Character Consistency | 20 |
+| Metaphor Discipline | 20 |
+| Anti-Pattern Compliance | 15 |
+| Phase Appropriateness | 15 |
+
+### Scene Enhancement
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/director/scene/enhance` | POST | Auto-select enhancement mode |
+| `/director/scene/action-prompt` | POST | Generate surgical fixes |
+| `/director/scene/apply-fixes` | POST | Apply fixes from action prompt |
+| `/director/scene/six-pass` | POST | Run 6-pass enhancement |
+
+**Enhancement Modes:**
+- **Action Prompt** (85+ score): Surgical line-by-line fixes
+- **6-Pass Enhancement** (70-84): Full polish pipeline
+
+---
+
+## Settings & Configuration
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/settings/{key}` | GET | Get a setting value |
+| `/settings` | POST | Set a setting value |
+| `/settings/{key}` | DELETE | Reset setting to default |
+| `/settings/category/{category}` | GET | Get all settings in category |
+| `/settings/category/{category}` | PUT | Update settings in category |
+| `/settings/project/{project_id}/overrides` | GET | Get project overrides |
+| `/settings/export` | GET | Export settings as YAML |
+| `/settings/import` | POST | Import settings |
+| `/settings/defaults` | GET | Get all default values |
+
+**Categories:** `foreman`, `scoring`, `voice`, `enhancement`, `health_checks`, `tournament`, `squad`, `graph`
+
+---
+
+## API Key Management
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api-keys/test` | POST | Test an API key |
+| `/api-keys/status` | GET | Get status of all API keys |
+
+**Supported Providers:** `google`/`gemini`, `openai`, `anthropic`, `deepseek`, `qwen`, `xai`/`grok`, `mistral`
+
+---
+
+## Model Orchestrator
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/orchestrator/capabilities` | GET | Get model capabilities registry |
+| `/orchestrator/estimate-cost` | POST | Estimate monthly cost for tier |
+| `/orchestrator/recommendations/{task_type}` | GET | Get model recommendations |
+| `/orchestrator/current-spend` | GET | Get current month spending |
+
+**Quality Tiers:** `Budget`, `Balanced`, `Premium`
+
+---
+
+## Tournament System
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/tournament/structure/create` | POST | Create structure variant tournament |
+| `/tournament/scene/create` | POST | Create scene variant tournament |
+| `/tournament/{id}/run` | POST | Run tournament round |
+| `/tournament/{id}/results` | GET | Get tournament results |
+| `/tournament/{id}/variants` | GET | Get tournament variants |
+| `/tournament/{id}/consensus` | GET | Get consensus analysis |
+| `/tournament/{id}/select-winner` | POST | Select tournament winner |
+| `/tournament/{id}/hybrid` | POST | Create hybrid from variants |
+| `/tournaments` | GET | List tournaments |
+| `/tournament/{id}` | GET | Get tournament details |
+
+---
+
+## Squad System
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/squad/available` | GET | Get available squads |
+| `/squad/apply` | POST | Apply squad configuration |
+| `/squad/active` | GET | Get active squad |
+| `/squad/tournament-models` | GET | Get tournament models |
+| `/squad/tournament-models` | POST | Set tournament models |
+| `/squad/tournament-models/custom` | DELETE | Clear custom models |
+| `/squad/estimate-cost` | POST | Estimate tournament cost |
+| `/squad/voice-recommendation` | GET | Get voice recommendation |
+| `/squad/voice-recommendation` | POST | Generate voice recommendation |
+| `/squad/genre-recommendation` | POST | Get genre-based recommendation |
+| `/squad/course-mode` | POST | Toggle course mode |
+
+**Squad Presets:** `starter`, `hybrid`, `pro`, `local`
+
+---
+
+## Usage Tracking
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/usage/record` | POST | Record API usage |
+| `/usage/summary` | GET | Get monthly usage summary |
+| `/usage/thresholds` | GET | Check cost thresholds |
+| `/usage/thresholds/dismiss` | POST | Dismiss threshold notification |
+| `/usage/recent` | GET | Get recent usage records |
+| `/usage/daily` | GET | Get daily cost breakdown |
+
+---
+
+## Key Provisioning
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/keys/provision` | POST | Provision API keys from server |
+| `/keys/status` | GET | Get key provisioning status |
+| `/keys/providers` | GET | Get available providers |
+| `/keys/clear` | DELETE | Clear all provisioned keys |
+
+---
+
+## System & Hardware
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/system/hardware` | GET | Detect system hardware |
+| `/system/local-models` | GET | Get recommended local models |
+| `/system/ollama/pull` | POST | Start pulling Ollama model |
+| `/system/ollama/pull-status` | GET | Get Ollama pull status |
+| `/system/workspace/default` | GET | Get default workspace path |
+| `/system/workspace/validate` | POST | Validate workspace path |
+
+---
+
+## Workspace Management
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/workspace/init` | POST | Initialize workspace |
+| `/workspace/status` | GET | Get workspace status |
+
+---
+
+## Manuscript & Knowledge Query
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/manuscript/working` | GET | List working files |
+| `/manuscript/structure` | GET | Get manuscript structure |
+| `/manuscript/promote` | POST | Promote working file to manuscript |
+| `/knowledge/query` | POST | Query with auto-classification |
+
+---
+
+## Metabolism
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/metabolism/consolidate-kb` | POST | Consolidate Foreman KB to graph |
+| `/metabolism/consolidate-kb/{project_id}` | POST | Consolidate KB for project |
+
+---
+
+## Mentions
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/mentions/search` | GET | Search for @mentionable entities |
+
+---
+
+## Project & Tournament (Legacy)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/project/init` | POST | Initialize student project |
+| `/graph/context/{scene_id}` | GET | Get scaffold data for scene |
+| `/tournament/run` | POST | Run scene drafting tournament |
+| `/scene/save` | POST | Save scene and ingest data |
 
 ---
 
@@ -1106,8 +492,31 @@ All endpoints return errors in this format:
 - `400` - Bad Request (invalid input)
 - `404` - Not Found
 - `500` - Internal Server Error
-- `501` - Not Implemented (missing dependency like spaCy)
+- `501` - Not Implemented
 
 ---
 
-*Generated for Writers Factory v0.1*
+## Endpoint Count by Category
+
+| Category | Count |
+|----------|-------|
+| Knowledge Graph | 23 |
+| Director Mode | 16 |
+| Tournament System | 10 |
+| Session Management | 8 |
+| Health Dashboard | 9 |
+| The Foreman | 14 |
+| Voice Calibration | 7 |
+| Settings | 9 |
+| Squad System | 11 |
+| Story Bible | 7 |
+| NotebookLM | 7 |
+| Usage Tracking | 6 |
+| System/Hardware | 6 |
+| Verification | 3 |
+| Other | 32 |
+| **Total** | **168** |
+
+---
+
+*Generated for Writers Factory v2.0 - December 2025*

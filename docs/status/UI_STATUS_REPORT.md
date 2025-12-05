@@ -49,13 +49,13 @@
 
 ## 🚧 Remaining UI Features & Improvements
 
-### 1. Voice Settings (Medium Priority)
-*   **Current State:** Placeholder or basic UI.
-*   **Goal:** Create a dedicated "Voice" settings panel.
-*   **Features Needed:**
-    *   TTS Provider selection (OpenAI, ElevenLabs, Local).
-    *   Voice preview/playback.
-    *   Speed/Pitch controls.
+### 1. Voice Settings ✅ COMPLETE
+*   **Current State:** Fully implemented in `SettingsVoice.svelte` (581 lines).
+*   **Features Implemented:**
+    *   Voice Authentication strictness (Authenticity, Purpose, Fusion)
+    *   Metaphor discipline settings (saturation threshold, domain rotation)
+    *   Advanced metaphor controls (simile tolerance, minimum domains)
+*   **Note:** This configures *authorial voice* calibration, not text-to-speech.
 
 ### 2. Advanced Settings (Medium Priority)
 *   **Current State:** Placeholder.

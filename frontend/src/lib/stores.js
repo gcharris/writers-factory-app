@@ -92,6 +92,22 @@ export const foremanWorkOrder = writable(null);
 // Foreman chat history (separate from manager)
 export const foremanChatHistory = writable([]);
 
+/**
+ * Helper to add a Foreman message to the chat
+ * @param {string} content - The message content
+ * @param {'user' | 'assistant'} [role='assistant'] - The message role
+ */
+export function addForemanMessage(content, role = 'assistant') {
+  foremanChatHistory.update(/** @param {Array<{role: string, content: string, timestamp: string}>} history */ history => [
+    ...history,
+    {
+      role,
+      content,
+      timestamp: new Date().toISOString()
+    }
+  ]);
+}
+
 // --- Story Bible State (ARCHITECT Mode) ---
 
 // Story Bible status from /story-bible/status endpoint

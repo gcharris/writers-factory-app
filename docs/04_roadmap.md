@@ -216,10 +216,10 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 **See:** [PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md](dev_logs/PHASE_3E_PHASES_3_4_IMPLEMENTATION_PLAN.md)
 
-## Phase 3F: GraphRAG Enhancement (✅ Phase 1 Complete)
+## Phase 3F: GraphRAG Enhancement (✅ Complete)
 **Goal:** Intelligent knowledge retrieval with query classification and context assembly.
 **Priority:** P1 High - Improves Foreman context quality
-**Status:** Phase 1 Complete (Dec 4, 2025)
+**Status:** All Phases Complete (Dec 2025)
 
 ### Phase 1: Core Services ✅
 - ✅ **QueryClassifier** - 8 query types (CHARACTER_DEEP, RELATIONSHIP, PLOT_TIMELINE, WORLD_RULES, etc.)
@@ -227,15 +227,15 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 - ✅ **ManuscriptService** - Working → Manuscript promotion workflow with graph extraction
 - ✅ **4 API Endpoints** - `/manuscript/working`, `/manuscript/structure`, `/manuscript/promote`, `/knowledge/query`
 
-### Phase 2: Embeddings & Semantic Search (Planned)
-- 🔲 **EmbeddingService** - Ollama `nomic-embed-text` with OpenAI fallback
-- 🔲 **Semantic Search** - Vector similarity for knowledge graph nodes
-- 🔲 **NarrativeExtractor** - Narrative edge types (MOTIVATES, HINDERS, FORESHADOWS)
+### Phase 2: Embeddings & Semantic Search ✅
+- ✅ **EmbeddingService** - Ollama `nomic-embed-text` with OpenAI fallback
+- ✅ **EmbeddingIndexService** - Vector similarity for knowledge graph nodes
+- ✅ **NarrativeExtractor** - Narrative edge types (MOTIVATES, HINDERS, FORESHADOWS)
 
-### Phase 3: Verification & Integration (Planned)
-- 🔲 **VerificationService** - Tiered health checks (fast/medium/slow)
-- 🔲 **KnowledgeRouter** - Full query → classification → retrieval → assembly pipeline
-- 🔲 **Foreman Integration** - Automatic context injection before chat
+### Phase 3: Verification & Integration ✅
+- ✅ **VerificationService** - Tiered health checks (fast/medium/slow)
+- ✅ **KnowledgeRouter** - Full query → classification → retrieval → assembly pipeline
+- ✅ **Foreman Integration** - Automatic context injection before chat
 
 **See:** [GRAPHRAG_IMPLEMENTATION_PLAN.md](specs/GRAPHRAG_IMPLEMENTATION_PLAN.md)
 
@@ -400,23 +400,22 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 
 ### 📊 Progress Summary
 
-**Overall Progress:** ~97% Complete
+**Overall Progress:** ~98% Complete
 
 **Backend:** 100% ✅
 - All Phases 1-3F complete (GraphRAG Phase 1 NEW)
 - 11 major services, 11 LLM providers, zero critical bugs
-- 4 new API endpoints for manuscript/knowledge
+- 168 API endpoints documented
 
-**Frontend:** 97% ✅
+**Frontend:** 98% ✅
 - Critical UI: 11/11 components ✅
 - Feature UI: 75+ components total ✅
-- Settings: 10/10 tabs ✅ (including Graph)
+- Settings: 10/10 tabs ✅ (including Graph, Voice)
 - Squad System: 5/5 components ✅
 
-**Remaining:** ~15 hours
-- Voice Settings UI (TTS provider selection)
-- Advanced Settings UI (Ollama URL, context window)
-- Polish & UX
+**Remaining:** ~5 hours
+- SettingsAdvanced enhancements (Ollama URL, Temperature/Top-P, Data Management)
+- Duplicate file cleanup (technical debt)
 
 ### 🚀 Recent Accomplishments (Dec 2025)
 
@@ -438,7 +437,8 @@ Current Director Mode has hard-coded rules from Explants project (Mickey Bardot 
 ### 📅 Next Milestones
 
 **Dec 4:** ✅ GraphRAG Phase 1, Squad UI, Settings Graph - COMPLETE
-**Dec 8:** Voice Settings UI & Advanced Settings
+**Dec 5:** ✅ API Reference rewrite (168 endpoints), Documentation audit
+**Dec 8:** SettingsAdvanced enhancements + Cleanup
 **Dec 15:** Production Ready (installers, docs, testing)
 
 ### 📝 Documentation

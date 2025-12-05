@@ -406,7 +406,7 @@ writers-factory-app/
 - ✅ Director Mode UI (scaffold, variants, enhancement)
 - ✅ Graph Health dashboard
 - ✅ Squad Management UI with role-based model assignment
-- 🔲 Voice Settings (TTS provider selection)
+- ✅ Voice Settings (authorial voice calibration strictness)
 - 🔲 Advanced Settings (Ollama URL, context window)
 
 ### Critical Blocker: Settings Panel
