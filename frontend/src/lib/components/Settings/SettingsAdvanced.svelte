@@ -14,6 +14,17 @@
     continuity_context_depth: 3
   };
 
+  // Ollama configuration
+  let ollamaUrl = 'http://localhost:11434';
+  let ollamaStatus: { ok: boolean; message: string; models?: string[] } | null = null;
+  let testingOllama = false;
+
+  // LLM defaults
+  let llmDefaults = {
+    temperature: 0.7,
+    top_p: 0.9
+  };
+
   // Default model selection
   let defaultModel = 'deepseek-chat';
   let availableModels = [
@@ -169,6 +180,126 @@
     };
     return descriptions[injection as keyof typeof descriptions] || '';
   }
+
+  // Ollama connection test
+  async function testOllamaConnection() {
+    testingOllama = true;
+    ollamaStatus = null;
+
+    try {
+      const response = await fetch(`${ollamaUrl}/api/tags`);
+      if (response.ok) {
+        const data = await response.json();
+        const modelNames = data.models?.map((m: any) => m.name) || [];
+        ollamaStatus = {
+          ok: true,
+          message: `Connected! ${modelNames.length} model(s) available`,
+          models: modelNames
+        };
+      } else {
+        ollamaStatus = {
+          ok: false,
+          message: `Server responded with status ${response.status}`
+        };
+      }
+    } catch (error) {
+      ollamaStatus = {
+        ok: false,
+        message: 'Connection failed. Is Ollama running?'
+      };
+    } finally {
+      testingOllama = false;
+    }
+  }
+
+  // Data management functions
+  async function exportSettings() {
+    try {
+      const response = await fetch(`${BASE_URL}/settings/export`);
+      if (response.ok) {
+        const settings = await response.json();
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `writers-factory-settings-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        saveMessage = 'Settings exported successfully';
+        setTimeout(() => saveMessage = '', 3000);
+      } else {
+        throw new Error('Export failed');
+      }
+    } catch (error) {
+      errorMessage = 'Failed to export settings';
+    }
+  }
+
+  let fileInput: HTMLInputElement;
+
+  function triggerImport() {
+    fileInput?.click();
+  }
+
+  async function handleFileImport(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const settings = JSON.parse(text);
+
+      const response = await fetch(`${BASE_URL}/settings/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+
+      if (response.ok) {
+        saveMessage = 'Settings imported successfully';
+        loadSettings(); // Reload to reflect changes
+        setTimeout(() => saveMessage = '', 3000);
+      } else {
+        throw new Error('Import failed');
+      }
+    } catch (error) {
+      errorMessage = 'Invalid settings file or import failed';
+    }
+  }
+
+  async function clearCache() {
+    if (!confirm('Clear all conversation cache? This cannot be undone.')) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/session/clear-all`, { method: 'POST' });
+      if (response.ok) {
+        saveMessage = 'Cache cleared successfully';
+        setTimeout(() => saveMessage = '', 3000);
+      } else {
+        throw new Error('Clear failed');
+      }
+    } catch (error) {
+      errorMessage = 'Failed to clear cache';
+    }
+  }
+
+  async function resetAllSettings() {
+    if (!confirm('Reset ALL settings to defaults? This cannot be undone.')) return;
+    if (!confirm('Are you absolutely sure? This will reset everything.')) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/settings/reset`, { method: 'POST' });
+      if (response.ok) {
+        saveMessage = 'Settings reset to defaults';
+        loadSettings();
+        setTimeout(() => saveMessage = '', 3000);
+      } else {
+        throw new Error('Reset failed');
+      }
+    } catch (error) {
+      errorMessage = 'Failed to reset settings';
+    }
+  }
 </script>
 
 <div class="settings-advanced">
@@ -291,6 +422,151 @@
       </div>
       <p class="injection-description">{getModelDescription(context.voice_bundle_injection)}</p>
     </div>
+
+    <!-- Local AI Configuration (Expert Mode Only) -->
+    {#if expertMode}
+      <div class="section">
+        <h3>Local AI Configuration</h3>
+        <p class="section-desc">Configure your local Ollama server for offline AI features.</p>
+
+        <div class="setting-item">
+          <div class="setting-header">
+            <label for="ollama-url">Ollama Server URL</label>
+          </div>
+          <div class="url-input-group">
+            <input
+              type="text"
+              id="ollama-url"
+              bind:value={ollamaUrl}
+              placeholder="http://localhost:11434"
+              class="url-input"
+            />
+            <button
+              class="btn-test"
+              on:click={testOllamaConnection}
+              disabled={testingOllama}
+            >
+              {testingOllama ? 'Testing...' : 'Test Connection'}
+            </button>
+          </div>
+          {#if ollamaStatus}
+            <div class="connection-status {ollamaStatus.ok ? 'success' : 'error'}">
+              <span class="status-icon">{ollamaStatus.ok ? '✓' : '✗'}</span>
+              <span>{ollamaStatus.message}</span>
+            </div>
+            {#if ollamaStatus.ok && ollamaStatus.models?.length}
+              <div class="model-list">
+                <span class="model-list-label">Available models:</span>
+                {#each ollamaStatus.models as model}
+                  <span class="model-tag">{model}</span>
+                {/each}
+              </div>
+            {/if}
+          {/if}
+          <p class="setting-desc">URL for local Ollama server. Default: http://localhost:11434</p>
+        </div>
+      </div>
+
+      <!-- LLM Defaults -->
+      <div class="section">
+        <h3>LLM Defaults</h3>
+        <p class="section-desc">Default parameters for AI generation (can be overridden per-request).</p>
+
+        <div class="setting-item">
+          <div class="setting-header">
+            <label for="temperature">Temperature</label>
+            <span class="setting-value">{llmDefaults.temperature.toFixed(2)}</span>
+          </div>
+          <input
+            type="range"
+            id="temperature"
+            min="0"
+            max="1"
+            step="0.05"
+            bind:value={llmDefaults.temperature}
+            class="slider"
+          />
+          <p class="setting-desc">
+            Lower = more focused/deterministic, Higher = more creative/random
+          </p>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-header">
+            <label for="top-p">Top-P (Nucleus Sampling)</label>
+            <span class="setting-value">{llmDefaults.top_p.toFixed(2)}</span>
+          </div>
+          <input
+            type="range"
+            id="top-p"
+            min="0.1"
+            max="1"
+            step="0.05"
+            bind:value={llmDefaults.top_p}
+            class="slider"
+          />
+          <p class="setting-desc">
+            Controls diversity by limiting to top probability mass
+          </p>
+        </div>
+      </div>
+
+      <!-- Data Management -->
+      <div class="section danger-zone">
+        <h3>Data Management</h3>
+        <p class="section-desc">Export, import, or reset your settings and data.</p>
+
+        <input
+          type="file"
+          accept=".json"
+          bind:this={fileInput}
+          on:change={handleFileImport}
+          style="display: none"
+        />
+
+        <div class="data-actions">
+          <div class="action-item">
+            <div class="action-info">
+              <strong>Export Settings</strong>
+              <p>Download all settings as JSON file</p>
+            </div>
+            <button class="btn-action" on:click={exportSettings}>
+              Export
+            </button>
+          </div>
+
+          <div class="action-item">
+            <div class="action-info">
+              <strong>Import Settings</strong>
+              <p>Load settings from JSON file</p>
+            </div>
+            <button class="btn-action" on:click={triggerImport}>
+              Import
+            </button>
+          </div>
+
+          <div class="action-item">
+            <div class="action-info">
+              <strong>Clear Conversation Cache</strong>
+              <p>Remove all cached conversations (does not affect saved sessions)</p>
+            </div>
+            <button class="btn-warning" on:click={clearCache}>
+              Clear Cache
+            </button>
+          </div>
+
+          <div class="action-item">
+            <div class="action-info">
+              <strong>Reset All Settings</strong>
+              <p>Restore all settings to factory defaults</p>
+            </div>
+            <button class="btn-danger" on:click={resetAllSettings}>
+              Reset All
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <!-- Debug Tools (Expert Mode Only) -->
     {#if expertMode}
@@ -912,5 +1188,191 @@
     background: #ff444420;
     color: #ff4444;
     border: 1px solid #ff4444;
+  }
+
+  /* URL Input Group (Ollama config) */
+  .url-input-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .url-input {
+    flex: 1;
+    padding: 0.625rem 0.875rem;
+    background: #1a1a1a;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+  }
+
+  .url-input:focus {
+    outline: none;
+    border-color: #00d9ff;
+  }
+
+  .btn-test {
+    padding: 0.625rem 1rem;
+    background: #404040;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    color: #ffffff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-test:hover:not(:disabled) {
+    background: #505050;
+    border-color: #00d9ff;
+  }
+
+  .btn-test:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Connection Status */
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .connection-status.success {
+    background: #00ff8820;
+    color: #00ff88;
+    border: 1px solid #00ff8840;
+  }
+
+  .connection-status.error {
+    background: #ff444420;
+    color: #ff6666;
+    border: 1px solid #ff444440;
+  }
+
+  .status-icon {
+    font-weight: bold;
+  }
+
+  /* Model List (Ollama models) */
+  .model-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #1a1a1a;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+  }
+
+  .model-list-label {
+    font-size: 0.75rem;
+    color: #888888;
+    margin-right: 0.25rem;
+  }
+
+  .model-tag {
+    padding: 0.25rem 0.5rem;
+    background: #00d9ff20;
+    color: #00d9ff;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  /* Data Management / Danger Zone */
+  .danger-zone {
+    border-color: #ff4444;
+    background: linear-gradient(135deg, #2d2d2d 0%, #3a1a1a 100%);
+  }
+
+  .danger-zone h3 {
+    color: #ff6666;
+  }
+
+  .data-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .action-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #1a1a1a;
+    border-radius: 6px;
+    border: 1px solid #333333;
+  }
+
+  .action-info {
+    flex: 1;
+  }
+
+  .action-info strong {
+    display: block;
+    color: #ffffff;
+    margin-bottom: 0.25rem;
+  }
+
+  .action-info p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #888888;
+  }
+
+  .btn-action {
+    padding: 0.5rem 1.25rem;
+    background: #00d9ff;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-action:hover {
+    background: #00b8d9;
+  }
+
+  .btn-warning {
+    padding: 0.5rem 1.25rem;
+    background: #ff8c00;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-warning:hover {
+    background: #e67e00;
+  }
+
+  .btn-danger {
+    padding: 0.5rem 1.25rem;
+    background: #ff4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-danger:hover {
+    background: #cc3333;
   }
 </style>
