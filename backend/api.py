@@ -52,9 +52,13 @@ CONFIG_PATH = os.path.join(PROJECT_PATH, "config")
 SCENES_PATH = os.path.join(PROJECT_PATH, "scenes")
 DB_FILE = os.path.join(PROJECT_PATH, "graph.db")
 DB_URL = f"sqlite:///{DB_FILE}"
-BASE_TEMPLATE_PATH = "backend/templates/reference_skills"
-AGENTS_CONFIG_PATH = "agents.yaml"
-NOTEBOOK_CONFIG_PATH = "backend/notebooklm_config.json"
+# Paths relative to this file's location for reliable resolution
+_API_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT_DIR = os.path.dirname(_API_DIR)  # Go up from backend/ to project root
+
+BASE_TEMPLATE_PATH = os.path.join(_API_DIR, "templates/reference_skills")
+AGENTS_CONFIG_PATH = os.path.join(_PROJECT_ROOT_DIR, "agents.yaml")
+NOTEBOOK_CONFIG_PATH = os.path.join(_API_DIR, "notebooklm_config.json")
 
 # --- FastAPI App Initialization ---
 app = FastAPI(

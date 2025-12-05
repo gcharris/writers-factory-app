@@ -9,28 +9,53 @@
 
 import { writable } from 'svelte/store';
 
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+export interface Toast {
+  id: number;
+  type: ToastType;
+  message: string;
+  action: ToastAction | null;
+}
+
+export interface ToastOptions {
+  type?: ToastType;
+  message: string;
+  duration?: number;
+  action?: ToastAction | null;
+}
+
 // Store for active toasts
-export const toasts = writable([]);
+export const toasts = writable<Toast[]>([]);
 
 let toastId = 0;
 
 /**
  * Add a new toast notification
- * @param {Object|string} options Toast options or message string
- * @param {string} [typeArg] - Type if first arg is message string: 'success' | 'error' | 'warning' | 'info'
- * @param {number} [durationArg] - Duration if using string signature
- * @returns {number} The toast ID
  *
  * Usage:
  * addToast({ type: 'success', message: 'Settings saved!' });
  * addToast('Settings saved!', 'success');
  * addToast('Error occurred', 'error', 5000);
  */
-export function addToast(options, typeArg = 'info', durationArg = 3000) {
+export function addToast(
+  options: ToastOptions | string,
+  typeArg: ToastType = 'info',
+  durationArg: number = 3000
+): number {
   const id = ++toastId;
 
   // Support both object and string signatures
-  let type, message, duration, action;
+  let type: ToastType;
+  let message: string;
+  let duration: number;
+  let action: ToastAction | null;
+
   if (typeof options === 'string') {
     message = options;
     type = typeArg;
@@ -43,7 +68,7 @@ export function addToast(options, typeArg = 'info', durationArg = 3000) {
     action = options.action || null;
   }
 
-  const toast = {
+  const toast: Toast = {
     id,
     type,
     message,
@@ -64,15 +89,14 @@ export function addToast(options, typeArg = 'info', durationArg = 3000) {
 
 /**
  * Dismiss a toast by ID
- * @param {number} id The toast ID to dismiss
  */
-export function dismissToast(id) {
+export function dismissToast(id: number): void {
   toasts.update(t => t.filter(toast => toast.id !== id));
 }
 
 /**
  * Dismiss all toasts
  */
-export function clearToasts() {
+export function clearToasts(): void {
   toasts.set([]);
 }

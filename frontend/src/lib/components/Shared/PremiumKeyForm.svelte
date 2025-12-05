@@ -143,8 +143,8 @@
     showKeys = showKeys;
   }
 
-  function openDocs(url: string, event: Event) {
-    event.preventDefault();
+  function openDocs(url: string, event?: Event) {
+    event?.preventDefault();
     window.open(url, '_blank');
   }
 
