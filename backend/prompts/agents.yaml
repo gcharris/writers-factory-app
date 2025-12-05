@@ -1,0 +1,246 @@
+# Agent Registry Configuration
+#
+# Defines all available agents for Writers Factory.
+# Writers can select agents mid-conversation, similar to Cursor AI.
+
+agents:
+  # ==========================================================================
+  # THE FOREMAN - Primary Agent
+  # ==========================================================================
+  foreman:
+    name: "The Foreman"
+    description: "Your structural editor and creative partner through all phases"
+    icon: "🏗️"
+
+    # The Foreman is the only agent with modes
+    has_modes: true
+    modes:
+      - architect
+      - voice_calibration
+      - director
+      - editor
+    default_mode: architect
+
+    # Prompt files
+    identity_file: "agents/foreman/identity.md"
+    process_map_file: "agents/foreman/process_map.md"
+    mode_files:
+      architect: "agents/foreman/modes/architect.md"
+      voice_calibration: "agents/foreman/modes/voice_calibration.md"
+      director: "agents/foreman/modes/director.md"
+      editor: "agents/foreman/modes/editor.md"
+
+    # Full capabilities - The Foreman can do everything
+    capabilities:
+      - query_notebook
+      - save_decision
+      - write_template
+      - update_status
+      - start_tournament
+      - select_winner
+      - generate_bundle
+      - generate_scaffold
+      - write_scene
+      - analyze_scene
+      - enhance_scene
+      - run_health_check
+      - apply_edit
+
+    # Model recommendations by quality tier
+    recommended_models:
+      premium:
+        - claude-sonnet-4-5
+        - claude-opus-4-5
+        - gpt-4o
+      balanced:
+        - claude-sonnet-4-5
+        - gpt-4o
+        - deepseek-chat
+      budget:
+        - mistral:7b
+        - llama3.2:3b
+
+  # ==========================================================================
+  # SPECIALIST AGENTS
+  # ==========================================================================
+
+  character_coach:
+    name: "Character Coach"
+    description: "Deep dive into character psychology, motivation, and arc"
+    icon: "🎭"
+
+    has_modes: false
+
+    identity_file: "agents/character_coach/identity.md"
+
+    # Limited capabilities - focused on character work
+    capabilities:
+      - query_notebook
+      - save_decision
+
+    # Focus areas for context injection
+    focus_areas:
+      - fatal_flaw
+      - the_lie
+      - character_arc
+      - relationships
+      - backstory
+      - character_voice
+
+    recommended_models:
+      premium:
+        - claude-sonnet-4-5
+        - claude-opus-4-5
+      balanced:
+        - claude-sonnet-4-5
+        - gpt-4o
+      budget:
+        - mistral:7b
+
+  plot_doctor:
+    name: "Plot Doctor"
+    description: "Structure, pacing, beat sheet, and story mechanics"
+    icon: "📊"
+
+    has_modes: false
+
+    identity_file: "agents/plot_doctor/identity.md"
+
+    capabilities:
+      - query_notebook
+      - save_decision
+      - run_health_check
+
+    focus_areas:
+      - beat_sheet
+      - pacing
+      - tension_curves
+      - act_structure
+      - subplots
+      - turning_points
+      - promise_payoff
+
+    recommended_models:
+      premium:
+        - claude-sonnet-4-5
+        - gpt-4o
+      balanced:
+        - gpt-4o
+        - deepseek-chat
+      budget:
+        - mistral:7b
+
+  voice_stylist:
+    name: "Voice Stylist"
+    description: "Prose quality, voice consistency, and style refinement"
+    icon: "✨"
+
+    has_modes: false
+
+    identity_file: "agents/voice_stylist/identity.md"
+
+    # Very limited capabilities - voice analysis only
+    capabilities:
+      - save_decision
+
+    focus_areas:
+      - prose_quality
+      - voice_consistency
+      - anti_patterns
+      - sentence_rhythm
+      - word_choice
+      - pov_discipline
+
+    recommended_models:
+      premium:
+        - claude-sonnet-4-5
+        - claude-opus-4-5
+      balanced:
+        - claude-sonnet-4-5
+      budget:
+        - mistral:7b
+
+  research_assistant:
+    name: "Research Assistant"
+    description: "Query your NotebookLM notebooks for research"
+    icon: "📚"
+
+    has_modes: false
+
+    identity_file: "agents/research_assistant/identity.md"
+
+    # Notebook queries only
+    capabilities:
+      - query_notebook
+
+    focus_areas:
+      - world_building
+      - research_synthesis
+      - fact_checking
+      - source_attribution
+
+    recommended_models:
+      premium:
+        - claude-sonnet-4-5
+        - gpt-4o
+      balanced:
+        - gpt-4o
+        - deepseek-chat
+      budget:
+        - llama3.2:3b
+
+# ==========================================================================
+# SHARED CONFIGURATION
+# ==========================================================================
+
+shared:
+  # Files included for ALL agents
+  common_files:
+    - "shared/project_context.md"
+    - "shared/protocols.md"
+
+  # Guardrail files (loaded based on mode/context)
+  guardrails:
+    voice: "shared/guardrails/voice_antipatterns.md"
+    continuity: "shared/guardrails/continuity_rules.md"
+
+# ==========================================================================
+# MODEL TIERS
+# ==========================================================================
+
+model_tiers:
+  # Full context, high capability models
+  full:
+    models:
+      - claude-sonnet-4-5
+      - claude-opus-4-5
+      - gpt-4o
+      - gpt-4o-mini
+      - gemini-2.0-flash
+      - grok-2
+      - mistral-large
+    include_all_layers: true
+    max_kb_entries: 15
+    max_conversation_turns: 10
+
+  # Medium context models
+  medium:
+    models:
+      - deepseek-chat
+      - qwen-plus
+      - qwen-max
+      - mistral:7b
+    include_all_layers: true
+    summarize_process_map: true
+    max_kb_entries: 8
+    max_conversation_turns: 6
+
+  # Limited context models
+  minimal:
+    models:
+      - llama3.2:3b
+    omit_process_map: true
+    compress_identity: true
+    minimal_protocols: true
+    max_kb_entries: 3
+    max_conversation_turns: 3
