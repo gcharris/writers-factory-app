@@ -421,3 +421,106 @@ export function clearOldWorkOrders(days = 7) {
     )
   );
 }
+
+// --- Verification State (GraphRAG Phase 4) ---
+
+/**
+ * Verification notification structure:
+ * {
+ *   id: string,
+ *   check_name: string,
+ *   severity: 'critical' | 'warning' | 'info',
+ *   message: string,
+ *   suggestion: string | null,
+ *   scene_id: string | null,
+ *   timestamp: string
+ * }
+ */
+
+// Pending verification notifications (not yet dismissed)
+export const verificationNotifications = writable([]);
+
+// Verification loading state
+export const verificationLoading = writable(false);
+
+// Last verification result (full response)
+export const lastVerificationResult = writable(null);
+
+// Auto-verification settings
+export const verificationSettings = persistentWritable('wf_verification_settings', {
+  enabled: true,
+  autoVerifyOnGenerate: true,
+  showNotifications: true,
+  minSeverity: 'warning' // 'info' | 'warning' | 'critical'
+});
+
+/**
+ * Helper: Add a verification notification
+ * @param {object} notification - Notification to add
+ */
+export function addVerificationNotification(notification) {
+  const notif = {
+    ...notification,
+    id: notification.id || `vn_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    timestamp: notification.timestamp || new Date().toISOString()
+  };
+
+  verificationNotifications.update(notifications => {
+    // Avoid duplicates by check_name + scene_id
+    const exists = notifications.some(
+      n => n.check_name === notif.check_name && n.scene_id === notif.scene_id
+    );
+    if (exists) return notifications;
+    return [...notifications, notif];
+  });
+}
+
+/**
+ * Helper: Dismiss a verification notification
+ * @param {string} id - Notification ID to dismiss
+ */
+export function dismissVerificationNotification(id) {
+  verificationNotifications.update(notifications =>
+    notifications.filter(n => n.id !== id)
+  );
+}
+
+/**
+ * Helper: Dismiss all verification notifications
+ */
+export function dismissAllVerificationNotifications() {
+  verificationNotifications.set([]);
+}
+
+/**
+ * Helper: Process verification result and create notifications
+ * @param {object} result - Verification result from API
+ * @param {string} sceneId - Scene ID being verified
+ */
+export function processVerificationResult(result, sceneId = null) {
+  lastVerificationResult.set(result);
+
+  if (!result || !result.issues) return;
+
+  // Get current settings
+  let settings;
+  verificationSettings.subscribe(s => settings = s)();
+
+  if (!settings.showNotifications) return;
+
+  const severityOrder = { 'info': 0, 'warning': 1, 'critical': 2 };
+  const minLevel = severityOrder[settings.minSeverity] || 1;
+
+  for (const issue of result.issues) {
+    const issueLevel = severityOrder[issue.severity] || 0;
+    if (issueLevel >= minLevel) {
+      addVerificationNotification({
+        check_name: issue.check_name || issue.check || 'unknown_check',
+        severity: issue.severity,
+        message: issue.message,
+        suggestion: issue.suggestion || null,
+        scene_id: sceneId
+      });
+    }
+  }
+}

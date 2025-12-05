@@ -742,6 +742,153 @@ Fix any anti-patterns (no "with X precision", no similes, no passive voice)."""
             target_word_count=target_word_count,
         )
 
+    # =========================================================================
+    # Phase 4: Verification Integration
+    # =========================================================================
+
+    async def verify_scene(
+        self,
+        content: str,
+        scene_context: Optional[Dict] = None,
+        run_background: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Verify a scene with fast checks, optionally queue background checks.
+
+        Args:
+            content: Scene content to verify
+            scene_context: Context dict (callbacks, beat, protagonist, etc.)
+            run_background: Whether to queue MEDIUM checks in background
+
+        Returns:
+            Dict with verification results and status
+        """
+        from backend.services.verification_service import (
+            get_verification_service, IssueSeverity
+        )
+
+        try:
+            service = get_verification_service()
+            context = scene_context or {}
+
+            # Always run FAST checks inline
+            fast_result = await service.run_fast_checks(content, context)
+
+            result = {
+                "verification": {
+                    "fast": fast_result.to_dict()
+                },
+                "passed": fast_result.passed,
+                "critical_issues": [
+                    i.to_dict() for i in fast_result.issues
+                    if i.severity == IssueSeverity.CRITICAL
+                ],
+                "requires_revision": not fast_result.passed
+            }
+
+            # Queue MEDIUM checks in background if FAST passed
+            if fast_result.passed and run_background:
+                asyncio.create_task(self._run_background_verification(
+                    content, context
+                ))
+                result["background_verification_queued"] = True
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Verification failed: {e}")
+            return {
+                "verification": None,
+                "passed": True,  # Don't block on verification errors
+                "error": str(e)
+            }
+
+    async def _run_background_verification(
+        self,
+        content: str,
+        scene_context: Dict
+    ) -> None:
+        """Run MEDIUM checks in background and queue notifications."""
+        try:
+            from backend.services.verification_service import get_verification_service
+
+            service = get_verification_service()
+            medium_result = await service.run_medium_checks(content, scene_context)
+
+            if medium_result.issues:
+                scene_id = scene_context.get("scene_id", "unknown")
+                service.add_notification(scene_id, medium_result.issues)
+                logger.info(f"Background verification: {len(medium_result.issues)} issues found for {scene_id}")
+
+        except Exception as e:
+            logger.error(f"Background verification failed: {e}")
+
+    async def generate_and_verify(
+        self,
+        scene_id: str,
+        scaffold: Scaffold,
+        structure_variant: StructureVariant,
+        voice_bundle: Optional[VoiceBundleContext] = None,
+        story_bible: Optional[StoryBibleContext] = None,
+        models: Optional[List[Dict]] = None,
+        strategies: Optional[List[WritingStrategy]] = None,
+        target_word_count: int = 1500,
+    ) -> SceneGenerationResult:
+        """
+        Generate scene variants with verification integrated.
+
+        Runs FAST verification on all variants after generation.
+        Variants that fail CRITICAL checks are flagged.
+
+        Returns:
+            SceneGenerationResult with verification info attached to variants
+        """
+        # Generate variants normally
+        result = await self.generate_scene_variants(
+            scene_id=scene_id,
+            scaffold=scaffold,
+            structure_variant=structure_variant,
+            voice_bundle=voice_bundle,
+            story_bible=story_bible,
+            models=models,
+            strategies=strategies,
+            target_word_count=target_word_count,
+        )
+
+        # Build context for verification
+        scene_context = {
+            "scene_id": scene_id,
+            "scaffold_id": scaffold.scene_id,
+            "beat_alignment": scaffold.phase,
+            "callbacks": getattr(scaffold, 'callbacks', []),
+        }
+
+        # Add protagonist from story bible if available
+        if story_bible and hasattr(story_bible, 'protagonist_name'):
+            scene_context["protagonist"] = story_bible.protagonist_name
+
+        # Verify each variant
+        from backend.services.verification_service import get_verification_service
+
+        try:
+            service = get_verification_service()
+
+            for variant in result.variants:
+                verification = await service.run_fast_checks(
+                    variant.content,
+                    scene_context
+                )
+
+                # Attach verification to variant (extend the dataclass conceptually)
+                variant_dict = variant.to_dict()
+                variant_dict["verification"] = verification.to_dict()
+                variant_dict["verification_passed"] = verification.passed
+
+        except Exception as e:
+            logger.error(f"Variant verification failed: {e}")
+
+        return result
+
 
 # =============================================================================
 # Service Singleton

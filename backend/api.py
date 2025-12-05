@@ -644,6 +644,127 @@ async def extract_from_file(filepath: str, current_beat: str = "Unknown"):
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
 
+# =============================================================================
+# GRAPH RAG PHASE 4: TIERED VERIFICATION
+# =============================================================================
+
+class VerificationRequest(BaseModel):
+    """Request model for verification checks."""
+    content: str
+    scene_context: Optional[Dict[str, Any]] = None
+    tier: str = "fast"
+
+
+@app.post("/verification/run", summary="Run verification checks on content")
+async def run_verification(request: VerificationRequest):
+    """
+    Run verification checks on content.
+
+    Tiers:
+    - "fast" (<500ms): Character status, contradictions, callbacks
+    - "medium" (2-5s): Flaw challenges, beat alignment, timeline
+    - "slow" (5-30s): Full LLM analysis (if available)
+
+    Returns:
+        Verification result with tier, passed status, issues, and duration.
+    """
+    from backend.services.verification_service import (
+        get_verification_service, VerificationTier
+    )
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            service = get_verification_service(graph_service)
+            context = request.scene_context or {}
+
+            if request.tier == "fast":
+                result = await service.run_fast_checks(request.content, context)
+            elif request.tier == "medium":
+                result = await service.run_medium_checks(request.content, context)
+            elif request.tier == "slow":
+                result = await service.run_slow_checks(request.content, context)
+            else:
+                raise HTTPException(status_code=400, detail=f"Unknown tier: {request.tier}")
+
+            return result.to_dict()
+        finally:
+            db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Verification failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+
+@app.get("/verification/notifications", summary="Get pending verification notifications")
+async def get_verification_notifications():
+    """
+    Get pending verification notifications from background checks.
+
+    Returns notifications queued by MEDIUM tier background checks.
+    Notifications are cleared after retrieval.
+    """
+    from backend.services.verification_service import get_verification_service
+
+    try:
+        service = get_verification_service()
+        notifications = service.get_pending_notifications()
+        return {"notifications": notifications, "count": len(notifications)}
+    except Exception as e:
+        logger.error(f"Failed to get notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/verification/run-all", summary="Run all verification tiers")
+async def run_all_verification(request: VerificationRequest):
+    """
+    Run all verification tiers sequentially.
+
+    Useful for comprehensive validation before publishing.
+    Returns combined results from FAST, MEDIUM, and SLOW checks.
+    """
+    from backend.services.verification_service import get_verification_service
+
+    try:
+        db = SessionLocal()
+        try:
+            graph_service = KnowledgeGraphService(db)
+            service = get_verification_service(graph_service)
+            context = request.scene_context or {}
+
+            fast_result = await service.run_fast_checks(request.content, context)
+            medium_result = await service.run_medium_checks(request.content, context)
+            slow_result = await service.run_slow_checks(request.content, context)
+
+            all_issues = (
+                fast_result.issues +
+                medium_result.issues +
+                slow_result.issues
+            )
+
+            return {
+                "passed": all(r.passed for r in [fast_result, medium_result, slow_result]),
+                "total_issues": len(all_issues),
+                "by_tier": {
+                    "fast": fast_result.to_dict(),
+                    "medium": medium_result.to_dict(),
+                    "slow": slow_result.to_dict()
+                },
+                "total_duration_ms": (
+                    fast_result.duration_ms +
+                    medium_result.duration_ms +
+                    slow_result.duration_ms
+                )
+            }
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Full verification failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+
 @app.get("/graph/nodes/{node_id}", summary="Get single node details")
 async def get_graph_node(node_id: str):
     """

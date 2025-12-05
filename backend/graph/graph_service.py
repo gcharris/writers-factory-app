@@ -121,6 +121,18 @@ class KnowledgeGraphService:
         """
         return self.session.query(Node).filter(Node.node_type == node_type).all()
 
+    def get_edges_by_type(self, relation_type: str) -> List[Edge]:
+        """
+        Retrieve all edges of a specific relation type.
+
+        Args:
+            relation_type: The type of relation (e.g., 'CONTRADICTS', 'CHALLENGES')
+
+        Returns:
+            List of Edge objects of the specified type.
+        """
+        return self.session.query(Edge).filter(Edge.relation_type == relation_type).all()
+
     def update_node(self, node_id: int, updates: dict) -> Optional[Node]:
         """
         Updates a node's attributes in the database and in-memory graph.
