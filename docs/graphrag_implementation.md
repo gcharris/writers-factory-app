@@ -10,13 +10,13 @@
 
 GraphRAG was implemented in five phases, each building on the previous:
 
-| Phase | Name | Focus | Branch |
-|-------|------|-------|--------|
-| **Phase 1** | Foundation | Schema, NetworkX, ego graphs | `infallible-vaughan` |
-| **Phase 2** | Semantic Search | Embeddings, similarity | `nifty-antonelli` |
-| **Phase 3** | Narrative Extraction | Story-physics edges, LLM extraction | `nifty-antonelli` |
-| **Phase 4** | Tiered Verification | Fast/Medium/Slow checks | `nifty-antonelli` |
-| **Phase 5** | Analysis & Enhancement | Community detection, tension | `nifty-antonelli` |
+| Phase | Name | Focus |
+|-------|------|-------|
+| **Phase 1** | Foundation | Schema, NetworkX, ego graphs |
+| **Phase 2** | Semantic Search | Embeddings, similarity |
+| **Phase 3** | Narrative Extraction | Story-physics edges, LLM extraction |
+| **Phase 4** | Tiered Verification | Fast/Medium/Slow checks |
+| **Phase 5** | Analysis & Enhancement | Community detection, tension |
 
 ---
 
@@ -487,18 +487,6 @@ frontend/
 
 ---
 
-## Commit History
-
-| Commit | Phase | Description |
-|--------|-------|-------------|
-| `7a598a6` | Phase 2 | Semantic Search & Embeddings |
-| `ecb0601` | Phase 3 | Narrative Extraction |
-| `05b23fa` | Phase 4 | Tiered Verification |
-| `bad6586` | Phase 5 | Analysis & Enhancement |
-| `cf95b40` | Docs | GraphRAG documentation |
-
----
-
 ## Testing
 
 All Python files pass syntax verification:
@@ -566,5 +554,3 @@ curl -X POST http://localhost:8000/verification/run-all \
 ---
 
 *Implementation: December 2025*
-*Branch: nifty-antonelli*
-*Authors: Claude Code (Opus 4.5) + Human collaboration*
