@@ -1,19 +1,24 @@
 <!--
   AgentDropdown.svelte - Select AI agent to route message to
 
-  Shows Squad-configured agents with a link to configure more.
-  Selection persists for session only.
+  Shows agents from the Agent Instruction System (agents.yaml).
+  Selection persists across sessions.
 -->
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
-  import { assistantName } from '$lib/stores';
+  import { selectedAgent as selectedAgentStore, availableAgents as availableAgentsStore } from '$lib/stores';
+  import { apiClient } from '$lib/api_client';
 
   const dispatch = createEventDispatcher();
 
-  export let selectedAgent = 'default';
+  // Bind to stores
+  let localSelectedAgent;
+  selectedAgentStore.subscribe(v => localSelectedAgent = v);
+
+  let localAvailableAgents = [];
+  availableAgentsStore.subscribe(v => localAvailableAgents = v);
 
   let isOpen = false;
-  let availableAgents = [];
   let isLoading = true;
 
   // Close on click outside
@@ -34,55 +39,42 @@
   async function loadAgents() {
     isLoading = true;
     try {
-      // Load from Squad configuration
-      const response = await fetch('http://localhost:8000/settings/category/squad');
-      if (response.ok) {
-        const data = await response.json();
-        // Extract agents from squad config
-        const agentIds = [
-          data.architect_agent,
-          data.voice_agent,
-          data.scene_writer_agent,
-          data.enhancement_agent,
-          data.analysis_agent
-        ].filter(Boolean);
+      // Load from Agent Instruction System API
+      const agents = await apiClient.getAvailableAgents();
 
-        // Get unique agents and fetch their details
-        const uniqueIds = [...new Set(agentIds)];
+      // Format for dropdown display
+      localAvailableAgents = agents.map(a => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        icon: a.icon,
+        has_modes: a.has_modes,
+        capabilities: a.capabilities
+      }));
 
-        // Also get all available agents for names
-        const agentsResponse = await fetch('http://localhost:8000/agents');
-        if (agentsResponse.ok) {
-          const allAgents = await agentsResponse.json();
-          availableAgents = uniqueIds.map(id => {
-            const agent = allAgents.find(a => a.id === id);
-            return {
-              id,
-              name: agent?.name || id,
-              description: agent?.description || ''
-            };
-          });
-        }
-      }
+      // Update store
+      availableAgentsStore.set(localAvailableAgents);
     } catch (e) {
       console.warn('Failed to load agents:', e);
+      // Fallback to default foreman
+      localAvailableAgents = [{
+        id: 'foreman',
+        name: 'The Foreman',
+        description: 'Your structural editor and creative partner',
+        icon: '🏗️',
+        has_modes: true,
+        capabilities: []
+      }];
+      availableAgentsStore.set(localAvailableAgents);
     } finally {
       isLoading = false;
-    }
-
-    // Always include default as first option
-    if (!availableAgents.find(a => a.id === 'default')) {
-      availableAgents = [
-        { id: 'default', name: $assistantName, description: 'Your writing assistant' },
-        ...availableAgents
-      ];
     }
   }
 
   function selectAgent(agent) {
-    selectedAgent = agent.id;
+    selectedAgentStore.set(agent.id);
     isOpen = false;
-    dispatch('change', { agent: agent.id, name: agent.name });
+    dispatch('change', { agent: agent.id, name: agent.name, icon: agent.icon });
   }
 
   function openSettings() {
@@ -94,16 +86,16 @@
     isOpen = !isOpen;
   }
 
-  $: currentAgent = availableAgents.find(a => a.id === selectedAgent) || { name: $assistantName };
+  $: currentAgent = localAvailableAgents.find(a => a.id === localSelectedAgent) || {
+    name: 'The Foreman',
+    icon: '🏗️'
+  };
 </script>
 
 <div class="agent-dropdown" bind:this={dropdownRef}>
   <button class="dropdown-trigger" on:click={toggle} title="Select agent">
     <span class="trigger-icon">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path>
-      </svg>
+      {currentAgent.icon || '🤖'}
     </span>
     <span class="trigger-text">{currentAgent.name}</span>
     <span class="trigger-arrow" class:open={isOpen}>
@@ -118,41 +110,29 @@
       {#if isLoading}
         <div class="dropdown-loading">Loading agents...</div>
       {:else}
-        {#each availableAgents as agent}
+        {#each localAvailableAgents as agent}
           <button
             class="dropdown-item"
-            class:selected={selectedAgent === agent.id}
+            class:selected={localSelectedAgent === agent.id}
             on:click={() => selectAgent(agent)}
           >
-            <span class="item-indicator">
-              {#if selectedAgent === agent.id}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="6"></circle>
-                </svg>
-              {:else}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="6"></circle>
-                </svg>
-              {/if}
-            </span>
+            <span class="item-icon">{agent.icon || '🤖'}</span>
             <span class="item-content">
               <span class="item-name">{agent.name}</span>
               {#if agent.description}
                 <span class="item-desc">{agent.description}</span>
               {/if}
             </span>
+            {#if localSelectedAgent === agent.id}
+              <span class="item-check">✓</span>
+            {/if}
           </button>
         {/each}
 
         <div class="dropdown-divider"></div>
 
         <button class="dropdown-item configure" on:click={openSettings}>
-          <span class="item-indicator">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </span>
+          <span class="item-icon">⚙️</span>
           <span class="item-content">
             <span class="item-name configure-text">Configure agents...</span>
           </span>
@@ -190,11 +170,11 @@
   .trigger-icon {
     display: flex;
     align-items: center;
-    color: var(--accent-cyan, #58a6ff);
+    font-size: 14px;
   }
 
   .trigger-text {
-    max-width: 100px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -214,8 +194,8 @@
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    min-width: 200px;
-    max-width: 280px;
+    min-width: 240px;
+    max-width: 320px;
     background: var(--bg-secondary, #1a2027);
     border: 1px solid var(--border, #2d3a47);
     border-radius: var(--radius-md, 6px);
@@ -250,21 +230,14 @@
   }
 
   .dropdown-item.selected {
+    background: var(--bg-tertiary, #252d38);
     color: var(--accent-cyan, #58a6ff);
   }
 
-  .item-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
+  .item-icon {
+    font-size: 16px;
     flex-shrink: 0;
     margin-top: 1px;
-  }
-
-  .dropdown-item.selected .item-indicator {
-    color: var(--accent-cyan, #58a6ff);
   }
 
   .item-content {
@@ -272,6 +245,7 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    flex: 1;
   }
 
   .item-name {
@@ -284,6 +258,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .item-check {
+    color: var(--accent-cyan, #58a6ff);
+    font-size: 12px;
+    margin-left: auto;
   }
 
   .dropdown-divider {

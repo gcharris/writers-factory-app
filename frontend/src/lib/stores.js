@@ -231,6 +231,15 @@ export const defaultChatModel = persistentWritable('wf_default_chat_model', 'dee
 // Currently selected model for next message (session only, not persisted)
 export const selectedChatModel = writable(null); // null means use defaultChatModel
 
+// --- Agent Selection ---
+
+// Currently selected agent (persisted across sessions)
+// Options: "foreman", "character_coach", "plot_doctor", "voice_stylist", "research_assistant"
+export const selectedAgent = persistentWritable('wf_selected_agent', 'foreman');
+
+// Available agents (loaded from /agents/available)
+export const availableAgents = writable([]);
+
 // Writing stage (auto-detected, manually overridable)
 export const currentStage = persistentWritable('wf_current_stage', 'conception');
 

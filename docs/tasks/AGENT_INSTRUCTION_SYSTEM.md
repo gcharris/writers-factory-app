@@ -2,7 +2,7 @@
 
 > Task specification for implementing the Universal Agent Instruction Architecture with support for agent-switchable chat.
 
-**Status**: Phase 1-5 COMPLETE, Phase 6-8 Ready
+**Status**: Phase 1-6 COMPLETE, Phase 7-8 Ready
 **Priority**: High
 **Depends On**: Mode Transition UI (DONE)
 **Source Document**: `docs/UNIVERSAL_AGENT_INSTRUCTION_ARCHITECTURE.md`
@@ -383,7 +383,7 @@ Key changes to `foreman.py`:
 
 ---
 
-## Phase 6: Frontend - Agent Selector
+## Phase 6: Frontend - Agent Selector ✅
 
 **Goal**: Allow writers to select different agents in the chat interface.
 
@@ -411,21 +411,29 @@ Key changes to `foreman.py`:
 
 ### Tasks
 
-- [ ] **6.1** Add `selectedAgent` store to `stores.js`
-- [ ] **6.2** Create `AgentSelector.svelte` component
-- [ ] **6.3** Integrate selector into `ChatSidebar.svelte` or `ForemanPanel`
-- [ ] **6.4** Update chat submission to include `agent_id`
-- [ ] **6.5** Show current agent in StatusBar (alongside mode)
-- [ ] **6.6** Persist agent selection in session
-- [ ] **6.7** Style agent selector with agent icons and descriptions
-- [ ] **6.8** Add keyboard shortcut for agent switching (Cmd+1-5)
+- [x] **6.1** Add `selectedAgent` store to `stores.js`
+- [x] **6.2** Update `AgentDropdown.svelte` to use `/agents/available` API
+- [x] **6.3** Integrate selector into `ForemanChatPanel.svelte`
+- [x] **6.4** Update chat submission to include `agent_id`
+- [x] **6.5** Show current agent in chat messages (name + icon)
+- [x] **6.6** Persist agent selection across sessions (localStorage)
+- [x] **6.7** Style agent selector with agent icons and descriptions
+- [ ] **6.8** Add keyboard shortcut for agent switching (Cmd+1-5) - SKIPPED
+
+### Implementation Notes
+
+Files modified:
+- `frontend/src/lib/stores.js` - Added `selectedAgent` and `availableAgents` stores
+- `frontend/src/lib/api_client.ts` - Added `getAvailableAgents()`, `getAgentInfo()`, updated `foremanChat()` with `agent` param
+- `frontend/src/lib/components/chat/AgentDropdown.svelte` - Complete rewrite to use agent API
+- `frontend/src/lib/components/ForemanChatPanel.svelte` - Integrated AgentDropdown, shows agent in messages
 
 ### Validation
 
-- [ ] Agent selector shows all available agents
-- [ ] Selecting agent changes chat behavior
-- [ ] Current agent visible in UI
-- [ ] Agent selection persists across page refresh
+- [x] Agent selector shows all available agents (from `/agents/available`)
+- [x] Selecting agent changes chat behavior (passed to `/foreman/chat`)
+- [x] Current agent visible in UI (dropdown, messages, loading indicator)
+- [x] Agent selection persists across page refresh (localStorage)
 
 ---
 
