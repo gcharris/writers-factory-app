@@ -2,7 +2,7 @@
 
 > Task specification for implementing the Universal Agent Instruction Architecture with support for agent-switchable chat.
 
-**Status**: Phase 1-2 COMPLETE, Phase 3 (Session State) integrated into Phase 2
+**Status**: Phase 1-4 COMPLETE, Phase 5 (Foreman Integration) Ready
 **Priority**: High
 **Depends On**: Mode Transition UI (DONE)
 **Source Document**: `docs/UNIVERSAL_AGENT_INSTRUCTION_ARCHITECTURE.md`
@@ -324,23 +324,24 @@ agents:
 
 ### Tasks
 
-- [ ] **4.1** Create `prompts/agents.yaml` with full schema
-- [ ] **4.2** Update `backend/agents/registry.py` to load agents.yaml
-- [ ] **4.3** Create `AgentConfig` dataclass for runtime agent info
-- [ ] **4.4** Create agent identity files:
-  - [ ] `prompts/agents/character_coach/identity.md`
-  - [ ] `prompts/agents/plot_doctor/identity.md`
-  - [ ] `prompts/agents/voice_stylist/identity.md`
-  - [ ] `prompts/agents/research_assistant/identity.md`
-- [ ] **4.5** Add `/agents/available` endpoint to list selectable agents
-- [ ] **4.6** Add `/agents/{agent_id}/info` endpoint for agent details
+- [x] **4.1** Create `prompts/agents.yaml` with full schema (done in Phase 1)
+- [x] **4.2** PromptAssembler loads agents.yaml (built into Phase 2)
+- [x] **4.3** Create `AgentConfig` dataclass for runtime agent info
+- [x] **4.4** Create agent identity files (done in Phase 1):
+  - [x] `prompts/agents/character_coach/identity.md`
+  - [x] `prompts/agents/plot_doctor/identity.md`
+  - [x] `prompts/agents/voice_stylist/identity.md`
+  - [x] `prompts/agents/research_assistant/identity.md`
+- [x] **4.5** Add `/agents/available` endpoint to list selectable agents
+- [x] **4.6** Add `/agents/{agent_id}/info` endpoint for agent details
+- [x] **4.7** Update `/foreman/chat` to accept `agent` parameter and return `agent_id`
 
 ### Validation
 
-- [ ] All agents load from YAML
-- [ ] Agent capabilities map to existing services
-- [ ] Identity files exist for all agents
-- [ ] API endpoints return correct agent info
+- [x] All agents load from YAML
+- [x] Agent capabilities defined in agents.yaml
+- [x] Identity files exist for all agents
+- [x] API endpoints return correct agent info
 
 ---
 
