@@ -29,6 +29,7 @@
   import SessionManagerModal from '$lib/components/SessionManagerModal.svelte';
   import OnboardingWizard from '$lib/components/Onboarding/OnboardingWizard.svelte';
   import { activeModal, hasCompletedOnboarding } from '$lib/stores';
+  import VerificationNotification from '$lib/components/VerificationNotification.svelte';
 
   // Modal open state derived from store
   $: settingsOpen = $activeModal === 'settings';
@@ -124,6 +125,9 @@
     </div>
   </div>
 {/if}
+
+<!-- Verification Notifications (GraphRAG Phase 4) -->
+<VerificationNotification />
 
 <style>
   /* Page styles are handled by MainLayout and child components */
