@@ -24,3 +24,6 @@ chrome_profile/
 
 # Private embedded keys (contains actual API keys for distribution)
 backend/config/embedded_keys_private.py
+
+# User workspace (runtime data)
+workspace/
