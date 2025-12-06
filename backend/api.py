@@ -1670,6 +1670,92 @@ async def get_research_categories():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Promotion Workflow (Phase 4 - Distillation Pipeline) ---
+
+class PromotionRequest(BaseModel):
+    """Request to promote research to Story Bible."""
+    source: str  # Path to research file
+    confirm_warnings: bool = False  # Acknowledge warnings and proceed
+
+
+@app.get("/promotion/check", summary="Check if file can be promoted")
+async def check_promotion_status(path: str):
+    """
+    Check if a research file can be promoted to Story Bible.
+
+    Checks:
+    1. Stage 2 content (not raw Stage 1)
+    2. No unresolved BREAKING conflicts
+    3. Contains required fields for category
+
+    Returns:
+        can_promote: Whether promotion can proceed
+        blockers: Issues that must be resolved
+        warnings: Issues that should be reviewed
+        target: Story Bible file that will be updated
+    """
+    from backend.services.promotion_service import get_promotion_service
+
+    try:
+        service = get_promotion_service()
+        status = await service.check_promotable(path)
+        return status.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/promotion/preview", summary="Preview what promotion will do")
+async def preview_promotion(path: str):
+    """
+    Preview the promotion without executing it.
+
+    Shows what fields will be extracted and where they will go.
+
+    Returns:
+        category: Detected category
+        target: Story Bible file
+        extracted_fields: Fields that will be promoted
+        merge_strategy: How data will be merged
+    """
+    from backend.services.promotion_service import get_promotion_service
+
+    try:
+        service = get_promotion_service()
+        preview = await service.preview_promotion(path)
+        return preview
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/promotion/execute", summary="Execute promotion to Story Bible")
+async def execute_promotion(req: PromotionRequest):
+    """
+    Promote research to Story Bible with intelligent transformation.
+
+    Each category extracts specific fields:
+    - characters → Fatal Flaw, The Lie, Arc → Protagonist.md
+    - world → Hard Rules → Rules.md
+    - theme → Central Question, Thesis → Theme.md
+    - plot → 15 Beats → Beat_Sheet.md
+    - voice → Triggers Voice Calibration (special case)
+
+    Returns:
+        success: Whether promotion succeeded
+        target: Story Bible file updated
+        fields_updated: List of fields that were promoted
+    """
+    from backend.services.promotion_service import get_promotion_service
+
+    try:
+        service = get_promotion_service()
+        result = await service.promote(req.source, req.confirm_warnings)
+        return result.to_dict()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- Original Endpoints ---
 
 @app.post("/project/init", summary="Initialize a new student project")
