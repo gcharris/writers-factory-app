@@ -1493,6 +1493,112 @@ async def get_context(req: ContextRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# --- Workspace / Research File System (Phase 1 - Distillation Pipeline) ---
+
+class SaveResearchRequest(BaseModel):
+    """Request to save NotebookLM extraction as a research file."""
+    content: str
+    category: str  # Must be one of: characters, world, theme, plot, voice
+    key: str
+    notebook_id: Optional[str] = None
+    notebook_name: Optional[str] = None
+
+
+@app.post("/workspace/research/save", summary="Save extraction to research file")
+async def save_research_note(req: SaveResearchRequest):
+    """
+    Save a NotebookLM extraction as an editable markdown file.
+
+    The file is saved to workspace/research/{category}/{key}.md with YAML frontmatter.
+    Category MUST be one of the 5 Core categories: characters, world, theme, plot, voice.
+
+    Returns:
+        file_path: Relative path to saved file
+        success: Boolean indicating success
+    """
+    from backend.services.workspace_service import get_workspace_service
+
+    try:
+        workspace = get_workspace_service()
+        result = workspace.save_research_note(
+            category=req.category,
+            key=req.key,
+            content=req.content,
+            metadata={
+                "notebook_id": req.notebook_id,
+                "notebook_name": req.notebook_name,
+            }
+        )
+        return result
+    except ValueError as e:
+        # Category validation error
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workspace/research", summary="List all research files by category")
+async def list_research_files():
+    """
+    List all research files organized by the 5 Core categories.
+
+    Returns:
+        Dict mapping category names to lists of filenames
+    """
+    from backend.services.workspace_service import get_workspace_service
+
+    try:
+        workspace = get_workspace_service()
+        return workspace.list_research_files()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workspace/research/{category}/{filename}", summary="Read a research file")
+async def read_research_file(category: str, filename: str):
+    """
+    Read a research file's content and metadata.
+
+    Args:
+        category: One of the 5 Core categories
+        filename: The filename (with or without .md extension)
+
+    Returns:
+        content: The file body (without frontmatter)
+        metadata: Parsed YAML frontmatter
+        file_path: Relative path
+    """
+    from backend.services.workspace_service import get_workspace_service
+
+    try:
+        workspace = get_workspace_service()
+        return workspace.read_research_file(category, filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workspace/research/categories", summary="Get available research categories")
+async def get_research_categories():
+    """
+    Get the 5 Core research categories with descriptions and icons.
+
+    Returns:
+        List of category objects with id, name, and icon
+    """
+    from backend.services.workspace_service import get_workspace_service
+
+    try:
+        workspace = get_workspace_service()
+        return {"categories": workspace.get_categories()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- Original Endpoints ---
 
 @app.post("/project/init", summary="Initialize a new student project")
