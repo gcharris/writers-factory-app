@@ -304,6 +304,23 @@ class ForemanKBService:
         logger.info(f"Deleted {count} KB entries for project: {project_id}")
         return count
 
+    def delete_entry(self, entry_id: int) -> bool:
+        """
+        Delete a single KB entry by ID.
+
+        Returns:
+            True if deleted, False if not found
+        """
+        entry = self.db.query(ForemanKBEntry).filter(
+            ForemanKBEntry.id == entry_id
+        ).first()
+        if entry:
+            self.db.delete(entry)
+            self.db.commit()
+            logger.info(f"Deleted KB entry: {entry_id} ({entry.key})")
+            return True
+        return False
+
     def get_stats(self, project_id: str) -> Dict[str, Any]:
         """Get statistics about the KB for a project."""
         total = self.db.query(ForemanKBEntry).filter(

@@ -261,17 +261,19 @@ Match existing onboarding style (dark theme, cyan accent). Reference `Step2Cloud
 
 ## Acceptance Criteria
 
-- [ ] New Step1WorkspaceLocation.svelte component created
-- [ ] OnboardingWizard.svelte updated to 4 steps
-- [ ] Progress bar shows all 4 steps with correct labels
-- [ ] Tauri folder picker dialog works
-- [ ] Selected path displayed in UI
-- [ ] "Use Default" button sets `~/Documents/Writers Factory/`
-- [ ] Next button disabled until folder selected
-- [ ] workspacePath store persists selection to localStorage
-- [ ] Backend /workspace/init endpoint creates folder structure
-- [ ] Existing Step1/2/3 components still work (no regressions)
-- [ ] `npm run check` passes with no TypeScript errors
+- [x] New Step1WorkspaceLocation.svelte component created
+- [x] OnboardingWizard.svelte updated to 4 steps
+- [x] Progress bar shows all 4 steps with correct labels
+- [x] Tauri folder picker dialog works
+- [x] Selected path displayed in UI
+- [x] "Use Default" button sets `~/Documents/Writers Factory/`
+- [x] Next button disabled until folder selected
+- [x] workspacePath store persists selection to localStorage
+- [x] Backend /workspace/init endpoint creates folder structure
+- [x] Existing Step1/2/3 components still work (no regressions)
+- [x] `npm run check` passes with no TypeScript errors
+
+**STATUS: COMPLETE** (Implemented December 2024)
 
 ---
 

@@ -1464,6 +1464,75 @@ async def list_notebooks():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+class NotebookConfigRequest(BaseModel):
+    notebook_id: str
+    label: str = ""
+    description: str = ""
+    category: str = "world"  # world, voice, craft, character
+
+
+@app.post("/notebooklm/notebooks", summary="Add a notebook to config")
+async def add_notebook_to_config(req: NotebookConfigRequest):
+    """Add a NotebookLM notebook to the config file (no project required)."""
+    try:
+        data = {"notebooks": []}
+        if os.path.exists(NOTEBOOK_CONFIG_PATH):
+            with open(NOTEBOOK_CONFIG_PATH, "r") as f:
+                data = json.load(f)
+
+        # Check for duplicate
+        existing_ids = [nb["id"] for nb in data.get("notebooks", [])]
+        if req.notebook_id in existing_ids:
+            raise HTTPException(status_code=400, detail="Notebook already registered")
+
+        # Add new notebook
+        new_notebook = {
+            "id": req.notebook_id,
+            "label": req.label or f"Notebook {req.notebook_id[:8]}",
+            "description": req.description,
+            "category": req.category
+        }
+        data["notebooks"].append(new_notebook)
+
+        with open(NOTEBOOK_CONFIG_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+
+        return {"success": True, "notebook": new_notebook}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/notebooklm/notebooks/{notebook_id}", summary="Remove a notebook from config")
+async def remove_notebook_from_config(notebook_id: str):
+    """Remove a NotebookLM notebook from the config file."""
+    try:
+        if not os.path.exists(NOTEBOOK_CONFIG_PATH):
+            raise HTTPException(status_code=404, detail="No notebooks configured")
+
+        with open(NOTEBOOK_CONFIG_PATH, "r") as f:
+            data = json.load(f)
+
+        notebooks = data.get("notebooks", [])
+        original_count = len(notebooks)
+        notebooks = [nb for nb in notebooks if nb["id"] != notebook_id]
+
+        if len(notebooks) == original_count:
+            raise HTTPException(status_code=404, detail="Notebook not found")
+
+        data["notebooks"] = notebooks
+        with open(NOTEBOOK_CONFIG_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+
+        return {"success": True, "message": f"Removed notebook {notebook_id}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/notebooklm/query")
 async def query_notebook(req: NotebookQueryRequest):
     try:
@@ -1494,264 +1563,98 @@ async def get_context(req: ContextRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- Workspace / Research File System (Phase 1 - Distillation Pipeline) ---
-
-class SaveResearchRequest(BaseModel):
-    """Request to save NotebookLM extraction as a research file."""
-    content: str
-    category: str  # Must be one of: characters, world, theme, plot, voice
-    key: str
-    notebook_id: Optional[str] = None
-    notebook_name: Optional[str] = None
-    skip_conflict_check: bool = False  # Skip conflict detection
-    force_save: bool = False  # Save even with conflicts
+class NotebookExtractSaveRequest(BaseModel):
+    """Request to save a NotebookLM extraction to the KB."""
+    category: str  # character, world, structure
+    key: str  # Unique identifier (e.g., character name, location name)
+    content: str  # The extracted content to save
+    source_notebook: Optional[str] = None  # Which notebook this came from
 
 
-class ConflictCheckRequest(BaseModel):
-    """Request to check content for conflicts."""
-    content: str
-    category: str
-
-
-@app.post("/workspace/research/check-conflicts", summary="Check content for conflicts")
-async def check_research_conflicts(req: ConflictCheckRequest):
+@app.post("/notebooklm/save-to-kb", summary="Save NotebookLM extraction to KB")
+async def save_notebooklm_extraction_to_kb(req: NotebookExtractSaveRequest):
     """
-    Check content for conflicts before saving (Phase 2).
-
-    Performs:
-    1. Stage Check - Is this raw (Stage 1) or distilled (Stage 2) content?
-    2. Hard Rules Check - Any violations of World Hard Rules?
-    3. Category Fact Check - Contradictions with existing research?
-
-    Returns:
-        stage_warning: Whether content appears to be raw Stage 1 data
-        conflicts: List of detected conflicts with severity
-        action_required: What the user should do
+    Save extracted research from NotebookLM to the Foreman Knowledge Base.
+    This allows character profiles, world details, etc. to be used by Story Bible.
     """
-    from backend.services.conflict_detection_service import get_conflict_detection_service
-
     try:
-        service = get_conflict_detection_service()
-        result = await service.detect_conflicts(req.content, req.category)
-        return result.to_dict()
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from backend.services.foreman_kb_service import get_foreman_kb_service
 
+        kb = get_foreman_kb_service()
 
-@app.post("/workspace/research/save", summary="Save extraction to research file")
-async def save_research_note(req: SaveResearchRequest):
-    """
-    Save a NotebookLM extraction as an editable markdown file.
+        # Use a default project ID for now (can be made dynamic later)
+        project_id = "default"
 
-    The file is saved to workspace/research/{category}/{key}.md with YAML frontmatter.
-    Category MUST be one of the 5 Core categories: characters, world, theme, plot, voice.
-
-    Optionally performs conflict detection unless skip_conflict_check=True.
-    If conflicts are found and force_save=False, returns conflicts instead of saving.
-
-    Returns:
-        file_path: Relative path to saved file
-        success: Boolean indicating success
-        conflicts: Any detected conflicts (if not force_save)
-    """
-    from backend.services.workspace_service import get_workspace_service
-    from backend.services.conflict_detection_service import get_conflict_detection_service
-
-    try:
-        # Run conflict detection unless skipped
-        conflicts_result = None
-        if not req.skip_conflict_check:
-            conflict_service = get_conflict_detection_service()
-            conflicts_result = await conflict_service.detect_conflicts(req.content, req.category)
-
-            # If conflicts exist and not forcing save, return them for user review
-            if conflicts_result.has_conflicts and not req.force_save:
-                return {
-                    "success": False,
-                    "conflicts_detected": True,
-                    **conflicts_result.to_dict()
-                }
-
-            # If Stage 1 warning and not forcing save, return warning
-            if conflicts_result.stage_warning and not req.force_save:
-                return {
-                    "success": False,
-                    "conflicts_detected": False,
-                    **conflicts_result.to_dict()
-                }
-
-        # Proceed with save
-        workspace = get_workspace_service()
-        result = workspace.save_research_note(
+        # Save to KB
+        entry = kb.save_decision(
+            project_id=project_id,
             category=req.category,
             key=req.key,
-            content=req.content,
-            metadata={
-                "notebook_id": req.notebook_id,
-                "notebook_name": req.notebook_name,
-            }
+            value=req.content,
+            source=f"NotebookLM: {req.source_notebook}" if req.source_notebook else "NotebookLM extraction"
         )
 
-        # Include any conflicts/warnings in response
-        if conflicts_result:
-            result["conflicts_checked"] = True
-            if conflicts_result.has_conflicts:
-                result["saved_with_conflicts"] = True
-                result["conflicts"] = [c.to_dict() for c in conflicts_result.conflicts]
-
-        return result
-    except ValueError as e:
-        # Category validation error
-        raise HTTPException(status_code=400, detail=str(e))
+        return {
+            "success": True,
+            "message": f"Saved '{req.key}' to Knowledge Base",
+            "entry_id": entry.id,
+            "category": entry.category
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/workspace/research", summary="List all research files by category")
-async def list_research_files():
+@app.get("/notebooklm/research-notes", summary="List saved research notes")
+async def list_research_notes(category: Optional[str] = None):
     """
-    List all research files organized by the 5 Core categories.
-
-    Returns:
-        Dict mapping category names to lists of filenames
+    List all saved research notes from NotebookLM extractions.
+    These are stored in the Foreman KB and can be used for Story Bible creation.
     """
-    from backend.services.workspace_service import get_workspace_service
-
     try:
-        workspace = get_workspace_service()
-        return workspace.list_research_files()
+        from backend.services.foreman_kb_service import get_foreman_kb_service
+
+        kb = get_foreman_kb_service()
+        project_id = "default"  # Same as save endpoint
+
+        entries = kb.get_decisions(project_id, category=category)
+
+        return {
+            "notes": [
+                {
+                    "id": entry.id,
+                    "key": entry.key,
+                    "category": entry.category,
+                    "content": entry.value,
+                    "source": entry.source,
+                    "created_at": entry.created_at.isoformat() if entry.created_at else None,
+                    "is_promoted": entry.is_promoted
+                }
+                for entry in entries
+            ],
+            "total": len(entries)
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/workspace/research/{category}/{filename}", summary="Read a research file")
-async def read_research_file(category: str, filename: str):
+@app.delete("/notebooklm/research-notes/{note_id}", summary="Delete a research note")
+async def delete_research_note(note_id: int):
     """
-    Read a research file's content and metadata.
-
-    Args:
-        category: One of the 5 Core categories
-        filename: The filename (with or without .md extension)
-
-    Returns:
-        content: The file body (without frontmatter)
-        metadata: Parsed YAML frontmatter
-        file_path: Relative path
+    Delete a saved research note by ID.
+    Use this to remove irrelevant or confusing extractions before Foreman uses them.
     """
-    from backend.services.workspace_service import get_workspace_service
-
     try:
-        workspace = get_workspace_service()
-        return workspace.read_research_file(category, filename)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from backend.services.foreman_kb_service import get_foreman_kb_service
 
+        kb = get_foreman_kb_service()
+        deleted = kb.delete_entry(note_id)
 
-@app.get("/workspace/research/categories", summary="Get available research categories")
-async def get_research_categories():
-    """
-    Get the 5 Core research categories with descriptions and icons.
-
-    Returns:
-        List of category objects with id, name, and icon
-    """
-    from backend.services.workspace_service import get_workspace_service
-
-    try:
-        workspace = get_workspace_service()
-        return {"categories": workspace.get_categories()}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# --- Promotion Workflow (Phase 4 - Distillation Pipeline) ---
-
-class PromotionRequest(BaseModel):
-    """Request to promote research to Story Bible."""
-    source: str  # Path to research file
-    confirm_warnings: bool = False  # Acknowledge warnings and proceed
-
-
-@app.get("/promotion/check", summary="Check if file can be promoted")
-async def check_promotion_status(path: str):
-    """
-    Check if a research file can be promoted to Story Bible.
-
-    Checks:
-    1. Stage 2 content (not raw Stage 1)
-    2. No unresolved BREAKING conflicts
-    3. Contains required fields for category
-
-    Returns:
-        can_promote: Whether promotion can proceed
-        blockers: Issues that must be resolved
-        warnings: Issues that should be reviewed
-        target: Story Bible file that will be updated
-    """
-    from backend.services.promotion_service import get_promotion_service
-
-    try:
-        service = get_promotion_service()
-        status = await service.check_promotable(path)
-        return status.to_dict()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/promotion/preview", summary="Preview what promotion will do")
-async def preview_promotion(path: str):
-    """
-    Preview the promotion without executing it.
-
-    Shows what fields will be extracted and where they will go.
-
-    Returns:
-        category: Detected category
-        target: Story Bible file
-        extracted_fields: Fields that will be promoted
-        merge_strategy: How data will be merged
-    """
-    from backend.services.promotion_service import get_promotion_service
-
-    try:
-        service = get_promotion_service()
-        preview = await service.preview_promotion(path)
-        return preview
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/promotion/execute", summary="Execute promotion to Story Bible")
-async def execute_promotion(req: PromotionRequest):
-    """
-    Promote research to Story Bible with intelligent transformation.
-
-    Each category extracts specific fields:
-    - characters → Fatal Flaw, The Lie, Arc → Protagonist.md
-    - world → Hard Rules → Rules.md
-    - theme → Central Question, Thesis → Theme.md
-    - plot → 15 Beats → Beat_Sheet.md
-    - voice → Triggers Voice Calibration (special case)
-
-    Returns:
-        success: Whether promotion succeeded
-        target: Story Bible file updated
-        fields_updated: List of fields that were promoted
-    """
-    from backend.services.promotion_service import get_promotion_service
-
-    try:
-        service = get_promotion_service()
-        result = await service.promote(req.source, req.confirm_warnings)
-        return result.to_dict()
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if deleted:
+            return {"success": True, "message": f"Deleted research note {note_id}"}
+        else:
+            raise HTTPException(status_code=404, detail="Research note not found")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,22 +1,10 @@
 {
   "notebooks": [
     {
-      "id": "8c13e467-7c97-46c6-b0c4-d0f484209d02",
-      "label": "Mo Gawdat Research",
-      "description": "Research collection on Mo Gawdat",
+      "id": "ce3c54ad-fc95-44ba-a88a-19573bd6aac2",
+      "label": "research for character Umar",
+      "description": "",
       "category": "character"
-    },
-    {
-      "id": "e03a6b48-2835-496c-88ae-4536dd3b1930",
-      "label": "Azeem Character Study",
-      "description": "Character voice based on curated YouTube interviews",
-      "category": "character"
-    },
-    {
-      "id": "71c17eaa-f11c-41a8-afc1-dc940ae35353",
-      "label": "Future World (10-Year Horizon)",
-      "description": "World-building research for near-future speculation",
-      "category": "world"
     }
   ]
 }

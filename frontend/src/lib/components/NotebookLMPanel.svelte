@@ -32,25 +32,15 @@
   let characterName = '';
   let worldAspect = '';
   let notebookIdInput = '';
-  let selectedRole = 'world';
+  let notebookLabelInput = '';  // Custom label for new notebooks
+  let selectedRole = 'character';
   let isRegistering = false;
-
-  // Save to Research state
-  let showSaveModal = false;
-  let saveCategory = 'characters';
-  let saveKey = '';
   let isSaving = false;
-  let saveError = '';
-  let saveSuccess = '';
 
-  // The 5 Core Categories (matching backend)
-  const RESEARCH_CATEGORIES = [
-    { id: 'characters', name: 'Characters (Fatal Flaw, Arc, Cast)', icon: '👤' },
-    { id: 'world', name: 'World (Hard Rules, Locations)', icon: '🌍' },
-    { id: 'theme', name: 'Theme (Central Question, Symbols)', icon: '💭' },
-    { id: 'plot', name: 'Plot (15 Beats, Structure)', icon: '📊' },
-    { id: 'voice', name: 'Voice (Style Targets, Anti-patterns)', icon: '✍️' }
-  ];
+  // Saved notes state
+  let savedNotes = [];
+  let isLoadingNotes = false;
+  let isDeletingNote = null;  // ID of note being deleted
 
   // Load state on mount
   onMount(async () => {
@@ -137,6 +127,7 @@
     if (!notebookIdInput.trim()) return;
 
     isRegistering = true;
+    notebookError.set('');
     try {
       // Extract ID from URL if needed
       let id = notebookIdInput.trim();
@@ -145,95 +136,147 @@
         if (match) id = match[1];
       }
 
-      const res = await fetch(`${API_URL}/foreman/notebook`, {
+      // Use the direct config endpoint (no project required)
+      const res = await fetch(`${API_URL}/notebooklm/notebooks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notebook_id: id, role: selectedRole })
+        body: JSON.stringify({
+          notebook_id: id,
+          label: notebookLabelInput.trim() || '',  // Use custom label if provided
+          description: '',
+          category: selectedRole
+        })
       });
 
       if (res.ok) {
         await fetchConfiguredNotebooks();
         notebookIdInput = '';
+        notebookLabelInput = '';
+      } else {
+        const data = await res.json();
+        notebookError.set(data.detail || 'Failed to register notebook');
       }
     } catch (err) {
-      notebookError.set('Failed to register notebook');
+      notebookError.set('Failed to register notebook: ' + err.message);
     } finally {
       isRegistering = false;
     }
   }
 
-  // Save to Research functionality
-  function openSaveModal() {
-    // Auto-suggest a key based on query or character name
-    if (characterName.trim()) {
-      saveKey = characterName.trim().toLowerCase().replace(/\s+/g, '_');
-      saveCategory = 'characters';
-    } else if (worldAspect.trim()) {
-      saveKey = worldAspect.trim().toLowerCase().replace(/\s+/g, '_');
-      saveCategory = 'world';
-    } else if (queryText.trim()) {
-      // Extract first few words as key
-      saveKey = queryText.trim().split(' ').slice(0, 3).join('_').toLowerCase();
-    } else {
-      saveKey = '';
+  async function handleDeleteNotebook(notebookId) {
+    try {
+      notebookError.set('');
+      const res = await fetch(`${API_URL}/notebooklm/notebooks/${encodeURIComponent(notebookId)}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        await fetchConfiguredNotebooks();
+      } else {
+        const data = await res.json();
+        notebookError.set(data.detail || 'Failed to delete notebook');
+      }
+    } catch (err) {
+      notebookError.set('Failed to delete notebook: ' + err.message);
     }
-    saveError = '';
-    saveSuccess = '';
-    showSaveModal = true;
   }
 
-  async function handleSaveToResearch() {
-    if (!saveKey.trim() || !result) return;
+  async function handleSaveToKB() {
+    if (!result) return;
 
     isSaving = true;
-    saveError = '';
-    saveSuccess = '';
+    notebookError.set('');
 
     try {
-      // Get the content from the result
-      const content = result.answer || result.profile || result.details || JSON.stringify(result);
+      // Determine category and key based on active tab and content
+      let category = 'world';
+      let key = '';
+      let content = '';
 
-      // Get notebook info
+      if (activeTab === 'characters' && characterName) {
+        category = 'character';
+        key = characterName.toLowerCase().replace(/\s+/g, '_');
+        content = result.profile || result.answer || JSON.stringify(result);
+      } else if (activeTab === 'world' && worldAspect) {
+        category = 'world';
+        key = worldAspect.toLowerCase().replace(/\s+/g, '_');
+        content = result.details || result.answer || JSON.stringify(result);
+      } else if (activeTab === 'research' && queryText) {
+        category = 'research';
+        key = `research_${Date.now()}`;
+        content = result.answer || JSON.stringify(result);
+      } else {
+        notebookError.set('Cannot determine what to save. Please use Characters or World tabs.');
+        isSaving = false;
+        return;
+      }
+
       const currentNb = notebooks.find(nb => nb.id === currentNotebook);
+      const sourceNotebook = currentNb?.label || currentNotebook;
 
-      const res = await fetch(`${API_URL}/workspace/research/save`, {
+      const res = await fetch(`${API_URL}/notebooklm/save-to-kb`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: content,
-          category: saveCategory,
-          key: saveKey.trim(),
-          notebook_id: currentNotebook,
-          notebook_name: currentNb?.label || ''
+          category,
+          key,
+          content,
+          source_notebook: sourceNotebook
         })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || `Save failed (${res.status})`);
+      if (res.ok) {
+        const data = await res.json();
+        // Show success briefly by updating the result
+        const savedMessage = `Saved to Knowledge Base as "${key}"`;
+        notebookError.set(''); // Clear any error
+        // Flash a success indicator (we'll add a saved state)
+        alert(savedMessage); // Simple feedback for now
+      } else {
+        const data = await res.json();
+        notebookError.set(data.detail || 'Failed to save to KB');
       }
-
-      const data = await res.json();
-      saveSuccess = `Saved to ${data.file_path}`;
-
-      // Close modal after brief delay to show success
-      setTimeout(() => {
-        showSaveModal = false;
-        saveSuccess = '';
-      }, 1500);
-
     } catch (err) {
-      saveError = err.message;
+      notebookError.set('Failed to save: ' + err.message);
     } finally {
       isSaving = false;
     }
   }
 
-  function copyToChat() {
-    if (!result) return;
-    const content = result.answer || result.profile || result.details || '';
-    const formatted = `[From: NotebookLM Research]\n\n${content}`;
-    dispatch('copyToChat', { content: formatted });
+  async function fetchSavedNotes() {
+    isLoadingNotes = true;
+    try {
+      const res = await fetch(`${API_URL}/notebooklm/research-notes`);
+      if (res.ok) {
+        const data = await res.json();
+        savedNotes = data.notes || [];
+      } else {
+        notebookError.set('Failed to load saved notes');
+      }
+    } catch (err) {
+      notebookError.set('Failed to load saved notes: ' + err.message);
+    } finally {
+      isLoadingNotes = false;
+    }
+  }
+
+  async function deleteNote(noteId) {
+    isDeletingNote = noteId;
+    try {
+      const res = await fetch(`${API_URL}/notebooklm/research-notes/${noteId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        savedNotes = savedNotes.filter(n => n.id !== noteId);
+      } else {
+        const data = await res.json();
+        notebookError.set(data.detail || 'Failed to delete note');
+      }
+    } catch (err) {
+      notebookError.set('Failed to delete note: ' + err.message);
+    } finally {
+      isDeletingNote = null;
+    }
   }
 
   // Tab definitions
@@ -242,13 +285,16 @@
     { id: 'notebooks', label: 'Notebooks', icon: 'book' },
     { id: 'characters', label: 'Characters', icon: 'user' },
     { id: 'world', label: 'World', icon: 'globe' },
+    { id: 'saved', label: 'Saved Notes', icon: 'folder' },
     { id: 'status', label: 'Status', icon: 'activity' }
   ];
 
   // Role definitions
   const roles = [
+    { id: 'character', name: 'Character', description: 'Character research, backstory, psychology' },
     { id: 'world', name: 'World', description: 'Setting, locations, factions, world-building' },
-    { id: 'voice', name: 'Voice', description: 'Character voice samples, dialogue patterns' },
+    { id: 'voice', name: 'Voice', description: 'Voice samples, dialogue patterns, prose style' },
+    { id: 'theme', name: 'Theme', description: 'Themes, philosophy, symbolism research' },
     { id: 'craft', name: 'Craft', description: 'Writing techniques, narrative craft reference' }
   ];
 
@@ -273,6 +319,9 @@
     </svg>`,
     activity: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+    </svg>`,
+    folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
     </svg>`
   };
 
@@ -283,6 +332,28 @@
   $: isLoading = $notebookLoading;
   $: errorMsg = $notebookError;
   $: result = $notebookResult;
+
+  // Clear results when switching tabs (prevents stale data confusion)
+  // and load saved notes when switching to saved tab
+  let previousTab = activeTab;
+  $: if (activeTab !== previousTab) {
+    const switchingToSaved = activeTab === 'saved';
+    notebookResult.set(null);
+    notebookError.set('');
+    previousTab = activeTab;
+    // Load saved notes when switching to saved tab
+    if (switchingToSaved) {
+      fetchSavedNotes();
+    }
+  }
+
+  // Clear results when switching notebooks
+  let previousNotebook = currentNotebook;
+  $: if (currentNotebook !== previousNotebook) {
+    notebookResult.set(null);
+    notebookError.set('');
+    previousNotebook = currentNotebook;
+  }
 </script>
 
 <div class="notebooklm-panel">
@@ -385,6 +456,18 @@
           </div>
 
           <div class="form-group">
+            <label for="notebook-label">Label (optional)</label>
+            <input
+              id="notebook-label"
+              type="text"
+              placeholder="e.g., Character Research, World Building Notes..."
+              bind:value={notebookLabelInput}
+              disabled={isRegistering}
+            />
+            <p class="field-hint">A friendly name to identify this notebook</p>
+          </div>
+
+          <div class="form-group">
             <label>Role</label>
             <div class="role-selector">
               {#each roles as role}
@@ -429,7 +512,19 @@
                     <span class="notebook-category">{nb.category}</span>
                     <span class="notebook-label">{nb.label}</span>
                   </div>
-                  <span class="notebook-id">{nb.id.slice(0, 8)}...</span>
+                  <div class="notebook-actions">
+                    <span class="notebook-id">{nb.id.slice(0, 8)}...</span>
+                    <button
+                      class="delete-btn"
+                      on:click={() => handleDeleteNotebook(nb.id)}
+                      title="Remove notebook"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               {/each}
             </div>
@@ -527,6 +622,61 @@
         {/if}
       </div>
 
+    {:else if activeTab === 'saved'}
+      <div class="tab-content">
+        <h2>Saved Research Notes</h2>
+        <p class="tab-description">Review and manage notes saved from NotebookLM extractions. Delete irrelevant ones before Foreman uses them.</p>
+
+        {#if isLoadingNotes}
+          <div class="loading-state">
+            <span class="spinner"></span>
+            Loading saved notes...
+          </div>
+        {:else if savedNotes.length === 0}
+          <div class="empty-state">
+            <div class="empty-icon">{@html tabIcons.folder}</div>
+            <p>No saved research notes yet</p>
+            <p class="empty-hint">Use the Characters or World tabs to extract and save notes</p>
+          </div>
+        {:else}
+          <div class="saved-notes-list">
+            {#each savedNotes as note}
+              <div class="saved-note-card">
+                <div class="note-header">
+                  <span class="note-category">{note.category}</span>
+                  <span class="note-key">{note.key}</span>
+                  <button
+                    class="delete-btn"
+                    on:click={() => deleteNote(note.id)}
+                    disabled={isDeletingNote === note.id}
+                    title="Delete this note"
+                  >
+                    {#if isDeletingNote === note.id}
+                      <span class="spinner small"></span>
+                    {:else}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    {/if}
+                  </button>
+                </div>
+                <div class="note-content">
+                  {note.content.length > 300 ? note.content.slice(0, 300) + '...' : note.content}
+                </div>
+                <div class="note-footer">
+                  <span class="note-source">{note.source || 'Unknown source'}</span>
+                  {#if note.is_promoted}
+                    <span class="note-status promoted">Promoted to Graph</span>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+          <p class="notes-count">{savedNotes.length} note{savedNotes.length !== 1 ? 's' : ''} saved</p>
+        {/if}
+      </div>
+
     {:else if activeTab === 'status'}
       <div class="tab-content">
         <h2>Connection Status</h2>
@@ -580,28 +730,10 @@
       </div>
     {/if}
 
-    <!-- Results Display -->
-    {#if result}
+    <!-- Results Display - only show on extraction tabs -->
+    {#if result && (activeTab === 'research' || activeTab === 'characters' || activeTab === 'world')}
       <div class="results-card">
-        <div class="results-header">
-          <h3 class="results-title">Response</h3>
-          <div class="results-actions">
-            <button class="action-btn small" on:click={copyToChat} title="Copy to Chat">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-              Copy to Chat
-            </button>
-            <button class="action-btn small primary" on:click={openSaveModal} title="Save to Research">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
-              Save to Research
-            </button>
-          </div>
-        </div>
+        <h3 class="results-title">Response</h3>
         <div class="results-content">
           {#if result.answer}
             <p class="answer-text">{result.answer}</p>
@@ -623,6 +755,30 @@
           {/if}
         </div>
 
+        <!-- Save to KB Button -->
+        {#if activeTab === 'characters' || activeTab === 'world'}
+          <div class="results-actions">
+            <button
+              class="action-btn save-btn"
+              on:click={handleSaveToKB}
+              disabled={isSaving}
+            >
+              {#if isSaving}
+                <span class="spinner"></span>
+                Saving...
+              {:else}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save to Research Notes
+              {/if}
+            </button>
+            <p class="save-hint">Save for Foreman to use when building your Story Bible</p>
+          </div>
+        {/if}
+
         <details class="debug-section">
           <summary>Raw JSON</summary>
           <pre>{JSON.stringify(result, null, 2)}</pre>
@@ -630,86 +786,6 @@
       </div>
     {/if}
   </div>
-
-  <!-- Save to Research Modal -->
-  {#if showSaveModal}
-    <div class="modal-overlay" on:click={() => showSaveModal = false} on:keydown={(e) => e.key === 'Escape' && (showSaveModal = false)} role="dialog" aria-modal="true" tabindex="-1">
-      <div class="modal-content" on:click|stopPropagation role="document">
-        <div class="modal-header">
-          <h3>Save to Research Notes</h3>
-          <button class="modal-close" on:click={() => showSaveModal = false} aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <p class="modal-description">
-            Save this extraction to your research files. Choose one of the 5 Core categories.
-          </p>
-
-          <div class="form-group">
-            <label for="save-category">Category (Required)</label>
-            <select id="save-category" bind:value={saveCategory}>
-              {#each RESEARCH_CATEGORIES as cat}
-                <option value={cat.id}>{cat.icon} {cat.name}</option>
-              {/each}
-            </select>
-            <p class="field-hint">Files save to workspace/research/{saveCategory}/</p>
-          </div>
-
-          <div class="form-group">
-            <label for="save-key">Name / Key (Required)</label>
-            <input
-              id="save-key"
-              type="text"
-              bind:value={saveKey}
-              placeholder="e.g., protagonist_profile, magic_rules"
-            />
-            <p class="field-hint">Will create: {saveKey || 'filename'}.md</p>
-          </div>
-
-          {#if saveError}
-            <div class="error-banner">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              {saveError}
-            </div>
-          {/if}
-
-          {#if saveSuccess}
-            <div class="success-banner">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              {saveSuccess}
-            </div>
-          {/if}
-        </div>
-
-        <div class="modal-footer">
-          <button class="action-btn" on:click={() => showSaveModal = false}>Cancel</button>
-          <button
-            class="action-btn primary"
-            on:click={handleSaveToResearch}
-            disabled={isSaving || !saveKey.trim()}
-          >
-            {#if isSaving}
-              <span class="spinner"></span>
-              Saving...
-            {:else}
-              Save to Research
-            {/if}
-          </button>
-        </div>
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -1022,6 +1098,32 @@
     color: var(--text-muted, #6e7681);
   }
 
+  .notebook-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+  }
+
+  .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    color: var(--text-muted, #6e7681);
+    cursor: pointer;
+    transition: all var(--transition-fast, 100ms ease);
+  }
+
+  .delete-btn:hover {
+    background: var(--error-muted, rgba(248, 81, 73, 0.2));
+    color: var(--error, #f85149);
+  }
+
   /* Status Card */
   .status-card {
     padding: var(--space-4, 16px);
@@ -1168,6 +1270,30 @@
     color: var(--text-secondary, #8b949e);
   }
 
+  /* Save to KB section */
+  .results-actions {
+    margin-top: var(--space-4, 16px);
+    padding-top: var(--space-3, 12px);
+    border-top: 1px solid var(--border, #2d3a47);
+  }
+
+  .save-btn {
+    background: var(--success-muted, rgba(63, 185, 80, 0.2));
+    border-color: var(--success, #3fb950);
+    color: var(--success, #3fb950);
+  }
+
+  .save-btn:hover:not(:disabled) {
+    background: var(--success, #3fb950);
+    color: white;
+  }
+
+  .save-hint {
+    margin: var(--space-2, 8px) 0 0 0;
+    font-size: 10px;
+    color: var(--text-muted, #6e7681);
+  }
+
   .debug-section {
     margin-top: var(--space-2, 8px);
   }
@@ -1189,108 +1315,110 @@
     overflow-x: auto;
   }
 
-  /* Results Header with Actions */
-  .results-header {
+  /* Loading State */
+  .loading-state {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    gap: var(--space-3, 12px);
+    padding: var(--space-10, 40px);
+    background: var(--bg-tertiary, #242d38);
+    border-radius: var(--radius-lg, 8px);
+    color: var(--text-secondary, #8b949e);
+    font-size: var(--text-sm, 12px);
+  }
+
+  /* Saved Notes List */
+  .saved-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+  }
+
+  .saved-note-card {
+    padding: var(--space-4, 16px);
+    background: var(--bg-tertiary, #242d38);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-lg, 8px);
+    transition: border-color var(--transition-fast, 100ms ease);
+  }
+
+  .saved-note-card:hover {
+    border-color: var(--border-strong, #3d4752);
+  }
+
+  .note-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
     margin-bottom: var(--space-3, 12px);
   }
 
-  .results-actions {
-    display: flex;
-    gap: var(--space-2, 8px);
-  }
-
-  .action-btn.small {
-    padding: var(--space-1, 4px) var(--space-2, 8px);
-    font-size: var(--text-xs, 11px);
-  }
-
-  /* Success Banner */
-  .success-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 8px);
-    padding: var(--space-3, 12px);
-    background: var(--success-muted, rgba(63, 185, 80, 0.2));
-    border-radius: var(--radius-md, 6px);
-    color: var(--success, #3fb950);
-    font-size: var(--text-sm, 12px);
-  }
-
-  /* Modal Styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal-content {
-    background: var(--bg-secondary, #1a2027);
-    border: 1px solid var(--border, #2d3a47);
-    border-radius: var(--radius-lg, 8px);
-    width: 90%;
-    max-width: 450px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-4, 16px);
-    border-bottom: 1px solid var(--border, #2d3a47);
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    font-size: var(--text-base, 14px);
-    font-weight: var(--font-semibold, 600);
-    color: var(--text-primary, #e6edf3);
-  }
-
-  .modal-close {
-    background: transparent;
-    border: none;
-    color: var(--text-muted, #6e7681);
-    cursor: pointer;
-    padding: var(--space-1, 4px);
+  .note-category {
+    padding: 2px 8px;
+    background: var(--accent-purple-muted, rgba(163, 113, 247, 0.2));
     border-radius: var(--radius-sm, 4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 9px;
+    font-weight: var(--font-semibold, 600);
+    color: var(--accent-purple, #a371f7);
+    text-transform: uppercase;
+    flex-shrink: 0;
   }
 
-  .modal-close:hover {
-    background: var(--bg-tertiary, #242d38);
+  .note-key {
+    flex: 1;
+    font-size: var(--text-sm, 12px);
+    font-weight: var(--font-medium, 500);
     color: var(--text-primary, #e6edf3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .modal-body {
-    padding: var(--space-4, 16px);
-  }
-
-  .modal-description {
-    margin: 0 0 var(--space-4, 16px) 0;
+  .note-content {
     font-size: var(--text-sm, 12px);
     color: var(--text-secondary, #8b949e);
+    line-height: var(--leading-relaxed, 1.7);
+    white-space: pre-wrap;
+    margin-bottom: var(--space-3, 12px);
   }
 
-  .modal-footer {
+  .note-footer {
     display: flex;
-    justify-content: flex-end;
-    gap: var(--space-2, 8px);
-    padding: var(--space-4, 16px);
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-2, 8px);
     border-top: 1px solid var(--border, #2d3a47);
+  }
+
+  .note-source {
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #6e7681);
+  }
+
+  .note-status {
+    padding: 2px 6px;
+    border-radius: var(--radius-sm, 4px);
+    font-size: 9px;
+    font-weight: var(--font-semibold, 600);
+    text-transform: uppercase;
+  }
+
+  .note-status.promoted {
+    background: var(--success-muted, rgba(63, 185, 80, 0.2));
+    color: var(--success, #3fb950);
+  }
+
+  .notes-count {
+    margin-top: var(--space-4, 16px);
+    font-size: var(--text-xs, 11px);
+    color: var(--text-muted, #6e7681);
+    text-align: center;
+  }
+
+  .spinner.small {
+    width: 12px;
+    height: 12px;
+    border-width: 1.5px;
   }
 </style>
