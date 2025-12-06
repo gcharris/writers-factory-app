@@ -13,7 +13,7 @@ exclude:
   - archive/
   - claude-skills/
   - guides/
-  - planning theories/
+  - "planning theories/"
   - reference/
   - status/
   - course_information/
@@ -22,11 +22,9 @@ exclude:
   - BACKEND_SERVICES.md
   - COMPONENT_AUDIT.md
   - DESKTOP_BUNDLING.md
-  - DISTILLATION_PROMPTS.md
   - DOCS_INDEX.md
   - DOCS_INVENTORY.md
   - DOCS_REORGANIZATION_PLAN.md
-  - FIVE_CORE_NOTEBOOKS.md
   - TESTING_CHECKLIST.md
   - UNIVERSAL_AGENT_INSTRUCTION_ARCHITECTURE.md
   - WORKFLOWS.md
@@ -34,6 +32,10 @@ exclude:
   - WRITERS_JOURNEY.md
   - WRITERS_JOURNEY_IMPLEMENTATION_PLAN.md
   - "Technical Feasibility Analysis*.md"
+  - "NARRATIVE PROTOCOL.md"
+  - "stylistic fingerprint scanner.md"
+  - 04_roadmap.md
+  - Ontologies.md
   - "*.log"
 
 # Navigation
