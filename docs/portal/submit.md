@@ -1,9 +1,16 @@
 ---
 layout: default
 title: How to Submit
+protected: true
 ---
 
-# 📤 How to Submit Your Work
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
+# How to Submit Your Work
 
 > **"Shipping is a feature."**
 

@@ -1,3 +1,15 @@
+---
+layout: default
+title: Systems Integration
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # Systems Integration: GraphRAG, Voice Calibration, and Narrative Dashboard
 
 **How the Intelligent Systems Work Together**

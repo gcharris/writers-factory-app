@@ -1,3 +1,15 @@
+---
+layout: default
+title: GraphRAG Conceptual
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # GraphRAG: The Living Brain of Writers Factory
 
 **From Context Flatness to Narrative Intelligence**

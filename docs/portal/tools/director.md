@@ -1,7 +1,14 @@
 ---
 layout: default
 title: Director Mode
+protected: true
 ---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
 
 # Director Mode: The Scene Creation Pipeline
 

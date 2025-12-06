@@ -1,128 +1,89 @@
 ---
 layout: default
-title: Welcome
+title: Writers Factory
 ---
 
-<style>
-    .hero-container {
-        text-align: center;
-        padding: 40px 20px;
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    .hero-image {
-        width: 100%;
-        max-width: 800px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        margin-bottom: 30px;
-    }
-    .course-title {
-        font-size: 2.5em;
-        font-weight: 800;
-        margin-bottom: 10px;
-        background: -webkit-linear-gradient(45deg, #2c3e50, #3498db);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .course-subtitle {
-        font-size: 1.2em;
-        color: #666;
-        margin-bottom: 40px;
-        font-style: italic;
-    }
-    .login-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        padding: 40px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        display: inline-block;
-        margin-top: 20px;
-        max-width: 400px;
-        width: 100%;
-    }
-    .login-input {
-        width: 100%;
-        padding: 12px;
-        margin: 10px 0;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 16px;
-        box-sizing: border-box;
-    }
-    .login-btn {
-        width: 100%;
-        padding: 12px;
-        background: linear-gradient(45deg, #2ea44f, #218c3d);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-    .login-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(46, 164, 79, 0.3);
-    }
-    .admin-note {
-        font-size: 0.9em;
-        color: #888;
-        margin-top: 30px;
-        border-top: 1px solid #eee;
-        padding-top: 20px;
-    }
-</style>
-
-<div class="hero-container">
-    
-    <img src="{{ '/assets/images/writers_factory_hero.png' | relative_url }}" alt="The Cyborg Novelist" class="hero-image">
-
-    <h1 class="course-title">AI and the One-Week Novel</h1>
-    <div class="course-subtitle">Skoltech ISP 2026</div>
-
-    <p style="font-size: 1.1em; line-height: 1.6; color: #444;">
-        <strong>"We are not just writing a novel; we are engineering a synthetic cognitive system."</strong>
+<div class="hero">
+    <h1>Writers Factory</h1>
+    <p class="subtitle">AI and the One-Week Novel | Skoltech ISP 2026</p>
+    <p style="max-width: 600px; margin: 0 auto 2em;">
+        An experimental intensive course exploring the intersection of Large Language Models,
+        System Architecture, and Creative Narratology.
     </p>
-
-    <div class="login-card">
-        <h3>Student Access</h3>
-        <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">Enter your course access code to view the schedule and download the software.</p>
-        
-        <input type="password" id="password-input" class="login-input" placeholder="Enter Access Code..." onkeydown="checkEnter(event)">
-        <button onclick="checkPassword()" class="login-btn">Enter Class</button>
-        <p id="error-msg" style="color: #d73a49; display: none; margin-top: 10px; font-size: 0.9em;">Incorrect Code</p>
-    </div>
-
-    <div class="admin-note">
-        <p><strong>For University Administration:</strong> This is an experimental intensive course exploring the intersection of Large Language Models, System Architecture, and Creative Narratology.</p>
-    </div>
-
+    <a href="/portal/" class="btn-primary">Student Portal</a>
+    <a href="/about" class="btn-secondary" style="margin-left: 12px;">Learn More</a>
 </div>
 
+---
 
-<script>
-function checkPassword() {
-    var password = document.getElementById("password-input").value;
-    if (password === "skoltech2026" || password === "admin") {
-        sessionStorage.setItem('authenticated', 'true');
-        window.location.href = "{{ '/student_portal' | relative_url }}";
-    } else {
-        document.getElementById("error-msg").style.display = "block";
-        // Shake animation
-        var card = document.querySelector('.login-card');
-        card.style.transform = 'translateX(10px)';
-        setTimeout(() => { card.style.transform = 'translateX(-10px)'; }, 100);
-        setTimeout(() => { card.style.transform = 'translateX(0)'; }, 200);
-    }
-}
+## What Is This?
 
-function checkEnter(event) {
-    if (event.key === "Enter") {
-        checkPassword();
-    }
-}
-</script>
+Writers Factory is a **professional novel-writing IDE** that enforces structure before freedom. In one intensive week, you'll produce a complete 15,000+ word novella using AI as a creative partner, not a replacement.
+
+> *"We are not just writing a novel; we are engineering a synthetic cognitive system."*
+
+The course offers two tracks:
+- **Writer Track**: Focus on creative output. Use the app as-is.
+- **Architect Track**: Dive into the codebase. Optimize the Context Engine.
+
+<p class="text-center mt-4">
+    <a href="/tracks" class="btn-secondary">Compare Tracks</a>
+</p>
+
+---
+
+## The Four Modes
+
+Your AI partner (The Foreman) guides you through four distinct phases:
+
+<div class="track-grid">
+    <div class="card">
+        <span class="badge badge-architect">ARCHITECT</span>
+        <h3>Story Bible</h3>
+        <p class="text-muted">Build your narrative foundation: protagonist, 15-beat structure, world rules, and theme.</p>
+    </div>
+    <div class="card">
+        <span class="badge badge-voice">VOICE</span>
+        <h3>Voice Calibration</h3>
+        <p class="text-muted">Train the system to write like you through tournament-style comparison.</p>
+    </div>
+    <div class="card">
+        <span class="badge badge-director">DIRECTOR</span>
+        <h3>Scene Drafting</h3>
+        <p class="text-muted">Generate scenes with full context injection from your Story Bible.</p>
+    </div>
+    <div class="card">
+        <span class="badge badge-editor">EDITOR</span>
+        <h3>Polish</h3>
+        <p class="text-muted">Check continuity, pacing, and voice consistency across your manuscript.</p>
+    </div>
+</div>
+
+---
+
+## What You'll Produce
+
+By the end of the week:
+
+- **A complete novella** (15,000+ words) in your authentic voice
+- **A Story Bible** that could guide future work
+- **Deep understanding** of AI-assisted creative workflows
+- **(Architect Track)** Pull requests improving the system
+
+---
+
+## Quick Links
+
+| Public | For Students |
+|--------|--------------|
+| [About / Philosophy](/about) | [Student Portal](/portal/) |
+| [Choose Your Track](/tracks) | [Submission Guide](/portal/submit) |
+| [FAQ](/faq) | [Reference Tools](/portal/tools/journey) |
+| [Showcase](/showcase) | |
+
+---
+
+<p class="text-center text-muted">
+    Writers Factory is open source.
+    <a href="https://github.com/gcharris/writers-factory-app">View the code</a>.
+</p>

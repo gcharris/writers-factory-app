@@ -1,3 +1,15 @@
+---
+layout: default
+title: LLM Models
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # Models Overview: Writing Agents and Their Foundations
 
 This document provides an overview of the large language models used inside the **Writers Factory**. Each agent in the system is powered by a different model, which means they think, write, and respond differently. Understanding these differences will help you choose the right agent for the right task.

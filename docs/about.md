@@ -1,3 +1,8 @@
+---
+layout: default
+title: About
+---
+
 # The Cyborg Novelist: Engineering the Muse
 
 **Course Concept: AI and the One-Week Novel**

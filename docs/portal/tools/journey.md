@@ -1,3 +1,15 @@
+---
+layout: default
+title: Writer's Journey
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # The Writer's Journey: From Research to Polished Novel
 
 **The Complete Creative Workflow in Writers Factory**

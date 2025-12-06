@@ -1,14 +1,62 @@
-theme: jekyll-theme-minimal
-title: AI and the One-Week Novel
-description: A course on engineering the muse.
+title: Writers Factory
+description: AI and the One-Week Novel - Skoltech ISP 2026
+baseurl: ""
+url: "https://gcharris.github.io"
 
+# Build settings
+markdown: kramdown
+theme: minima
+
+# Exclude from processing (internal docs, not for website)
 exclude:
-  - claude-skills
-  - dev_logs
-  - planning theories
-  - archive
-  - tasks
-  - specs
-  - status
-  - reference
-  - course_information
+  - tasks/
+  - archive/
+  - claude-skills/
+  - guides/
+  - planning theories/
+  - reference/
+  - status/
+  - course_information/
+  - ARCHITECTURE.md
+  - API_REFERENCE.md
+  - BACKEND_SERVICES.md
+  - COMPONENT_AUDIT.md
+  - DESKTOP_BUNDLING.md
+  - DISTILLATION_PROMPTS.md
+  - DOCS_INDEX.md
+  - DOCS_INVENTORY.md
+  - DOCS_REORGANIZATION_PLAN.md
+  - FIVE_CORE_NOTEBOOKS.md
+  - TESTING_CHECKLIST.md
+  - UNIVERSAL_AGENT_INSTRUCTION_ARCHITECTURE.md
+  - WORKFLOWS.md
+  - WORKSPACE_SETUP_IMPLEMENTATION.md
+  - WRITERS_JOURNEY.md
+  - WRITERS_JOURNEY_IMPLEMENTATION_PLAN.md
+  - "Technical Feasibility Analysis*.md"
+  - "*.log"
+
+# Navigation
+nav:
+  - title: About
+    url: /about
+  - title: Tracks
+    url: /tracks
+  - title: Showcase
+    url: /showcase
+  - title: FAQ
+    url: /faq
+  - title: Student Portal
+    url: /portal/
+
+# Defaults for frontmatter
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+  - scope:
+      path: "portal"
+    values:
+      layout: default
+      protected: true

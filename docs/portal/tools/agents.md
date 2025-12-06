@@ -1,7 +1,14 @@
 ---
 layout: default
 title: Agent Instructions
+protected: true
 ---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
 
 # Agent Instruction System: The Brain of Writers Factory
 
