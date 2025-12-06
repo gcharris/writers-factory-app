@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Pre-Flight Manual
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Writers Factory Pre-Flight Manual
 

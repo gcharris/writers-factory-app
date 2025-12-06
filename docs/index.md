@@ -4,13 +4,13 @@ title: Writers Factory
 ---
 
 <div class="hero">
-    <h1>Writers Factory</h1>
+    <img src="/assets/images/logo-full.png" alt="Writers Factory" style="max-width: 400px; margin-bottom: 24px;">
     <p class="subtitle">AI and the One-Week Novel | Skoltech ISP 2026</p>
     <p style="max-width: 600px; margin: 0 auto 2em;">
         An experimental intensive course exploring the intersection of Large Language Models,
         System Architecture, and Creative Narratology.
     </p>
-    <a href="/portal/" class="btn-primary">Student Portal</a>
+    <a href="/journey" class="btn-primary">See How It Works</a>
     <a href="/about" class="btn-secondary" style="margin-left: 12px;">Learn More</a>
 </div>
 
@@ -20,14 +20,29 @@ title: Writers Factory
 
 Writers Factory is a **professional novel-writing IDE** that enforces structure before freedom. In one intensive week, you'll produce a complete 15,000+ word novella using AI as a creative partner, not a replacement.
 
-> *"We are not just writing a novel; we are engineering a synthetic cognitive system."*
+> *"We are not building an AI that writes for you. We are building the Iron Man suit for storytelling."*
 
-The course offers two tracks:
-- **Writer Track**: Focus on creative output. Use the app as-is.
-- **Architect Track**: Dive into the codebase. Optimize the Context Engine.
+---
+
+## Two Tracks, One Goal
+
+<div class="track-grid">
+    <div class="track-card writer">
+        <h3>Writer Track</h3>
+        <p><strong>For:</strong> Novelists, storytellers, creatives</p>
+        <p>Focus on the creative output. Use the app as your AI writing partner. No coding required.</p>
+        <p class="text-muted">Produce a 15k+ word novella in your authentic voice.</p>
+    </div>
+    <div class="track-card architect">
+        <h3>Architect Track</h3>
+        <p><strong>For:</strong> Engineers, ML enthusiasts, system designers</p>
+        <p>Dive into the codebase. Understand the Context Engine. Submit improvements.</p>
+        <p class="text-muted">Learn how to engineer creativity at scale.</p>
+    </div>
+</div>
 
 <p class="text-center mt-4">
-    <a href="/tracks" class="btn-secondary">Compare Tracks</a>
+    <a href="/tracks" class="btn-secondary">Compare Tracks in Detail</a>
 </p>
 
 ---
@@ -40,7 +55,7 @@ Your AI partner (The Foreman) guides you through four distinct phases:
     <div class="card">
         <span class="badge badge-architect">ARCHITECT</span>
         <h3>Story Bible</h3>
-        <p class="text-muted">Build your narrative foundation: protagonist, 15-beat structure, world rules, and theme.</p>
+        <p class="text-muted">Build your narrative foundation: protagonist arc, 15-beat structure, world rules, and theme.</p>
     </div>
     <div class="card">
         <span class="badge badge-voice">VOICE</span>
@@ -59,6 +74,26 @@ Your AI partner (The Foreman) guides you through four distinct phases:
     </div>
 </div>
 
+<p class="text-center mt-4">
+    <a href="/journey" class="btn-secondary">See the Full Journey</a>
+</p>
+
+---
+
+## For Engineers: The Tech Stack
+
+Writers Factory is a showcase of modern AI engineering:
+
+- **Multi-Model Orchestration** - 9+ LLM providers with intelligent routing
+- **GraphRAG** - Knowledge graphs for narrative consistency
+- **Context Engineering** - Maximize the 200k token window
+- **Voice Calibration** - Tournament-based style matching
+- **Tauri + SvelteKit** - Native desktop performance
+
+<p class="text-center mt-4">
+    <a href="/learn/" class="btn-primary">Explore the Architecture</a>
+</p>
+
 ---
 
 ## What You'll Produce
@@ -74,12 +109,35 @@ By the end of the week:
 
 ## Quick Links
 
-| Public | For Students |
-|--------|--------------|
-| [About / Philosophy](/about) | [Student Portal](/portal/) |
-| [Choose Your Track](/tracks) | [Submission Guide](/portal/submit) |
-| [FAQ](/faq) | [Reference Tools](/portal/tools/journey) |
-| [Showcase](/showcase) | |
+<div class="track-grid">
+    <div class="card">
+        <h4>Explore</h4>
+        <ul>
+            <li><a href="/about">About / Philosophy</a></li>
+            <li><a href="/journey">The Writer's Journey</a></li>
+            <li><a href="/schedule">Weekly Schedule</a></li>
+            <li><a href="/showcase">Student Projects</a></li>
+        </ul>
+    </div>
+    <div class="card">
+        <h4>Learn</h4>
+        <ul>
+            <li><a href="/learn/context">Context Engineering</a></li>
+            <li><a href="/learn/graphrag">GraphRAG</a></li>
+            <li><a href="/learn/voice">Voice Calibration</a></li>
+            <li><a href="/learn/director">Director Mode</a></li>
+        </ul>
+    </div>
+    <div class="card">
+        <h4>Get Started</h4>
+        <ul>
+            <li><a href="/learn/preflight">Pre-Flight Checklist</a></li>
+            <li><a href="/learn/notebooks">5 Core Notebooks</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/portal/">Download App</a></li>
+        </ul>
+    </div>
+</div>
 
 ---
 

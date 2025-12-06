@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Context Engineering
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Context Engineering: The New Prompt Engineering
 

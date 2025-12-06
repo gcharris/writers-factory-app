@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Weekly Schedule
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Weekly Schedule
 

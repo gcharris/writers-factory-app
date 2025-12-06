@@ -1,14 +1,9 @@
 ---
 layout: default
 title: The 5 Core Notebooks
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # The 5 Core Notebooks
 

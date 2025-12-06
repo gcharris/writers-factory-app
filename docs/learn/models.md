@@ -1,14 +1,9 @@
 ---
 layout: default
 title: LLM Models
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Models Overview: Writing Agents and Their Foundations
 

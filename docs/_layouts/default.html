@@ -95,10 +95,32 @@
         font-weight: 700;
         text-decoration: none;
         letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .site-logo {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
       }
 
       .site-title:hover {
         color: var(--accent-gold-hover);
+      }
+
+      .nav-download {
+        background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+        color: var(--bg-primary) !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+
+      .nav-download:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
       }
 
       .site-nav {
@@ -459,13 +481,18 @@
   <body>
     <header class="site-header">
       <div class="header-wrapper">
-        <a href="{{ '/' | relative_url }}" class="site-title">{{ site.title }}</a>
+        <a href="{{ '/' | relative_url }}" class="site-title">
+          <img src="{{ '/assets/images/logo.png' | relative_url }}" alt="Writers Factory" class="site-logo">
+          {{ site.title }}
+        </a>
         <nav class="site-nav">
           <a href="{{ '/about' | relative_url }}">About</a>
-          <a href="{{ '/tracks' | relative_url }}">Tracks</a>
+          <a href="{{ '/journey' | relative_url }}">Journey</a>
+          <a href="{{ '/schedule' | relative_url }}">Schedule</a>
+          <a href="{{ '/learn/' | relative_url }}">Learn</a>
           <a href="{{ '/showcase' | relative_url }}">Showcase</a>
           <a href="{{ '/faq' | relative_url }}">FAQ</a>
-          <a href="{{ '/portal/' | relative_url }}">Student Portal</a>
+          <a href="{{ '/portal/' | relative_url }}" class="nav-download">Download</a>
         </nav>
       </div>
     </header>

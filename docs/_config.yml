@@ -44,13 +44,17 @@ exclude:
 nav:
   - title: About
     url: /about
-  - title: Tracks
-    url: /tracks
+  - title: Journey
+    url: /journey
+  - title: Schedule
+    url: /schedule
+  - title: Learn
+    url: /learn/
   - title: Showcase
     url: /showcase
   - title: FAQ
     url: /faq
-  - title: Student Portal
+  - title: Download
     url: /portal/
 
 # Defaults for frontmatter
@@ -59,8 +63,3 @@ defaults:
       path: ""
     values:
       layout: default
-  - scope:
-      path: "portal"
-    values:
-      layout: default
-      protected: true

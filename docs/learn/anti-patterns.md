@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Anti-Patterns
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # 🚫 Anti-Patterns: How to Fail at AI Writing
 

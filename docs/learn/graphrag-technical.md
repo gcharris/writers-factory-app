@@ -1,14 +1,9 @@
 ---
 layout: default
 title: GraphRAG Technical
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # GraphRAG Implementation (Technical)
 

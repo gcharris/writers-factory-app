@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Distillation Prompts
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Distillation Prompts Library
 

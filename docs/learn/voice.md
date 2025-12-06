@@ -1,14 +1,9 @@
 ---
 layout: default
 title: Voice Calibration
-protected: true
+
 ---
 
-<script>
-if (!sessionStorage.getItem('authenticated')) {
-    window.location.href = "/portal/";
-}
-</script>
 
 # Voice Calibration System
 
