@@ -293,6 +293,57 @@
 
 ---
 
+## 18. Distillation Pipeline (Workspace Research)
+
+### 18.1 Workspace Service
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.1.1 | Get categories | `curl http://localhost:8000/workspace/research/categories` → returns 5 categories | |
+| 18.1.2 | List files | `curl http://localhost:8000/workspace/research` → returns files by category | |
+| 18.1.3 | Valid categories | Response includes: characters, world, theme, plot, voice | |
+| 18.1.4 | Category icons | Each category has icon (👤, 🌍, 💭, 📊, ✍️) | |
+
+### 18.2 Save Research
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.2.1 | Save valid | `curl -X POST http://localhost:8000/workspace/research/save -H "Content-Type: application/json" -d '{"category":"characters","key":"test_character","content":"Fatal Flaw: Pride"}'` | |
+| 18.2.2 | Reject invalid category | POST with category="misc" → 400 error with helpful message | |
+| 18.2.3 | File created | Check workspace/research/characters/test_character.md exists | |
+| 18.2.4 | YAML frontmatter | File has frontmatter with stage: 2, category, status | |
+
+### 18.3 Conflict Detection
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.3.1 | Check conflicts | `curl -X POST http://localhost:8000/workspace/research/check-conflicts -H "Content-Type: application/json" -d '{"content":"Test content","category":"characters"}'` | |
+| 18.3.2 | Stage 1 warning | Raw content without markers → stage_warning: true | |
+| 18.3.3 | Stage 2 pass | Content with "Fatal Flaw:" → stage_warning: false | |
+| 18.3.4 | Summary included | Response has "summary" field with readable text | |
+
+### 18.4 Promotion Check
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.4.1 | Check promotable | `curl "http://localhost:8000/promotion/check?file_path=workspace/research/characters/test.md"` | |
+| 18.4.2 | Blockers listed | Response shows blockers if content missing required fields | |
+| 18.4.3 | Warnings listed | Response shows warnings for significant conflicts | |
+| 18.4.4 | Target shown | Response shows target Story Bible file | |
+
+### 18.5 Promotion Preview
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.5.1 | Preview extraction | `curl "http://localhost:8000/promotion/preview?file_path=workspace/research/characters/test.md"` | |
+| 18.5.2 | Fields extracted | Response shows extracted_fields (fatal_flaw, the_lie, etc.) | |
+| 18.5.3 | Merge strategy | Response shows merge_strategy (update_fields, trigger_calibration) | |
+
+### 18.6 Promotion Execute
+| # | Test | How to Test | Status |
+|---|------|-------------|--------|
+| 18.6.1 | Execute promotion | `curl -X POST http://localhost:8000/promotion/execute -H "Content-Type: application/json" -d '{"source_path":"workspace/research/characters/test.md","confirm_warnings":true}'` | |
+| 18.6.2 | Target updated | Story Bible file (Protagonist.md) updated with extracted fields | |
+| 18.6.3 | Source marked | Source file frontmatter updated with status: promoted | |
+| 18.6.4 | Voice special | Voice category triggers calibration, not file copy | |
+
+---
+
 ## Quick Test Commands
 
 ```bash
@@ -320,6 +371,33 @@ curl -X POST http://localhost:8000/verification/run \
 curl -X POST http://localhost:8000/graph/extract-narrative \
   -H "Content-Type: application/json" \
   -d '{"content": "Sarah confronted Mickey about the missing documents.", "scene_id": "test-1"}'
+
+# Distillation Pipeline - Workspace Research
+curl http://localhost:8000/workspace/research/categories
+
+# List research files
+curl http://localhost:8000/workspace/research
+
+# Save research (with conflict check)
+curl -X POST http://localhost:8000/workspace/research/save \
+  -H "Content-Type: application/json" \
+  -d '{"category":"characters","key":"protagonist","content":"Fatal Flaw: Pride\nThe Lie: I must do everything alone"}'
+
+# Check conflicts (preview)
+curl -X POST http://localhost:8000/workspace/research/check-conflicts \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Magic requires blood sacrifice","category":"world"}'
+
+# Promotion check
+curl "http://localhost:8000/promotion/check?file_path=workspace/research/characters/protagonist.md"
+
+# Promotion preview
+curl "http://localhost:8000/promotion/preview?file_path=workspace/research/characters/protagonist.md"
+
+# Execute promotion
+curl -X POST http://localhost:8000/promotion/execute \
+  -H "Content-Type: application/json" \
+  -d '{"source_path":"workspace/research/characters/protagonist.md","confirm_warnings":true}'
 ```
 
 ---
@@ -354,8 +432,9 @@ curl -X POST http://localhost:8000/graph/extract-narrative \
 | 15. Orchestrator | | | | 3 |
 | 16. Foreman Modes | | | | 5 |
 | 17. API Health | | | | 4 |
-| **TOTAL** | | | | **92** |
+| 18. Distillation Pipeline | | | | 19 |
+| **TOTAL** | | | | **111** |
 
 ---
 
-*Last updated: December 5, 2025*
+*Last updated: December 6, 2025*

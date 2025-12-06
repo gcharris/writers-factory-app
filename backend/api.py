@@ -37,6 +37,9 @@ from backend.services.manuscript_service import get_manuscript_service, Manuscri
 from backend.services.embedding_service import get_embedding_service
 from backend.services.embedding_index_service import EmbeddingIndexService, get_embedding_index_service
 from backend.services.knowledge_router import KnowledgeRouter, create_knowledge_router
+from backend.services.workspace_service import get_workspace_service, WorkspaceService, VALID_RESEARCH_CATEGORIES
+from backend.services.conflict_detection_service import get_conflict_detection_service, ConflictDetectionService
+from backend.services.promotion_service import get_promotion_service, PromotionService
 
 # --- SQLAlchemy Imports ---
 from sqlalchemy import create_engine
@@ -189,6 +192,36 @@ class CreateHybridRequest(BaseModel):
     target_word_count: Optional[int] = None
     maintain_pacing: bool = True
     smooth_transitions: bool = True
+
+
+# --- Workspace Research Models (Distillation Pipeline) ---
+
+class SaveResearchRequest(BaseModel):
+    """Request to save research to workspace."""
+    category: str  # One of: characters, world, theme, plot, voice
+    key: str  # Name for the file
+    content: str  # The extracted content
+    notebook_name: Optional[str] = None
+    notebook_id: Optional[str] = None
+    skip_conflict_check: bool = False
+
+
+class CheckConflictsRequest(BaseModel):
+    """Request to check content for conflicts."""
+    content: str
+    category: str
+    skip_stage_check: bool = False
+
+
+class PromotionCheckRequest(BaseModel):
+    """Request to check if file can be promoted."""
+    file_path: str
+
+
+class PromotionExecuteRequest(BaseModel):
+    """Request to execute promotion to Story Bible."""
+    source_path: str
+    confirm_warnings: bool = False
 
 
 # --- API Endpoints ---
@@ -7014,6 +7047,224 @@ async def knowledge_query(request: QueryRequest):
 
     except Exception as e:
         logger.error(f"Knowledge query failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Workspace Research Endpoints (Distillation Pipeline Phase 1) ---
+
+@app.get("/workspace/research/categories", summary="Get available research categories")
+def get_research_categories():
+    """
+    Get the 5 Core research categories with descriptions and icons.
+
+    Returns list of: characters, world, theme, plot, voice
+    """
+    workspace_service = get_workspace_service()
+    return {"categories": workspace_service.get_categories()}
+
+
+@app.get("/workspace/research", summary="List all research files")
+def list_research_files():
+    """
+    List all research files organized by category.
+
+    Returns dict mapping category to list of filenames.
+    """
+    workspace_service = get_workspace_service()
+    return {"files": workspace_service.list_research_files()}
+
+
+@app.get("/workspace/research/{category}/{filename}", summary="Read a research file")
+def read_research_file(category: str, filename: str):
+    """
+    Read a specific research file's content and metadata.
+
+    Args:
+        category: One of characters, world, theme, plot, voice
+        filename: The filename (with or without .md extension)
+    """
+    workspace_service = get_workspace_service()
+    try:
+        result = workspace_service.read_research_file(category, filename)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/workspace/research/save", summary="Save research with conflict detection")
+async def save_research_note(request: SaveResearchRequest):
+    """
+    Save extracted research to workspace/research/{category}/.
+
+    Optionally runs conflict detection before saving.
+    """
+    workspace_service = get_workspace_service()
+
+    # Validate category first
+    if not workspace_service.validate_category(request.category):
+        error_msg = workspace_service.get_category_error_message(request.category)
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    # Run conflict detection if not skipped
+    conflict_result = None
+    if not request.skip_conflict_check:
+        conflict_service = get_conflict_detection_service()
+        conflict_result = await conflict_service.detect_conflicts(
+            request.content,
+            request.category
+        )
+
+        # If BREAKING conflicts, reject save
+        if conflict_result.has_breaking_conflicts:
+            return {
+                "success": False,
+                "action_required": "resolve_conflicts",
+                "conflicts": conflict_result.to_dict(),
+                "message": "BREAKING conflicts detected. Resolve before saving."
+            }
+
+    # Save the research note
+    try:
+        metadata = {
+            "notebook_name": request.notebook_name,
+            "notebook_id": request.notebook_id,
+        }
+        result = workspace_service.save_research_note(
+            category=request.category,
+            key=request.key,
+            content=request.content,
+            metadata=metadata
+        )
+
+        response = {
+            "success": True,
+            "file_path": result["file_path"],
+            "category": result["category"],
+            "key": result["key"],
+        }
+
+        # Include conflict info if any were detected
+        if conflict_result and conflict_result.has_conflicts:
+            response["conflicts"] = conflict_result.to_dict()
+            response["message"] = "Saved with warnings. Review conflicts recommended."
+
+        return response
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to save research: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workspace/research/check-conflicts", summary="Check content for conflicts")
+async def check_research_conflicts(request: CheckConflictsRequest):
+    """
+    Check content for conflicts without saving.
+
+    Useful for preview before save.
+    """
+    conflict_service = get_conflict_detection_service()
+
+    try:
+        result = await conflict_service.detect_conflicts(
+            request.content,
+            request.category,
+            skip_stage_check=request.skip_stage_check
+        )
+
+        return {
+            **result.to_dict(),
+            "summary": conflict_service.get_conflict_summary(result)
+        }
+
+    except Exception as e:
+        logger.error(f"Conflict detection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Promotion Endpoints (Distillation Pipeline Phase 4) ---
+
+@app.get("/promotion/check", summary="Check if file can be promoted")
+async def check_promotion_status(file_path: str = Query(..., description="Path to research file")):
+    """
+    Check if a research file can be promoted to Story Bible.
+
+    Validates:
+    1. Stage 2 content (not raw Stage 1)
+    2. No unresolved BREAKING conflicts
+    3. Contains required fields for category
+    """
+    promotion_service = get_promotion_service()
+
+    try:
+        status = await promotion_service.check_promotable(file_path)
+        return status.to_dict()
+    except Exception as e:
+        logger.error(f"Promotion check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/promotion/preview", summary="Preview what promotion will do")
+async def preview_promotion(file_path: str = Query(..., description="Path to research file")):
+    """
+    Preview what fields will be extracted and where they'll go.
+
+    Does not execute the promotion.
+    """
+    promotion_service = get_promotion_service()
+
+    try:
+        preview = await promotion_service.preview_promotion(file_path)
+        if "error" in preview:
+            raise HTTPException(status_code=404, detail=preview["error"])
+        return preview
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Promotion preview failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/promotion/execute", summary="Promote research to Story Bible")
+async def execute_promotion(request: PromotionExecuteRequest):
+    """
+    Promote a research file to Story Bible with intelligent transformation.
+
+    Each category extracts specific fields:
+    - characters → Protagonist.md (Fatal Flaw, The Lie, Arc)
+    - world → Rules.md (Hard Rules)
+    - theme → Theme.md (Central Question, Thesis)
+    - plot → Beat_Sheet.md (15 Beats)
+    - voice → Triggers Voice Calibration
+    """
+    promotion_service = get_promotion_service()
+
+    try:
+        result = await promotion_service.promote(
+            request.source_path,
+            confirm_warnings=request.confirm_warnings
+        )
+
+        if not result.success:
+            return {
+                "success": False,
+                "error": result.error,
+                "action": result.action
+            }
+
+        return {
+            "success": True,
+            "target": result.target,
+            "fields_updated": result.fields_updated,
+            "action": result.action,
+            "data": result.data
+        }
+
+    except Exception as e:
+        logger.error(f"Promotion failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
