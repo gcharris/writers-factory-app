@@ -94,7 +94,7 @@ The #1 problem with AI is that it sounds generic. We solve this with Darwinian s
 3.  **The Selection:** You review 15-25 variants and pick the winner.
 4.  **The Output:** A **Voice Bundle**—reference files that govern all future generation.
 
-**[→ Voice Calibration Deep Dive](voice_calibration)**
+**[→ Voice Calibration Deep Dive](/learn/voice)**
 
 ---
 
@@ -110,9 +110,9 @@ We treat scene creation like a manufacturing pipeline:
 2.  **Variants**: Multiple approaches (Action-heavy vs. Dialogue-heavy).
 3.  **Tournament**: Models compete to draft the scene.
 4.  **Analysis**: Every scene is scored on a **100-Point Rubric** (Voice Authenticity, Character Consistency, Metaphor Discipline).
-5.  **Verification**: **[GraphRAG](graphrag)** checks for contradictions, ensures callbacks to earlier setups, and updates the knowledge graph.
+5.  **Verification**: **[GraphRAG](/learn/graphrag)** checks for contradictions, ensures callbacks to earlier setups, and updates the knowledge graph.
 
-**[→ Director Mode Deep Dive](director_mode)**
+**[→ Director Mode Deep Dive](/learn/director)**
 
 ---
 
@@ -129,14 +129,19 @@ The suit doesn't replace your judgment—it amplifies it. It doesn't write your 
 
 ---
 
-## Full Technical Documentation
+## Deep Dives
 
-This is the simplified course version. For complete technical details:
+Ready to go deeper? Explore the technical documentation:
 
 | Topic | Document |
 |-------|----------|
-| Complete Writer's Journey | [WRITERS_JOURNEY.md](WRITERS_JOURNEY.md) |
-| GraphRAG System | [GraphRAG: The Living Brain](graphrag) |
-| Voice Calibration | [Voice Calibration System](voice_calibration) |
-| Director Mode | [Director Mode Pipeline](director_mode) |
-| How Systems Integrate | [Systems Integration](systems_integration) |
+| GraphRAG System | [GraphRAG: The Living Brain](/learn/graphrag) |
+| Voice Calibration | [Voice Calibration System](/learn/voice) |
+| Director Mode | [Director Mode Pipeline](/learn/director) |
+| How Systems Integrate | [Systems Integration](/learn/integration) |
+| Context Engineering | [The New Prompt Engineering](/learn/context) |
+
+<p class="text-center mt-4">
+    <a href="/learn/" class="btn-primary">Browse All Documentation</a>
+    <a href="/schedule" class="btn-secondary" style="margin-left: 12px;">View Schedule</a>
+</p>
