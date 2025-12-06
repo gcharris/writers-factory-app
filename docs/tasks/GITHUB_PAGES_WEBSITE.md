@@ -100,7 +100,12 @@ docs/
         ├── director.md            # Director mode
         ├── integration.md         # Systems integration
         ├── agents.md              # Agent instructions
-        └── anti-patterns.md       # Common mistakes
+        ├── anti-patterns.md       # Common mistakes
+        │
+        │   # NEW: Distillation Pipeline Documentation
+        ├── preflight.md           # Pre-Flight Manual for writers
+        ├── notebooks.md           # The 5 Core Notebooks guide
+        └── distillation.md        # Distillation Prompts library
 ```
 
 ### File Mapping (Current → New)
@@ -122,6 +127,9 @@ docs/
 | `systems_integration.md` | `portal/tools/integration.md` | Move to protected |
 | `agent_instructions.md` | `portal/tools/agents.md` | Move to protected |
 | `anti_patterns.md` | `portal/tools/anti-patterns.md` | Move to protected |
+| `WRITERS_PREFLIGHT_MANUAL.md` | `portal/tools/preflight.md` | Move to protected (NEW) |
+| `FIVE_CORE_NOTEBOOKS.md` | `portal/tools/notebooks.md` | Move to protected (NEW) |
+| `DISTILLATION_PROMPTS.md` | `portal/tools/distillation.md` | Move to protected (NEW) |
 
 ---
 
@@ -416,5 +424,68 @@ After reorganization, update these broken link patterns:
 
 ---
 
+## Distillation Pipeline Documentation (NEW)
+
+The following technical documentation was created for the Distillation Pipeline feature and should be included in the student portal:
+
+### Files to Include
+
+| File | Portal Location | Purpose |
+|------|-----------------|---------|
+| `WRITERS_PREFLIGHT_MANUAL.md` | `/portal/tools/preflight` | **START HERE** - Complete checklist before using Writers Factory |
+| `FIVE_CORE_NOTEBOOKS.md` | `/portal/tools/notebooks` | Detailed guide to the 5 Core Notebook structure |
+| `DISTILLATION_PROMPTS.md` | `/portal/tools/distillation` | Copy-paste prompts for NotebookLM |
+
+### Recommended Navigation
+
+Add these to the portal tools sidebar in this order:
+
+```
+Tools
+├── Getting Started
+│   ├── Pre-Flight Checklist (/portal/tools/preflight)    ← ENTRY POINT
+│   ├── 5 Core Notebooks (/portal/tools/notebooks)
+│   └── Distillation Prompts (/portal/tools/distillation)
+├── Writer's Journey (/portal/tools/journey)
+├── Modes
+│   ├── Voice Calibration (/portal/tools/voice)
+│   └── Director Mode (/portal/tools/director)
+├── Technical (Architect Track)
+│   ├── Context Engineering (/portal/tools/context)
+│   ├── GraphRAG (/portal/tools/graphrag)
+│   ├── GraphRAG Implementation (/portal/tools/graphrag-technical)
+│   ├── Systems Integration (/portal/tools/integration)
+│   └── Agent Instructions (/portal/tools/agents)
+└── Reference
+    ├── LLM Models (/portal/tools/models)
+    └── Anti-Patterns (/portal/tools/anti-patterns)
+```
+
+### Content Summary
+
+**Pre-Flight Manual** (`WRITERS_PREFLIGHT_MANUAL.md`):
+- 3-stage pipeline explanation (Raw → Core → Bible)
+- Pre-flight checklist with checkboxes
+- Required markers table for each notebook type
+- Verification examples showing exact text patterns
+- Launch instructions for Writers Factory
+- Common mistakes table
+
+**5 Core Notebooks** (`FIVE_CORE_NOTEBOOKS.md`):
+- Why exactly 5 notebooks (not more, not less)
+- Detailed explanation of each notebook type
+- What to include vs what to avoid
+- Setup instructions for NotebookLM
+- Graceful failure behavior
+
+**Distillation Prompts** (`DISTILLATION_PROMPTS.md`):
+- Copy-paste prompts for each category
+- Character, World, Theme, Plot, Voice extraction
+- Key markers the AI looks for
+- Common mistakes when distilling
+
+---
+
 *Task created: December 6, 2025*
 *Created by: Claude Desktop (Cloud Agent)*
+*Updated: December 6, 2025 - Added Distillation Pipeline documentation*
