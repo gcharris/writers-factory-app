@@ -76,9 +76,9 @@
 
       /* Sidebar */
       .sidebar {
-        width: 260px;
+        width: 300px;
         background: var(--bg-secondary);
-        border-right: 1px solid var(--border);
+        border-right: none;
         display: flex;
         flex-direction: column;
         position: fixed;
@@ -87,21 +87,27 @@
         height: 100vh;
         overflow-y: auto;
         z-index: 100;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+      }
+
+      .sidebar::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
       }
 
       .sidebar-header {
-        padding: 20px;
-        border-bottom: 1px solid var(--border);
+        padding: 24px;
+        border-bottom: 1px solid var(--border-subtle);
       }
 
       .site-title {
         color: var(--accent-gold);
-        font-size: 1.1rem;
+        font-size: 1.4rem;
         font-weight: 700;
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
       }
 
       .site-title:hover {
@@ -109,8 +115,8 @@
       }
 
       .site-logo {
-        height: 36px;
-        width: 36px;
+        height: 48px;
+        width: 48px;
         border-radius: 50%;
       }
 
@@ -118,19 +124,54 @@
         flex: 1;
         padding: 16px 0;
         overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .sidebar-nav::-webkit-scrollbar {
+        display: none;
       }
 
       .nav-section {
-        margin-bottom: 8px;
+        margin-bottom: 4px;
       }
 
       .nav-section-title {
         color: var(--text-muted);
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        padding: 8px 20px 4px;
+        padding: 12px 24px 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+      }
+
+      .nav-section-title:hover {
+        color: var(--text-secondary);
+      }
+
+      .nav-section-title::after {
+        content: '▼';
+        font-size: 0.6rem;
+        transition: transform 0.2s ease;
+      }
+
+      .nav-section.collapsed .nav-section-title::after {
+        transform: rotate(-90deg);
+      }
+
+      .nav-section-items {
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        max-height: 500px;
+      }
+
+      .nav-section.collapsed .nav-section-items {
+        max-height: 0;
       }
 
       .nav-item {
@@ -139,7 +180,7 @@
         gap: 8px;
         color: var(--text-secondary);
         text-decoration: none;
-        padding: 8px 20px;
+        padding: 10px 24px;
         font-size: 0.9rem;
         transition: all 0.15s ease;
         border-left: 3px solid transparent;
@@ -163,11 +204,11 @@
       .badge-dot.director { background: var(--accent-gold); }
 
       .sidebar-footer {
-        padding: 16px 20px;
-        border-top: 1px solid var(--border);
+        padding: 20px 24px;
+        border-top: 1px solid var(--border-subtle);
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
       }
 
       .download-btn {
@@ -201,7 +242,7 @@
       /* Main Content */
       .main-content {
         flex: 1;
-        margin-left: 260px;
+        margin-left: 300px;
         min-height: 100vh;
       }
 
@@ -556,42 +597,52 @@
 
         <nav class="sidebar-nav">
           <div class="nav-section">
-            <div class="nav-section-title">Overview</div>
-            <a href="{{ '/' | relative_url }}" class="nav-item">Home</a>
-            <a href="{{ '/about' | relative_url }}" class="nav-item">About</a>
-            <a href="{{ '/tracks' | relative_url }}" class="nav-item">Tracks</a>
-            <a href="{{ '/faq' | relative_url }}" class="nav-item">FAQ</a>
+            <div class="nav-section-title" onclick="this.parentElement.classList.toggle('collapsed')">Overview</div>
+            <div class="nav-section-items">
+              <a href="{{ '/' | relative_url }}" class="nav-item">Home</a>
+              <a href="{{ '/about' | relative_url }}" class="nav-item">About</a>
+              <a href="{{ '/tracks' | relative_url }}" class="nav-item">Tracks</a>
+              <a href="{{ '/faq' | relative_url }}" class="nav-item">FAQ</a>
+            </div>
           </div>
 
           <div class="nav-section">
-            <div class="nav-section-title">The Course</div>
-            <a href="{{ '/journey' | relative_url }}" class="nav-item">Writer's Journey</a>
-            <a href="{{ '/schedule' | relative_url }}" class="nav-item">Schedule</a>
-            <a href="{{ '/showcase' | relative_url }}" class="nav-item">Showcase</a>
+            <div class="nav-section-title" onclick="this.parentElement.classList.toggle('collapsed')">The Course</div>
+            <div class="nav-section-items">
+              <a href="{{ '/journey' | relative_url }}" class="nav-item">Writer's Journey</a>
+              <a href="{{ '/schedule' | relative_url }}" class="nav-item">Schedule</a>
+              <a href="{{ '/showcase' | relative_url }}" class="nav-item">Showcase</a>
+            </div>
           </div>
 
           <div class="nav-section">
-            <div class="nav-section-title">Getting Started</div>
-            <a href="{{ '/learn/preflight' | relative_url }}" class="nav-item">Pre-Flight Checklist</a>
-            <a href="{{ '/learn/notebooks' | relative_url }}" class="nav-item">5 Core Notebooks</a>
-            <a href="{{ '/learn/distillation' | relative_url }}" class="nav-item">Distillation Prompts</a>
+            <div class="nav-section-title" onclick="this.parentElement.classList.toggle('collapsed')">Getting Started</div>
+            <div class="nav-section-items">
+              <a href="{{ '/learn/preflight' | relative_url }}" class="nav-item">Pre-Flight Checklist</a>
+              <a href="{{ '/learn/notebooks' | relative_url }}" class="nav-item">5 Core Notebooks</a>
+              <a href="{{ '/learn/distillation' | relative_url }}" class="nav-item">Distillation Prompts</a>
+            </div>
           </div>
 
           <div class="nav-section">
-            <div class="nav-section-title">Writing Modes</div>
-            <a href="{{ '/learn/agents' | relative_url }}" class="nav-item"><span class="badge-dot architect"></span>Agent Instructions</a>
-            <a href="{{ '/learn/voice' | relative_url }}" class="nav-item"><span class="badge-dot voice"></span>Voice Calibration</a>
-            <a href="{{ '/learn/director' | relative_url }}" class="nav-item"><span class="badge-dot director"></span>Director Mode</a>
+            <div class="nav-section-title" onclick="this.parentElement.classList.toggle('collapsed')">Writing Modes</div>
+            <div class="nav-section-items">
+              <a href="{{ '/learn/agents' | relative_url }}" class="nav-item"><span class="badge-dot architect"></span>Agent Instructions</a>
+              <a href="{{ '/learn/voice' | relative_url }}" class="nav-item"><span class="badge-dot voice"></span>Voice Calibration</a>
+              <a href="{{ '/learn/director' | relative_url }}" class="nav-item"><span class="badge-dot director"></span>Director Mode</a>
+            </div>
           </div>
 
-          <div class="nav-section">
-            <div class="nav-section-title">Technical</div>
-            <a href="{{ '/learn/context' | relative_url }}" class="nav-item">Context Engineering</a>
-            <a href="{{ '/learn/graphrag' | relative_url }}" class="nav-item">GraphRAG</a>
-            <a href="{{ '/learn/graphrag-technical' | relative_url }}" class="nav-item">GraphRAG Technical</a>
-            <a href="{{ '/learn/integration' | relative_url }}" class="nav-item">Systems Integration</a>
-            <a href="{{ '/learn/models' | relative_url }}" class="nav-item">LLM Models</a>
-            <a href="{{ '/learn/anti-patterns' | relative_url }}" class="nav-item">Anti-Patterns</a>
+          <div class="nav-section collapsed">
+            <div class="nav-section-title" onclick="this.parentElement.classList.toggle('collapsed')">Technical</div>
+            <div class="nav-section-items">
+              <a href="{{ '/learn/context' | relative_url }}" class="nav-item">Context Engineering</a>
+              <a href="{{ '/learn/graphrag' | relative_url }}" class="nav-item">GraphRAG</a>
+              <a href="{{ '/learn/graphrag-technical' | relative_url }}" class="nav-item">GraphRAG Technical</a>
+              <a href="{{ '/learn/integration' | relative_url }}" class="nav-item">Systems Integration</a>
+              <a href="{{ '/learn/models' | relative_url }}" class="nav-item">LLM Models</a>
+              <a href="{{ '/learn/anti-patterns' | relative_url }}" class="nav-item">Anti-Patterns</a>
+            </div>
           </div>
         </nav>
 
