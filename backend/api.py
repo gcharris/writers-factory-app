@@ -1503,6 +1503,41 @@ class SaveResearchRequest(BaseModel):
     key: str
     notebook_id: Optional[str] = None
     notebook_name: Optional[str] = None
+    skip_conflict_check: bool = False  # Skip conflict detection
+    force_save: bool = False  # Save even with conflicts
+
+
+class ConflictCheckRequest(BaseModel):
+    """Request to check content for conflicts."""
+    content: str
+    category: str
+
+
+@app.post("/workspace/research/check-conflicts", summary="Check content for conflicts")
+async def check_research_conflicts(req: ConflictCheckRequest):
+    """
+    Check content for conflicts before saving (Phase 2).
+
+    Performs:
+    1. Stage Check - Is this raw (Stage 1) or distilled (Stage 2) content?
+    2. Hard Rules Check - Any violations of World Hard Rules?
+    3. Category Fact Check - Contradictions with existing research?
+
+    Returns:
+        stage_warning: Whether content appears to be raw Stage 1 data
+        conflicts: List of detected conflicts with severity
+        action_required: What the user should do
+    """
+    from backend.services.conflict_detection_service import get_conflict_detection_service
+
+    try:
+        service = get_conflict_detection_service()
+        result = await service.detect_conflicts(req.content, req.category)
+        return result.to_dict()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/workspace/research/save", summary="Save extraction to research file")
@@ -1513,13 +1548,41 @@ async def save_research_note(req: SaveResearchRequest):
     The file is saved to workspace/research/{category}/{key}.md with YAML frontmatter.
     Category MUST be one of the 5 Core categories: characters, world, theme, plot, voice.
 
+    Optionally performs conflict detection unless skip_conflict_check=True.
+    If conflicts are found and force_save=False, returns conflicts instead of saving.
+
     Returns:
         file_path: Relative path to saved file
         success: Boolean indicating success
+        conflicts: Any detected conflicts (if not force_save)
     """
     from backend.services.workspace_service import get_workspace_service
+    from backend.services.conflict_detection_service import get_conflict_detection_service
 
     try:
+        # Run conflict detection unless skipped
+        conflicts_result = None
+        if not req.skip_conflict_check:
+            conflict_service = get_conflict_detection_service()
+            conflicts_result = await conflict_service.detect_conflicts(req.content, req.category)
+
+            # If conflicts exist and not forcing save, return them for user review
+            if conflicts_result.has_conflicts and not req.force_save:
+                return {
+                    "success": False,
+                    "conflicts_detected": True,
+                    **conflicts_result.to_dict()
+                }
+
+            # If Stage 1 warning and not forcing save, return warning
+            if conflicts_result.stage_warning and not req.force_save:
+                return {
+                    "success": False,
+                    "conflicts_detected": False,
+                    **conflicts_result.to_dict()
+                }
+
+        # Proceed with save
         workspace = get_workspace_service()
         result = workspace.save_research_note(
             category=req.category,
@@ -1530,6 +1593,14 @@ async def save_research_note(req: SaveResearchRequest):
                 "notebook_name": req.notebook_name,
             }
         )
+
+        # Include any conflicts/warnings in response
+        if conflicts_result:
+            result["conflicts_checked"] = True
+            if conflicts_result.has_conflicts:
+                result["saved_with_conflicts"] = True
+                result["conflicts"] = [c.to_dict() for c in conflicts_result.conflicts]
+
         return result
     except ValueError as e:
         # Category validation error
