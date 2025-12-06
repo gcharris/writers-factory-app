@@ -68,83 +68,167 @@
         padding: 0;
       }
 
-      /* Header / Navigation */
-      .site-header {
+      /* App Layout - Sidebar + Main */
+      .app-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
         background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border);
-        padding: 16px 0;
-        position: sticky;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
         top: 0;
+        left: 0;
+        height: 100vh;
+        overflow-y: auto;
         z-index: 100;
       }
 
-      .header-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
+      .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
       }
 
       .site-title {
         color: var(--accent-gold);
-        font-size: 1.5rem;
+        font-size: 1.1rem;
         font-weight: 700;
         text-decoration: none;
-        letter-spacing: -0.5px;
         display: flex;
         align-items: center;
         gap: 12px;
-      }
-
-      .site-logo {
-        height: 40px;
-        width: 40px;
-        border-radius: 50%;
       }
 
       .site-title:hover {
         color: var(--accent-gold-hover);
       }
 
-      .nav-download {
-        background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
-        color: var(--bg-primary) !important;
-        padding: 8px 16px;
-        border-radius: 6px;
+      .site-logo {
+        height: 36px;
+        width: 36px;
+        border-radius: 50%;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 16px 0;
+        overflow-y: auto;
+      }
+
+      .nav-section {
+        margin-bottom: 8px;
+      }
+
+      .nav-section-title {
+        color: var(--text-muted);
+        font-size: 0.7rem;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 8px 20px 4px;
       }
 
-      .nav-download:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
-      }
-
-      .site-nav {
+      .nav-item {
         display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-      }
-
-      .site-nav a {
+        align-items: center;
+        gap: 8px;
         color: var(--text-secondary);
         text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s ease;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        transition: all 0.15s ease;
+        border-left: 3px solid transparent;
       }
 
-      .site-nav a:hover {
+      .nav-item:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+        border-left-color: var(--accent-cyan);
+      }
+
+      .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .badge-dot.architect { background: var(--accent-blue); }
+      .badge-dot.voice { background: var(--accent-purple); }
+      .badge-dot.director { background: var(--accent-gold); }
+
+      .sidebar-footer {
+        padding: 16px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .download-btn {
+        background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+        color: var(--bg-primary);
+        text-align: center;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        color: var(--bg-primary);
+      }
+
+      .github-link {
+        color: var(--text-muted);
+        text-align: center;
+        font-size: 0.8rem;
+        text-decoration: none;
+      }
+
+      .github-link:hover {
         color: var(--accent-cyan);
       }
 
       /* Main Content */
-      .page-content {
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        min-height: 100vh;
+      }
+
+      .content-wrapper {
         max-width: 900px;
         margin: 0 auto;
-        padding: 40px 24px;
+        padding: 40px 40px;
+      }
+
+      /* Mobile: Hide sidebar, show as overlay */
+      @media (max-width: 900px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .content-wrapper {
+          padding: 24px;
+        }
       }
 
       /* Typography */
@@ -417,16 +501,7 @@
         box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
       }
 
-      /* Footer */
-      .site-footer {
-        background: var(--bg-secondary);
-        border-top: 1px solid var(--border);
-        padding: 24px;
-        text-align: center;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-top: 60px;
-      }
+      /* Footer - now in sidebar */
 
       /* Utility classes */
       .text-center { text-align: center; }
@@ -456,18 +531,8 @@
         margin: 2em 0;
       }
 
-      /* Responsive */
+      /* Responsive - additional */
       @media (max-width: 768px) {
-        .header-wrapper {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .site-nav {
-          flex-direction: column;
-          gap: 12px;
-        }
-
         .hero h1 {
           font-size: 2rem;
         }
@@ -479,31 +544,69 @@
     </style>
   </head>
   <body>
-    <header class="site-header">
-      <div class="header-wrapper">
-        <a href="{{ '/' | relative_url }}" class="site-title">
-          <img src="{{ '/assets/images/logo.png' | relative_url }}" alt="Writers Factory" class="site-logo">
-          {{ site.title }}
-        </a>
-        <nav class="site-nav">
-          <a href="{{ '/about' | relative_url }}">About</a>
-          <a href="{{ '/journey' | relative_url }}">Journey</a>
-          <a href="{{ '/schedule' | relative_url }}">Schedule</a>
-          <a href="{{ '/learn/' | relative_url }}">Learn</a>
-          <a href="{{ '/showcase' | relative_url }}">Showcase</a>
-          <a href="{{ '/faq' | relative_url }}">FAQ</a>
-          <a href="{{ '/portal/' | relative_url }}" class="nav-download">Download</a>
+    <div class="app-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="{{ '/' | relative_url }}" class="site-title">
+            <img src="{{ '/assets/images/logo.png' | relative_url }}" alt="Writers Factory" class="site-logo">
+            <span>Writers Factory</span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-section">
+            <div class="nav-section-title">Overview</div>
+            <a href="{{ '/' | relative_url }}" class="nav-item">Home</a>
+            <a href="{{ '/about' | relative_url }}" class="nav-item">About</a>
+            <a href="{{ '/tracks' | relative_url }}" class="nav-item">Tracks</a>
+            <a href="{{ '/faq' | relative_url }}" class="nav-item">FAQ</a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">The Course</div>
+            <a href="{{ '/journey' | relative_url }}" class="nav-item">Writer's Journey</a>
+            <a href="{{ '/schedule' | relative_url }}" class="nav-item">Schedule</a>
+            <a href="{{ '/showcase' | relative_url }}" class="nav-item">Showcase</a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Getting Started</div>
+            <a href="{{ '/learn/preflight' | relative_url }}" class="nav-item">Pre-Flight Checklist</a>
+            <a href="{{ '/learn/notebooks' | relative_url }}" class="nav-item">5 Core Notebooks</a>
+            <a href="{{ '/learn/distillation' | relative_url }}" class="nav-item">Distillation Prompts</a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Writing Modes</div>
+            <a href="{{ '/learn/agents' | relative_url }}" class="nav-item"><span class="badge-dot architect"></span>Agent Instructions</a>
+            <a href="{{ '/learn/voice' | relative_url }}" class="nav-item"><span class="badge-dot voice"></span>Voice Calibration</a>
+            <a href="{{ '/learn/director' | relative_url }}" class="nav-item"><span class="badge-dot director"></span>Director Mode</a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Technical</div>
+            <a href="{{ '/learn/context' | relative_url }}" class="nav-item">Context Engineering</a>
+            <a href="{{ '/learn/graphrag' | relative_url }}" class="nav-item">GraphRAG</a>
+            <a href="{{ '/learn/graphrag-technical' | relative_url }}" class="nav-item">GraphRAG Technical</a>
+            <a href="{{ '/learn/integration' | relative_url }}" class="nav-item">Systems Integration</a>
+            <a href="{{ '/learn/models' | relative_url }}" class="nav-item">LLM Models</a>
+            <a href="{{ '/learn/anti-patterns' | relative_url }}" class="nav-item">Anti-Patterns</a>
+          </div>
         </nav>
-      </div>
-    </header>
 
-    <main class="page-content">
-      {{ content }}
-    </main>
+        <div class="sidebar-footer">
+          <a href="{{ '/portal/' | relative_url }}" class="download-btn">Download App</a>
+          <a href="https://github.com/gcharris/writers-factory-app" class="github-link">View on GitHub</a>
+        </div>
+      </aside>
 
-    <footer class="site-footer">
-      <p>Writers Factory &mdash; Open source AI writing environment</p>
-      <p><a href="https://github.com/gcharris/writers-factory-app">View on GitHub</a></p>
-    </footer>
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="content-wrapper">
+          {{ content }}
+        </div>
+      </main>
+    </div>
   </body>
 </html>
