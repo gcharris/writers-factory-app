@@ -40,6 +40,21 @@ protected: true
 
 ---
 
+## Quick Navigation
+
+<div class="track-grid">
+    <div class="card" style="border-top: 4px solid var(--accent-gold);">
+        <h4><a href="/portal/schedule">Weekly Schedule</a></h4>
+        <p class="text-muted">Day-by-day breakdown of the intensive</p>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--accent-cyan);">
+        <h4><a href="/portal/tools/preflight">Pre-Flight Checklist</a></h4>
+        <p class="text-muted">Everything you need before Day 1</p>
+    </div>
+</div>
+
+---
+
 ## Pre-Course Setup
 
 **Deadline:** 48 hours before Day 1
@@ -51,40 +66,17 @@ protected: true
 
 ---
 
-## Weekly Schedule
+## Weekly Schedule Overview
 
-### Day 1: The Machine & The Voice
-- **Morning:** Installation Verification & Multi-Agent Tour
-- **Afternoon:** Voice Extraction Party - feed NotebookLM data to generate "Starter Skills"
-- **Homework:** Generate 1,000 words using your voice profile
+| Day | Focus | Goal |
+|-----|-------|------|
+| **Day 1** | The Machine & The Voice | Set up, extract voice profile |
+| **Day 2** | Narrative Architecture | Complete 15-beat outline |
+| **Day 3** | The Drafting Pipeline | 50% of draft complete |
+| **Day 4** | Diagnostics & Polish | Debug narrative, polish excerpt |
+| **Day 5** | Showcase | Final assembly, presentations |
 
-### Day 2: Narrative Architecture
-- **Focus:** Story as System Design
-- **Activity:** Defining the Story Spec (Logline, Audience, Tone)
-- **Tech:** Using the Graph to model character contradictions
-- **Deliverable:** 15-beat outline in the Knowledge Graph
-
-### Day 3: The Drafting Pipeline
-- **Focus:** High-velocity generation
-- **Activity:** Running Tournament Mode for scene variations
-- **Milestone:** At 2,500 words, skills upgrade from "Starter" to "Novel-Tuned"
-- **Goal:** 50% of draft complete
-
-### Day 4: Diagnostics & Polish
-- **Focus:** Debugging the Narrative
-- **Activity:** Using the Narrative Dashboard:
-  - Tension Indicator: conflict pacing
-  - Pacing Analysis: action vs. setup balance
-  - Community Detection: character clusters (subplots)
-- **Tracks Split:**
-  - Writers: Polish 3-page excerpt for reading
-  - Architects: Draft technical proposal for system improvement
-
-### Day 5: Showcase
-- **Morning:** Final assembly. [Submit Your Work](/portal/submit)
-- **Afternoon:** Presentations (10 mins each)
-  - Creative: Premise + Reading
-  - Technical: Problem + Solution + Impact
+<p><a href="/portal/schedule" class="btn-secondary">View Full Schedule</a></p>
 
 ---
 
@@ -152,7 +144,7 @@ protected: true
 // Check if already authenticated
 if (sessionStorage.getItem('authenticated')) {
     document.getElementById('login-section').style.display = 'none';
-    document.getElementById('portal-content').style.display = 'block';
+    document.getElementById('portal-content').classList.add('authenticated');
 }
 
 function checkPassword() {
@@ -160,7 +152,7 @@ function checkPassword() {
     if (password === "skoltech2026" || password === "admin") {
         sessionStorage.setItem('authenticated', 'true');
         document.getElementById('login-section').style.display = 'none';
-        document.getElementById('portal-content').style.display = 'block';
+        document.getElementById('portal-content').classList.add('authenticated');
     } else {
         document.getElementById("error-msg").style.display = "block";
         var input = document.getElementById("password-input");
