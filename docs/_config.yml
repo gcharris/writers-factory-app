@@ -17,6 +17,8 @@ exclude:
   - reference/
   - status/
   - course_information/
+  - dev_logs/
+  - specs/
   - ARCHITECTURE.md
   - API_REFERENCE.md
   - BACKEND_SERVICES.md
