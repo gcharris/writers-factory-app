@@ -12,7 +12,7 @@ protected: true
     <p id="error-msg" style="color: var(--error); display: none; margin-top: 12px;">Incorrect Code</p>
 </div>
 
-<div id="portal-content" style="display: none;">
+<div id="portal-content" style="display: none;" markdown="1">
 
 # Student Portal: AI and the One-Week Novel
 
