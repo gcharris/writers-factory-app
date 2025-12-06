@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Writer's Journey
+title: "Writer's Journey"
 protected: true
 ---
 
