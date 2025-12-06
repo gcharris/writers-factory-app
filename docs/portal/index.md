@@ -92,11 +92,19 @@ protected: true
 
 <div class="track-grid">
     <div class="card">
+        <h4>Getting Started</h4>
+        <ul>
+            <li><a href="/portal/tools/notebooks">5 Core Notebooks</a></li>
+            <li><a href="/portal/tools/distillation">Distillation Prompts</a></li>
+            <li><a href="/portal/tools/journey">Writer's Journey</a></li>
+        </ul>
+    </div>
+    <div class="card">
         <h4>Core Concepts</h4>
         <ul>
-            <li><a href="/portal/tools/journey">Writer's Journey</a></li>
             <li><a href="/portal/tools/context">Context Engineering</a></li>
             <li><a href="/portal/tools/models">LLM Models</a></li>
+            <li><a href="/portal/tools/anti-patterns">Anti-Patterns</a></li>
         </ul>
     </div>
     <div class="card">
@@ -112,7 +120,7 @@ protected: true
         <ul>
             <li><a href="/portal/tools/voice">Voice Calibration</a></li>
             <li><a href="/portal/tools/director">Director Mode</a></li>
-            <li><a href="/portal/tools/anti-patterns">Anti-Patterns</a></li>
+            <li><a href="/portal/tools/agents">Agent Instructions</a></li>
         </ul>
     </div>
 </div>

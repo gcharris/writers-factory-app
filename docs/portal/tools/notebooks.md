@@ -1,3 +1,15 @@
+---
+layout: default
+title: The 5 Core Notebooks
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # The 5 Core Notebooks
 
 > Writers Factory accepts exactly 5 structured notebooks. No more, no less.
