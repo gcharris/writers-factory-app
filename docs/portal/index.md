@@ -94,6 +94,7 @@ protected: true
     <div class="card">
         <h4>Getting Started</h4>
         <ul>
+            <li><a href="/portal/tools/preflight"><strong>Pre-Flight Checklist</strong></a></li>
             <li><a href="/portal/tools/notebooks">5 Core Notebooks</a></li>
             <li><a href="/portal/tools/distillation">Distillation Prompts</a></li>
             <li><a href="/portal/tools/journey">Writer's Journey</a></li>

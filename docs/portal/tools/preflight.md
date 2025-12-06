@@ -1,3 +1,15 @@
+---
+layout: default
+title: Pre-Flight Manual
+protected: true
+---
+
+<script>
+if (!sessionStorage.getItem('authenticated')) {
+    window.location.href = "/portal/";
+}
+</script>
+
 # Writers Factory Pre-Flight Manual
 
 > Complete your research in NotebookLM before launching Writers Factory.
