@@ -147,6 +147,28 @@ async def generate_transition_response(
         target=target_mode
     )
 
+    # Check if NotebookLM notebooks are registered (for ARCHITECT guidance)
+    notebooks_registered = False
+    try:
+        from backend.agents.foreman import get_foreman
+        foreman = get_foreman()
+        notebooks_registered = len(foreman.notebooks) > 0 if foreman and foreman.notebooks else False
+    except Exception:
+        pass
+
+    # Special guidance for ARCHITECT mode without notebooks
+    architect_notebook_guidance = ""
+    if target_mode.upper() == "ARCHITECT" and not notebooks_registered:
+        architect_notebook_guidance = """
+
+IMPORTANT: No NotebookLM notebooks are registered yet.
+Before diving into Story Bible creation, guide the writer to:
+1. Click the NOTEBOOK button in the top-right toolbar
+2. Register their research notebooks (character, world, theme, craft)
+3. This grounds the Story Bible in their actual research
+
+Mention this naturally in your response - that connecting research notebooks first will make the Story Bible process much more effective."""
+
     # Build the prompt for the LLM
     system_prompt = f"""You are the Foreman, a creative writing partner.
 
@@ -157,7 +179,7 @@ Transition type: {transition_type}
 Context: {context}
 
 Your guidance: {template["guidance"]}
-Tone: {template["tone"]}
+Tone: {template["tone"]}{architect_notebook_guidance}
 
 Respond in 2-3 sentences max. Be conversational, not robotic.
 Do NOT use phrases like "I understand" or "Great choice".
