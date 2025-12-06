@@ -1,7 +1,7 @@
 title: Writers Factory
 description: AI and the One-Week Novel - Skoltech ISP 2026
 baseurl: ""
-url: "https://gcharris.github.io"
+url: "https://writersfactory.app"
 
 # Build settings
 markdown: kramdown
