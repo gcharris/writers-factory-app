@@ -35,6 +35,23 @@
   let selectedRole = 'world';
   let isRegistering = false;
 
+  // Save to Research state
+  let showSaveModal = false;
+  let saveCategory = 'characters';
+  let saveKey = '';
+  let isSaving = false;
+  let saveError = '';
+  let saveSuccess = '';
+
+  // The 5 Core Categories (matching backend)
+  const RESEARCH_CATEGORIES = [
+    { id: 'characters', name: 'Characters (Fatal Flaw, Arc, Cast)', icon: '👤' },
+    { id: 'world', name: 'World (Hard Rules, Locations)', icon: '🌍' },
+    { id: 'theme', name: 'Theme (Central Question, Symbols)', icon: '💭' },
+    { id: 'plot', name: 'Plot (15 Beats, Structure)', icon: '📊' },
+    { id: 'voice', name: 'Voice (Style Targets, Anti-patterns)', icon: '✍️' }
+  ];
+
   // Load state on mount
   onMount(async () => {
     await Promise.all([fetchStatus(), fetchConfiguredNotebooks()]);
@@ -143,6 +160,80 @@
     } finally {
       isRegistering = false;
     }
+  }
+
+  // Save to Research functionality
+  function openSaveModal() {
+    // Auto-suggest a key based on query or character name
+    if (characterName.trim()) {
+      saveKey = characterName.trim().toLowerCase().replace(/\s+/g, '_');
+      saveCategory = 'characters';
+    } else if (worldAspect.trim()) {
+      saveKey = worldAspect.trim().toLowerCase().replace(/\s+/g, '_');
+      saveCategory = 'world';
+    } else if (queryText.trim()) {
+      // Extract first few words as key
+      saveKey = queryText.trim().split(' ').slice(0, 3).join('_').toLowerCase();
+    } else {
+      saveKey = '';
+    }
+    saveError = '';
+    saveSuccess = '';
+    showSaveModal = true;
+  }
+
+  async function handleSaveToResearch() {
+    if (!saveKey.trim() || !result) return;
+
+    isSaving = true;
+    saveError = '';
+    saveSuccess = '';
+
+    try {
+      // Get the content from the result
+      const content = result.answer || result.profile || result.details || JSON.stringify(result);
+
+      // Get notebook info
+      const currentNb = notebooks.find(nb => nb.id === currentNotebook);
+
+      const res = await fetch(`${API_URL}/workspace/research/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content,
+          category: saveCategory,
+          key: saveKey.trim(),
+          notebook_id: currentNotebook,
+          notebook_name: currentNb?.label || ''
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || `Save failed (${res.status})`);
+      }
+
+      const data = await res.json();
+      saveSuccess = `Saved to ${data.file_path}`;
+
+      // Close modal after brief delay to show success
+      setTimeout(() => {
+        showSaveModal = false;
+        saveSuccess = '';
+      }, 1500);
+
+    } catch (err) {
+      saveError = err.message;
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  function copyToChat() {
+    if (!result) return;
+    const content = result.answer || result.profile || result.details || '';
+    const formatted = `[From: NotebookLM Research]\n\n${content}`;
+    dispatch('copyToChat', { content: formatted });
   }
 
   // Tab definitions
@@ -492,7 +583,25 @@
     <!-- Results Display -->
     {#if result}
       <div class="results-card">
-        <h3 class="results-title">Response</h3>
+        <div class="results-header">
+          <h3 class="results-title">Response</h3>
+          <div class="results-actions">
+            <button class="action-btn small" on:click={copyToChat} title="Copy to Chat">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Copy to Chat
+            </button>
+            <button class="action-btn small primary" on:click={openSaveModal} title="Save to Research">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Save to Research
+            </button>
+          </div>
+        </div>
         <div class="results-content">
           {#if result.answer}
             <p class="answer-text">{result.answer}</p>
@@ -521,6 +630,86 @@
       </div>
     {/if}
   </div>
+
+  <!-- Save to Research Modal -->
+  {#if showSaveModal}
+    <div class="modal-overlay" on:click={() => showSaveModal = false} on:keydown={(e) => e.key === 'Escape' && (showSaveModal = false)} role="dialog" aria-modal="true" tabindex="-1">
+      <div class="modal-content" on:click|stopPropagation role="document">
+        <div class="modal-header">
+          <h3>Save to Research Notes</h3>
+          <button class="modal-close" on:click={() => showSaveModal = false} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-description">
+            Save this extraction to your research files. Choose one of the 5 Core categories.
+          </p>
+
+          <div class="form-group">
+            <label for="save-category">Category (Required)</label>
+            <select id="save-category" bind:value={saveCategory}>
+              {#each RESEARCH_CATEGORIES as cat}
+                <option value={cat.id}>{cat.icon} {cat.name}</option>
+              {/each}
+            </select>
+            <p class="field-hint">Files save to workspace/research/{saveCategory}/</p>
+          </div>
+
+          <div class="form-group">
+            <label for="save-key">Name / Key (Required)</label>
+            <input
+              id="save-key"
+              type="text"
+              bind:value={saveKey}
+              placeholder="e.g., protagonist_profile, magic_rules"
+            />
+            <p class="field-hint">Will create: {saveKey || 'filename'}.md</p>
+          </div>
+
+          {#if saveError}
+            <div class="error-banner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {saveError}
+            </div>
+          {/if}
+
+          {#if saveSuccess}
+            <div class="success-banner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              {saveSuccess}
+            </div>
+          {/if}
+        </div>
+
+        <div class="modal-footer">
+          <button class="action-btn" on:click={() => showSaveModal = false}>Cancel</button>
+          <button
+            class="action-btn primary"
+            on:click={handleSaveToResearch}
+            disabled={isSaving || !saveKey.trim()}
+          >
+            {#if isSaving}
+              <span class="spinner"></span>
+              Saving...
+            {:else}
+              Save to Research
+            {/if}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -998,5 +1187,110 @@
     font-family: var(--font-mono);
     color: var(--text-secondary, #8b949e);
     overflow-x: auto;
+  }
+
+  /* Results Header with Actions */
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3, 12px);
+  }
+
+  .results-actions {
+    display: flex;
+    gap: var(--space-2, 8px);
+  }
+
+  .action-btn.small {
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+    font-size: var(--text-xs, 11px);
+  }
+
+  /* Success Banner */
+  .success-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+    padding: var(--space-3, 12px);
+    background: var(--success-muted, rgba(63, 185, 80, 0.2));
+    border-radius: var(--radius-md, 6px);
+    color: var(--success, #3fb950);
+    font-size: var(--text-sm, 12px);
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: var(--bg-secondary, #1a2027);
+    border: 1px solid var(--border, #2d3a47);
+    border-radius: var(--radius-lg, 8px);
+    width: 90%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4, 16px);
+    border-bottom: 1px solid var(--border, #2d3a47);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: var(--text-base, 14px);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #e6edf3);
+  }
+
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #6e7681);
+    cursor: pointer;
+    padding: var(--space-1, 4px);
+    border-radius: var(--radius-sm, 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-close:hover {
+    background: var(--bg-tertiary, #242d38);
+    color: var(--text-primary, #e6edf3);
+  }
+
+  .modal-body {
+    padding: var(--space-4, 16px);
+  }
+
+  .modal-description {
+    margin: 0 0 var(--space-4, 16px) 0;
+    font-size: var(--text-sm, 12px);
+    color: var(--text-secondary, #8b949e);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2, 8px);
+    padding: var(--space-4, 16px);
+    border-top: 1px solid var(--border, #2d3a47);
   }
 </style>
