@@ -1,70 +1,474 @@
 <!DOCTYPE html>
-<html lang="{{ site.lang | default: "en-US" }}">
+<html lang="{{ site.lang | default: 'en-US' }}">
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title }} | {{ site.title }}</title>
 
-{% seo %}
-    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
-    <!--[if lt IE 9]>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-    <![endif]-->
+    {% seo %}
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&family=Merriweather:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+
     <style>
-      /* Custom sidebar styles to make links prominent */
-      header nav ul {
-        list-style-type: none;
+      /* Cyber-Noir Theme - Inline for GitHub Pages */
+      :root {
+        /* Backgrounds */
+        --bg-primary: #0f1419;
+        --bg-secondary: #1a2027;
+        --bg-tertiary: #242d38;
+        --bg-elevated: #2d3640;
+        --bg-input: #1a2027;
+
+        /* Text */
+        --text-primary: #e6edf3;
+        --text-secondary: #8b949e;
+        --text-muted: #6e7681;
+
+        /* Accents */
+        --accent-gold: #d4a574;
+        --accent-gold-hover: #e0b585;
+        --accent-gold-muted: rgba(212, 165, 116, 0.15);
+        --accent-cyan: #58a6ff;
+        --accent-cyan-hover: #79b8ff;
+        --accent-purple: #a371f7;
+        --accent-purple-muted: rgba(163, 113, 247, 0.15);
+        --accent-blue: #2f81f7;
+        --accent-blue-muted: rgba(47, 129, 247, 0.15);
+
+        /* Semantic */
+        --success: #3fb950;
+        --success-muted: rgba(63, 185, 80, 0.15);
+        --warning: #d29922;
+        --error: #f85149;
+
+        /* Borders */
+        --border: #2d3a47;
+        --border-subtle: #21262d;
+
+        /* Typography */
+        --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        --font-prose: 'Merriweather', Georgia, serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        line-height: 1.6;
+        margin: 0;
         padding: 0;
       }
-      header nav ul li {
-        margin-bottom: 10px;
+
+      /* Header / Navigation */
+      .site-header {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
       }
-      header nav ul li a {
-        font-weight: bold;
-        display: block;
-        padding: 5px 0;
+
+      .header-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .site-title {
+        color: var(--accent-gold);
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-decoration: none;
+        letter-spacing: -0.5px;
+      }
+
+      .site-title:hover {
+        color: var(--accent-gold-hover);
+      }
+
+      .site-nav {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .site-nav a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .site-nav a:hover {
+        color: var(--accent-cyan);
+      }
+
+      /* Main Content */
+      .page-content {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      /* Typography */
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+      }
+
+      h1 { font-size: 2.5rem; margin-top: 0; }
+      h2 { font-size: 1.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+      h3 { font-size: 1.25rem; }
+
+      p {
+        margin-bottom: 1em;
+      }
+
+      /* Links */
+      a {
+        color: var(--accent-cyan);
+        text-decoration: none;
+      }
+
+      a:hover {
+        color: var(--accent-cyan-hover);
+        text-decoration: underline;
+      }
+
+      /* Code */
+      pre, code {
+        background: var(--bg-input);
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        border-radius: 4px;
+      }
+
+      code {
+        padding: 2px 6px;
+        color: var(--accent-gold);
+      }
+
+      pre {
+        padding: 16px;
+        overflow-x: auto;
+        border: 1px solid var(--border);
+      }
+
+      pre code {
+        padding: 0;
+        background: transparent;
+      }
+
+      /* Tables */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1em 0;
+      }
+
+      th, td {
+        border: 1px solid var(--border);
+        padding: 12px;
+        text-align: left;
+      }
+
+      th {
+        background: var(--bg-tertiary);
+        font-weight: 600;
+      }
+
+      tr:hover {
+        background: var(--bg-secondary);
+      }
+
+      /* Blockquotes */
+      blockquote {
+        border-left: 4px solid var(--accent-gold);
+        background: var(--bg-secondary);
+        padding: 16px 20px;
+        margin: 1em 0;
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+
+      blockquote p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Lists */
+      ul, ol {
+        padding-left: 1.5em;
+      }
+
+      li {
+        margin-bottom: 0.5em;
+      }
+
+      /* Buttons */
+      .btn-primary {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+        color: var(--bg-primary);
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        text-decoration: none;
+        color: var(--bg-primary);
+      }
+
+      .btn-secondary {
+        display: inline-block;
+        background: transparent;
+        color: var(--accent-cyan);
+        border: 1px solid var(--accent-cyan);
+        border-radius: 6px;
+        padding: 12px 24px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .btn-secondary:hover {
+        background: rgba(88, 166, 255, 0.1);
+        text-decoration: none;
+      }
+
+      /* Cards */
+      .card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+
+      .card:hover {
+        border-color: var(--accent-cyan);
+      }
+
+      /* Mode badges */
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .badge-architect { background: var(--accent-blue-muted); color: var(--accent-blue); }
+      .badge-voice { background: var(--accent-purple-muted); color: var(--accent-purple); }
+      .badge-director { background: var(--accent-gold-muted); color: var(--accent-gold); }
+      .badge-editor { background: var(--success-muted); color: var(--success); }
+
+      /* Hero section */
+      .hero {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+        border-radius: 12px;
+        margin-bottom: 40px;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+        margin-bottom: 0.5em;
+        background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero .subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: 2em;
+      }
+
+      /* Track cards grid */
+      .track-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin: 2em 0;
+      }
+
+      .track-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+
+      .track-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-cyan);
+      }
+
+      .track-card h3 {
+        margin-top: 0;
+      }
+
+      .track-card.writer { border-top: 4px solid var(--accent-gold); }
+      .track-card.architect { border-top: 4px solid var(--accent-blue); }
+
+      /* FAQ accordion */
+      details {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 16px;
+      }
+
+      details[open] {
+        border-color: var(--accent-cyan);
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      summary:hover {
+        color: var(--accent-cyan);
+      }
+
+      details p {
+        margin-top: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* Login form */
+      .login-form {
+        max-width: 400px;
+        margin: 60px auto;
+        padding: 40px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: center;
+      }
+
+      .login-form input[type="password"] {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        margin-bottom: 16px;
+      }
+
+      .login-form input[type="password"]:focus {
+        outline: none;
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+      }
+
+      /* Footer */
+      .site-footer {
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        padding: 24px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 60px;
+      }
+
+      /* Utility classes */
+      .text-center { text-align: center; }
+      .text-muted { color: var(--text-muted); }
+      .mt-4 { margin-top: 2rem; }
+      .mb-4 { margin-bottom: 2rem; }
+
+      /* Images */
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+      }
+
+      /* Horizontal rule */
+      hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 2em 0;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header-wrapper {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .site-nav {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .track-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1><a href="{{ "/" | relative_url }}">{{ site.title | default: site.github.repository_name }}</a></h1>
-
-        {% if site.logo %}
-          <img src="{{site.logo | relative_url}}" alt="Logo" />
-        {% endif %}
-
-        <p>{{ site.description | default: site.github.project_tagline }}</p>
-
-        <nav>
-            <ul>
-                <li><a href="{{ '/student_portal' | relative_url }}">👉 Student Portal</a></li>
-                <li><a href="{{ '/showcase' | relative_url }}">👉 Student Projects</a></li>
-                <li><a href="{{ '/submission_guide' | relative_url }}">👉 How to Submit</a></li>
-                <li><a href="{{ '/philosophy' | relative_url }}">👉 The Philosophy</a></li>
-                <li><a href="{{ '/journey' | relative_url }}">👉 The Writer's Journey</a></li>
-                <li><a href="{{ '/team' | relative_url }}">👉 The Squad</a></li>
-                <li><a href="{{ '/context_engineering' | relative_url }}">👉 Context Engineering</a></li>
-                <li><a href="{{ '/anti_patterns' | relative_url }}">👉 Anti-Patterns</a></li>
-            </ul>
+    <header class="site-header">
+      <div class="header-wrapper">
+        <a href="{{ '/' | relative_url }}" class="site-title">{{ site.title }}</a>
+        <nav class="site-nav">
+          <a href="{{ '/about' | relative_url }}">About</a>
+          <a href="{{ '/tracks' | relative_url }}">Tracks</a>
+          <a href="{{ '/showcase' | relative_url }}">Showcase</a>
+          <a href="{{ '/faq' | relative_url }}">FAQ</a>
+          <a href="{{ '/portal/' | relative_url }}">Student Portal</a>
         </nav>
+      </div>
+    </header>
 
-        {% if site.github.is_project_page %}
-        <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub <small>{{ site.github.repository_nwo }}</small></a></p>
-        {% endif %}
-
-      </header>
-      <section>
-
+    <main class="page-content">
       {{ content }}
+    </main>
 
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
-    </div>
-    <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
+    <footer class="site-footer">
+      <p>Writers Factory &mdash; Open source AI writing environment</p>
+      <p><a href="https://github.com/gcharris/writers-factory-app">View on GitHub</a></p>
+    </footer>
   </body>
 </html>
