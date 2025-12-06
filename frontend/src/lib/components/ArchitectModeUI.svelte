@@ -69,19 +69,35 @@
       </button>
     </div>
   {:else}
-    <div class="welcome-banner">
-      <div class="welcome-content">
-        <h4>Welcome to ARCHITECT Mode</h4>
-        <p>Create your Story Bible to define the foundation of your novel.</p>
-        <button class="start-btn" on:click={openStoryBibleWizard}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Create Story Bible
-        </button>
+    {#if !hasNotebooks}
+      <div class="welcome-banner" style="border-color: var(--accent-cyan, #58a6ff);">
+        <div class="welcome-content">
+          <h4 style="color: var(--accent-cyan, #58a6ff);">Step 1: Connect Research</h4>
+          <p>Before building your Story Bible, connect your NotebookLM research to ground your story in facts.</p>
+          <button class="start-btn" on:click={openNotebookRegistration} style="background: var(--accent-cyan, #58a6ff);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            Connect Research Notebooks
+          </button>
+        </div>
       </div>
-    </div>
+    {:else}
+      <div class="welcome-banner">
+        <div class="welcome-content">
+          <h4>Welcome to ARCHITECT Mode</h4>
+          <p>Create your Story Bible to define the foundation of your novel.</p>
+          <button class="start-btn" on:click={openStoryBibleWizard}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create Story Bible
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 
   <!-- Work Order Tracker -->
