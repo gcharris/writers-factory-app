@@ -164,10 +164,15 @@ async def generate_transition_response(
 IMPORTANT: No NotebookLM notebooks are registered yet.
 Before diving into Story Bible creation, guide the writer to:
 1. Click the NOTEBOOK button in the top-right toolbar
-2. Register their research notebooks (character, world, theme, craft)
+2. Register their 5 Core Notebooks: Character, World, Theme, Plot, Voice
+   - CHARACTER notebook: All characters in ONE notebook (Fatal Flaw, The Lie, Arc)
+   - WORLD notebook: All world-building in ONE notebook (Hard Rules, Locations)
+   - THEME notebook: Central Question as a question, arguments FOR and AGAINST
+   - PLOT notebook: 15-beat structure, Midpoint type
+   - VOICE notebook: Style targets, passages to emulate, anti-patterns to avoid
 3. This grounds the Story Bible in their actual research
 
-Mention this naturally in your response - that connecting research notebooks first will make the Story Bible process much more effective."""
+Mention this naturally - explain that the 5 Core Notebooks are required for building a solid Story Bible. Without them, we're improvising instead of extracting."""
 
     # Build the prompt for the LLM
     system_prompt = f"""You are the Foreman, a creative writing partner.
